@@ -1,0 +1,32 @@
+# Controlled PIT channel-0 -> master-8259 IRR0 proof in the retained B06VP
+# CAR state.  IRQ0 stays masked and the LAPIC stays software-disabled/masked.
+# PIT mode/count and PIC command sequencing are stateful, so writes are
+# deliberately non-reversible.  On success or failure, archive and discard
+# this transaction, then run ich10-pit0-pic-cleanup-b06vp.xrs.  A cold reset
+# remains the exact recovery for the PIT state.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert io 00000021 b ff fb
+assert io 000000a1 b ff ff
+assert io 000004d0 b ff 00
+assert io 000004d1 b ff 02
+assert mem fee000f0 l 00000100 00000000
+assert mem fee00350 l 0001ff00 00010000
+
+# Select IRR reads and require no pre-existing IRQ0 request.
+write io 00000020 b 0a nr
+assert io 00000020 b 01 00
+
+# PIT0, binary mode 0, low/high count 0x0800 (about 1.7 ms).
+write io 00000043 b 30 nr
+write io 00000040 b 00 nr
+write io 00000040 b 08 nr
+poll io 00000020 b 01 01 000f4240
+read io 00000020 b
+assert io 00000021 b ff fb
+assert io 000000a1 b ff ff
+assert io 000004d0 b ff 00
+assert io 000004d1 b ff 02
+assert mem fee000f0 l 00000100 00000000
+assert mem fee00350 l 0001ff00 00010000
+assert pci 001f0000 l ffffffff 3a168086

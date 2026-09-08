@@ -1,0 +1,301 @@
+{
+  "schema_version": 2,
+  "verified_date": "2026-08-04",
+  "policy": "Repository handling policy: firmware and extracted payloads are private local analysis inputs only. Public availability does not establish redistribution permission; this policy is not a legal conclusion about vendor terms.",
+  "images": [
+    {
+      "id": "msi-x58-pro-e-8f0",
+      "vendor": "MSI",
+      "platform": "MS-7522 family",
+      "package_label": "X58 Pro SLI (MS-7522)",
+      "target_identity": "user reports that the payload is byte-identical to the target X58 Pro-E EEPROM",
+      "chipset": "Intel X58 + ICH10R",
+      "cpu_scope": "Bloomfield/Gulftown",
+      "firmware_family": "AMIBIOS8",
+      "version": "A7522IMS.8F0",
+      "release_date": "2011-03-19",
+      "source_status": "user-supplied MSI-branded archive; user-reported byte match against the target EEPROM",
+      "source_page": null,
+      "download_url": null,
+      "archive": {
+        "local_path": "7522v8F.zip",
+        "size": 1338294,
+        "sha256": "83b7cc523ed79ab1b86b810261d33f7bb3a27575b7479b9fbe26ad2a037adf7b"
+      },
+      "payload": {
+        "local_path": "blobs-local/msi-x58-pro-e/7522v8F/A7522IMS.8F0",
+        "size": 4194304,
+        "sha256": "ee7912da81a3cf47b6bedef7dedfa56cbc31723f5cdd7f0d75a7f64e336c04a8"
+      },
+      "research_use": "bootblock and board-policy evidence for the exact compared EEPROM contents; not generalized to every MS-7522 PCB revision",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "vendor terms not audited by this project"
+    },
+    {
+      "id": "intel-dx58so2-og-0920",
+      "vendor": "Intel",
+      "platform": "DX58SO2 / DX58OG",
+      "chipset": "Intel X58 + ICH10R",
+      "cpu_scope": "Bloomfield/Gulftown",
+      "firmware_family": "Intel UEFI capsule",
+      "version": "SOX5820J.86A.0920.2013.0729.0042",
+      "build_date": "2013-07-29 (from internal BIOS ID)",
+      "source_status": "user-supplied archive; platform identity verified from internal BIOS ID",
+      "source_page": null,
+      "download_url": null,
+      "archive": {
+        "local_path": "sox5820j-86a-0920-bi.zip",
+        "size": 2871264,
+        "sha256": "d8cb1c8cb2ad0027c85f1a51ee9d436cdaad7f74d50ec17e363fd223863fce74"
+      },
+      "payload": {
+        "local_path": "blobs-local/intel-dx58so/SO0920P.bio",
+        "size": 3991700,
+        "sha256": "4e6b895898db07e78d8627ae6fb9c81df8df9ad950f24c1617ad4bb7ac5ce52c"
+      },
+      "research_use": "late desktop X58 UEFI and Intel 63C0690C candidate reference",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "vendor terms not audited by this project"
+    },
+    {
+      "id": "intel-dx58so-5600",
+      "vendor": "Intel",
+      "platform": "DX58SO",
+      "chipset": "Intel X58 + ICH10R",
+      "cpu_scope": "Bloomfield/Gulftown",
+      "firmware_family": "Intel UEFI capsule",
+      "version": "SOX5810J.86A.5600.2013.0729.2250",
+      "archive_member_date": "2013-07-31",
+      "build_date": "2013-07-29 (from internal BIOS ID)",
+      "source_status": "public mirror of retired Intel downloadmirror content",
+      "source_page": "https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00019.html",
+      "source_page_role": "official product/version corroboration; not a hash attestation for the mirrored bytes",
+      "download_url": "https://ftp.infania.net/pub/Windows%20Drivers/Intel/downloadmirror.intel.com/SOX5810J.86A.5600.BI.ZIP",
+      "archive": {
+        "local_path": "blobs-local/intel-dx58so/5600/SOX5810J.86A.5600.BI.ZIP",
+        "size": 2740806,
+        "sha256": "347801ebc6801beb540e2677f7852d00aa786122be8c234ea4577612489970d7"
+      },
+      "payload": {
+        "local_path": "blobs-local/intel-dx58so/5600/extracted/SO5600P.bio",
+        "size": 3849620,
+        "sha256": "d26337570c7a8efde9cce5002310a4f96583e667f063a691e4d582f55c0f866b"
+      },
+      "research_use": "true DX58SO comparison against DX58SO2/DX58OG",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "vendor terms not audited by this project"
+    },
+    {
+      "id": "intel-s55xx-r0033",
+      "vendor": "Intel",
+      "platform": "S5520HC / S5500HCV / S5520SC",
+      "chipset": "Intel 5500/5520 + ICH10",
+      "cpu_scope": "Xeon 5500",
+      "firmware_family": "Intel server UEFI capsule",
+      "version": "S5500.86B.01.00.0033",
+      "package_date": "2009-03-29",
+      "build_date": "2009-03-06",
+      "date_evidence": "private package release.txt distinguishes package date from BIOS build date",
+      "source_status": "public mirror of retired Intel downloadmirror content",
+      "source_page": "https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00026.html",
+      "source_page_role": "official product/version corroboration; not a hash attestation for the mirrored bytes",
+      "download_url": "https://ftp.infania.net/pub/Windows%20Drivers/Intel/downloadmirror.intel.com/S5520HC_S5500HCV_S5520SC_SFUP_PR1_04_08_2009.zip",
+      "archive": {
+        "local_path": "blobs-local/intel-s55xx/r0033/S5520HC_S5500HCV_S5520SC_SFUP_PR1_04_08_2009.zip",
+        "size": 13845221,
+        "sha256": "5316cb1495088cc162ce836a45bc90f6fc7ca0d1af73502a2ea6cc060a6f0e11"
+      },
+      "payload": {
+        "local_path": "blobs-local/intel-s55xx/r0033/extracted/R0033.cap",
+        "size": 3217944,
+        "sha256": "850c24fb50168660ddf5b23dbb42b6bd642c1a35e254e3575c71bb01b2cb5046"
+      },
+      "research_use": "early QPI RC 1.03 / MRC 1.05RC1 baseline",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "private package COPYING.txt covers identified portions only; no blanket firmware grant established"
+    },
+    {
+      "id": "intel-s55xx-r0069",
+      "vendor": "Intel",
+      "platform": "Intel S55xx board family",
+      "chipset": "Intel 5500/5520 + ICH10",
+      "cpu_scope": "Xeon 5500/5600",
+      "firmware_family": "Intel server UEFI capsule",
+      "version": "S5500.86B.01.00.0069",
+      "release_date": "2018-03-26",
+      "source_status": "public mirror of retired Intel downloadmirror content",
+      "source_page": "https://web.archive.org/web/20210620194423/https://downloadcenter.intel.com/download/27730/BIOS-Update-Package-Update-for-EFI-Intel-Server-Boards-and-Intel-Server-Systems-Based-on-Intel-55XX-Chipset",
+      "source_page_role": "archived original Intel download page; not a hash attestation for the mirrored bytes",
+      "download_url": "https://ftp.infania.net/pub/Windows%20Drivers/Intel/downloadmirror.intel.com/S55xx_BIOS69_EFI_BIOS_Only.zip",
+      "archive": {
+        "local_path": "blobs-local/intel-s55xx/r0069/S55xx_BIOS69_EFI_BIOS_Only.zip",
+        "size": 14028057,
+        "sha256": "160f7c3dc282eeaa255ba9aef1cb349d3ed642c5e349438d898a7981be943b19"
+      },
+      "payload": {
+        "local_path": "blobs-local/intel-s55xx/r0069/extracted/S55xx_BIOS69_EFI_BIOS_Only/R0069.cap",
+        "size": 3218464,
+        "sha256": "b44982dc2d8d46bf161ce13107d3822a861a03bb4167af474f7186b2ae5e1032"
+      },
+      "research_use": "late QPI RC 1.85 / MRC 2.21 endpoint",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "private package LICENSE.TXT retained; terms not adjudicated by this project"
+    },
+    {
+      "id": "asus-rampage-iii-formula-0402",
+      "vendor": "ASUS",
+      "platform": "Rampage III Formula",
+      "chipset": "Intel X58 + ICH10R",
+      "cpu_scope": "Bloomfield/Gulftown",
+      "firmware_family": "AMIBIOS8",
+      "version": "0402",
+      "release_date": "2010-08-27",
+      "source_status": "official active ASUS CDN",
+      "source_page": "https://www.asus.com/us/supportonly/rampage%20iii%20formula/helpdesk_bios/",
+      "download_url": "https://dlcdnets.asus.com/pub/ASUS/mb/LGA1366/Rampage_III_Formula/RampageIII-Formula-ASUS-0402.zip",
+      "archive": {
+        "local_path": "blobs-local/asus-rampage-iii-formula/RampageIII-Formula-ASUS-0402.zip",
+        "size": 994096,
+        "sha256": "4aeb04f323fb95ee2df107860d325287e80275d02f228b3a93f05a46b2edbf38"
+      },
+      "payload": {
+        "local_path": "blobs-local/asus-rampage-iii-formula/0402/RampageIII-Formula-ASUS-0402.ROM",
+        "size": 2097152,
+        "sha256": "31aa96784a5f2304b9ca5c5238e7d130fd6a9c59cad257b1c153b403078515cf"
+      },
+      "research_use": "first-release AMIBIOS8 baseline",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "vendor terms not audited by this project"
+    },
+    {
+      "id": "asus-rampage-iii-formula-0701",
+      "vendor": "ASUS",
+      "platform": "Rampage III Formula",
+      "chipset": "Intel X58 + ICH10R",
+      "cpu_scope": "Bloomfield/Gulftown",
+      "firmware_family": "AMIBIOS8",
+      "version": "0701",
+      "release_date": "2011-04-08",
+      "source_status": "official active ASUS CDN",
+      "source_page": "https://www.asus.com/us/supportonly/rampage%20iii%20formula/helpdesk_bios/",
+      "download_url": "https://dlcdnets.asus.com/pub/ASUS/mb/LGA1366/Rampage_III_Formula/RampageIII-Formula-ASUS-0701.zip",
+      "archive": {
+        "local_path": "blobs-local/asus-rampage-iii-formula/RampageIII-Formula-ASUS-0701.zip",
+        "size": 1008785,
+        "sha256": "7bd185bf5c9cc446e31e8925884b3f5edd0ad5edf2f348f5e522da2e2d6c9379"
+      },
+      "payload": {
+        "local_path": "blobs-local/asus-rampage-iii-formula/0701/RampageIII-Formula-ASUS-0701.ROM",
+        "size": 2097152,
+        "sha256": "656bd86320dd0edee9f49e923cae4c9c4317b2db0c7f3ee95f075a6df6e4d539"
+      },
+      "research_use": "immediate predecessor to Memory Recheck release",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "vendor terms not audited by this project"
+    },
+    {
+      "id": "asus-rampage-iii-formula-0702",
+      "vendor": "ASUS",
+      "platform": "Rampage III Formula",
+      "chipset": "Intel X58 + ICH10R",
+      "cpu_scope": "Bloomfield/Gulftown",
+      "firmware_family": "AMIBIOS8",
+      "version": "0702",
+      "release_date": "2011-04-21",
+      "source_status": "official active ASUS CDN",
+      "source_page": "https://www.asus.com/us/supportonly/rampage%20iii%20formula/helpdesk_bios/",
+      "download_url": "https://dlcdnets.asus.com/pub/ASUS/mb/LGA1366/Rampage_III_Formula/RampageIII-Formula-ASUS-0702.zip",
+      "archive": {
+        "local_path": "blobs-local/asus-rampage-iii-formula/RampageIII-Formula-ASUS-0702.zip",
+        "size": 1009296,
+        "sha256": "35dd8142245459f35f79d730748f3fa2193b76ade00afbd45c7a3e719a60ef50"
+      },
+      "payload": {
+        "local_path": "blobs-local/asus-rampage-iii-formula/0702/RampageIII-Formula-ASUS-0702.ROM",
+        "size": 2097152,
+        "sha256": "abebd1131f075f9658cd63e198d0c7e2faf6b6672fc07d53554645c21450e50c"
+      },
+      "research_use": "release note: Add Memory Recheck feature",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "vendor terms not audited by this project"
+    },
+    {
+      "id": "asus-rampage-iii-formula-0903",
+      "vendor": "ASUS",
+      "platform": "Rampage III Formula",
+      "chipset": "Intel X58 + ICH10R",
+      "cpu_scope": "Bloomfield/Gulftown",
+      "firmware_family": "AMIBIOS8",
+      "version": "0903",
+      "release_date": "2011-10-10",
+      "source_status": "official active ASUS CDN",
+      "source_page": "https://www.asus.com/us/supportonly/rampage%20iii%20formula/helpdesk_bios/",
+      "download_url": "https://dlcdnets.asus.com/pub/ASUS/mb/LGA1366/Rampage_III_Formula/RampageIII-Formula-ASUS-0903.zip",
+      "archive": {
+        "local_path": "blobs-local/asus-rampage-iii-formula/RampageIII-Formula-ASUS-0903.zip",
+        "size": 972689,
+        "sha256": "c0a84f6d6f09df0320c48cf59f5cce50afc2220aea3e8e2c5476a8d80b0916c8"
+      },
+      "payload": {
+        "local_path": "blobs-local/asus-rampage-iii-formula/0903/RampageIII-Formula-ASUS-0903.ROM",
+        "size": 2097152,
+        "sha256": "1d862b0227b426a0ce6e966d86e1c9aea59e6515139abb59b5b5d1a5d9dbae7e"
+      },
+      "research_use": "release note: Improve memory compatibility",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "vendor terms not audited by this project"
+    },
+    {
+      "id": "apple-macpro41-efi-1.4",
+      "vendor": "Apple",
+      "platform": "Mac Pro (Early 2009 / MacPro4,1)",
+      "chipset": "Intel Tylersburg family (exact IOH by configuration unverified)",
+      "cpu_scope": "Xeon 3500/5500",
+      "firmware_family": "Apple EFI firmware device image",
+      "version": "MP41.0081.07B / EFI Update 1.4",
+      "release_date": "2010-03-22",
+      "source_status": "official active Apple CDN",
+      "source_page": "https://support.apple.com/en-euro/106656",
+      "download_url": "https://updates.cdn-apple.com/2019/cert/041-85221-20191017-79244f0a-4ce2-487d-be9c-3426c8914340/MacProEFIUpdate.dmg",
+      "archive": {
+        "local_path": "blobs-local/apple-macpro/efi-1.4/MacProEFIUpdate.dmg",
+        "size": 2024906,
+        "sha256": "1b618a2f0191c06734b38ec7b7c5fce74dbc691cc58272a481c835cc9cfc441b"
+      },
+      "payload": {
+        "local_path": "blobs-local/apple-macpro/efi-1.4/MP41_0081_07B_LOCKED.fd",
+        "size": 4194304,
+        "sha256": "6a5dd6190b1de163a4bc59956be12e60236708fd006e6451280859437ca68df3"
+      },
+      "research_use": "independent Nehalem OEM candidate; D71C8BA4 is labeled UncoreInitPeim by the pinned UEFITool GUID database, not by an Apple UI section",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "vendor terms not captured in corpus metadata or adjudicated by this project"
+    },
+    {
+      "id": "apple-macpro51-efi-1.5",
+      "vendor": "Apple",
+      "platform": "Mac Pro (Mid 2010 / MacPro5,1)",
+      "chipset": "Intel Tylersburg family (exact IOH by configuration unverified)",
+      "cpu_scope": "Nehalem 106Ax and Westmere 206Cx (Xeon 3500/3600/5500/5600 microcodes present)",
+      "firmware_family": "Apple EFI firmware device image",
+      "version": "MP51.007F.03B / EFI Update 1.5",
+      "release_date": "2010-09-27",
+      "source_status": "official active Apple CDN",
+      "source_page": "https://support.apple.com/en-us/106455",
+      "download_url": "https://updates.cdn-apple.com/2019/cert/041-87779-20191017-fcbc4e09-65e2-4332-83bd-9dfe7013e409/MacProEFIUpdate.dmg",
+      "archive": {
+        "local_path": "blobs-local/apple-macpro/efi-1.5/MacProEFIUpdate.dmg",
+        "size": 2278703,
+        "sha256": "d998c82434aa3a795fc0b973b16819fa7d75df98be23f4eba8de0e911d318703"
+      },
+      "payload": {
+        "local_path": "blobs-local/apple-macpro/efi-1.5/MP51_007F_03B_LOCKED.fd",
+        "size": 4194304,
+        "sha256": "45728fd04b6b173a1741c2795cb8b18ec726d1a40389f65e90b9b0fda243f5b9"
+      },
+      "research_use": "independent Nehalem/Westmere OEM candidate and D71C8BA4 PE32-to-TE diff partner; GUID role label comes from the pinned UEFITool database",
+      "repository_handling": "private local analysis only; do not commit or redistribute from this repository",
+      "license_evidence": "vendor terms not captured in corpus metadata or adjudicated by this project"
+    }
+  ]
+}

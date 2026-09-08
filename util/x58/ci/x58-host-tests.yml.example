@@ -1,0 +1,35 @@
+# Optional template, NOT an active GitHub Actions workflow.
+# Installing under .github/workflows requires appropriate repository/workflow
+# permissions. All commands below can instead be run locally as documented.
+name: X58 source-only checks
+
+on:
+  push:
+    branches: [coreboot-x58]
+  pull_request:
+    branches: [coreboot-x58]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-contracts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: false
+      - name: Native test dependencies (no firmware toolchain)
+        run: sudo apt-get update && sudo apt-get install -y build-essential acpica-tools
+      - name: Source-only tests
+        run: |
+          python3 -B -m unittest discover -s util/x58/tests
+          PYTHONPATH=util/x58/scripts python3 -B -m unittest discover -s util/x58/scripts -p 'test_*.py'
+          bash util/x58/scripts/test_x58_host_c.sh
+      - name: Public release content check
+        run: python3 -B util/x58/scripts/audit_public_tree.py
+      - name: Whitespace check
+        run: git diff --check fe3e08197177d3ce6ef6ea9ef238069e5b1d33a2

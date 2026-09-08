@@ -1,0 +1,40 @@
+# Invasive CAR-only companion test for EHCI1.  It reconstructs the observed
+# MSI GPIO57/H_PWRGD low-delay-high lifecycle while the reset-state EHCI1
+# controller is halted, then samples all six root-hub ports.
+#
+# Assertions cover only the GPIO57 target bit after the write because native
+# OC inputs in the same GP_LVL2 byte change dynamically.  A one-second AC
+# cycle is mandatory after the run even if rollback appears successful.
+
+assert pci 001d0700 l ffffffff 3a3a8086
+assert pci 001d0704 w ffff 0000
+assert pci 001d0710 l ffffffff 00000000
+assert pci 001d07fc l ffffffff 20001706
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0048 l ffffffff 00000581
+assert pci 001f004c b ff 10
+assert io 000005b0 l ffffffff 030300ff
+assert io 000005b7 b ff 0f
+assert io 000005bb b ff 15
+write pci 001d0710 l cfcfe000 rev
+assert pci 001d0710 l ffffffff cfcfe000
+write pci 001d0704 w 00000002 rev
+assert pci 001d0704 w ffff 0002
+assert mem cfcfe000 b ff 20
+assert mem cfcfe004 l 0000000f 00000006
+assert mem cfcfe020 l 00000003 00000000
+assert mem cfcfe024 l 00001000 00001000
+assert mem cfcfe064 l ffffffff 00003030
+assert mem cfcfe078 l ffffffff 00003030
+mask io 000005b7 b 02 00 rev
+assert io 000005b7 b 02 00
+delay 00010000
+mask io 000005bb b 00 02 rev
+assert io 000005bb b 02 02
+delay 00010000
+read mem cfcfe064 l
+read mem cfcfe068 l
+read mem cfcfe06c l
+read mem cfcfe070 l
+read mem cfcfe074 l
+read mem cfcfe078 l

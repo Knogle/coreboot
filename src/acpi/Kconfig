@@ -59,6 +59,15 @@ config ACPI_CUSTOM_MADT
 	help
 	  Selected by platforms that need to expose custom MADT entries.
 
+config ACPI_CUSTOM_MCFG
+	bool
+	default n
+	help
+	  Selected by platforms that need to publish a custom PCI MMCONFIG
+	  allocation.  This controls ACPI table contents only; unlike
+	  ECAM_MMCONF_SUPPORT, it does not select the MMIO PCI configuration
+	  access mechanism used by coreboot itself.
+
 config ACPI_NO_CUSTOM_MADT
 	bool
 	default y if ACPI_COMMON_MADT_LAPIC && ACPI_COMMON_MADT_IOAPIC

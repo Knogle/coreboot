@@ -1,0 +1,35 @@
+# Temporarily decode reset-state EHCI2 at the exact MMIO address previously
+# assigned by coreboot.  The controller remains halted: no reset, schedules,
+# DMA, CONFIGFLAG or PORTSC write is issued.  BAR0 and PCI_COMMAND are the only
+# mutations and are reversible after the trace has been retained.
+
+assert pci 001a0700 l ffffffff 3a3c8086
+assert pci 001a0704 w ffff 0000
+assert pci 001a0710 l ffffffff 00000000
+assert pci 001a0754 w 0003 0000
+assert pci 001a07fc l ffffffff 20001706
+write pci 001a0710 l cfcff000 rev
+assert pci 001a0710 l ffffffff cfcff000
+write pci 001a0704 w 00000002 rev
+assert pci 001a0704 w ffff 0002
+assert mem cfcff000 b ff 20
+assert mem cfcff002 w ffff 0100
+assert mem cfcff004 l 0000000f 00000006
+read mem cfcff008 l
+assert mem cfcff020 l ffffffff 00080000
+read mem cfcff024 l
+assert mem cfcff028 l ffffffff 00000000
+read mem cfcff02c l
+read mem cfcff030 l
+read mem cfcff034 l
+read mem cfcff038 l
+assert mem cfcff060 l ffffffff 00000000
+read mem cfcff064 l
+read mem cfcff068 l
+read mem cfcff06c l
+read mem cfcff070 l
+read mem cfcff074 l
+read mem cfcff078 l
+assert pci 001a0704 w ffff 0002
+assert pci 001a0710 l ffffffff cfcff000
+assert pci 001a0700 l ffffffff 3a3c8086

@@ -1,0 +1,36 @@
+# Read-only census of the ICH10R power-management, SMI, and GPIO routing
+# state under B06VP.  Exact decode assertions make the snapshot fail closed;
+# no status register is acknowledged and no enable or GPIO value is changed.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0040 l ffffffff 00000501
+assert pci 001f0044 b ff 80
+assert pci 001f0048 l ffffffff 00000581
+assert pci 001f004c b ff 10
+read pci 001f00b8 l
+read pci 001f00a0 w
+read pci 001f00a2 w
+read pci 001f00a4 b
+read pci 001f00a6 w
+read pci 001f00ac l
+read io 00000500 w
+read io 00000502 w
+read io 00000504 l
+read io 00000508 l
+read io 00000520 l
+read io 00000524 l
+read io 00000528 l
+read io 0000052c l
+read io 00000530 l
+read io 00000534 l
+read io 00000538 w
+read io 0000053a w
+read io 00000542 w
+read io 00000580 l
+read io 00000584 l
+read io 0000058c l
+read io 00000598 l
+read io 000005ac l
+read io 000005b0 l
+read io 000005b4 l
+read io 000005b8 l

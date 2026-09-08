@@ -20,14 +20,8 @@ static void i82801jx_early_settings(const config_t *const info)
 {
 	/* Program FERR# as processor break event indicator. */
 	RCBA32(GCS) |= (1 << 6);
-	/* BIOS must program... */
-	RCBA32(RCBA_CIR8) = (RCBA32(RCBA_CIR8) & ~(0x3 <<  0)) | (0x2 <<  0);
-	RCBA32(RCBA_FD) |= (1 << 0);
-	RCBA32(RCBA_CIR9) = (RCBA32(RCBA_CIR9) & ~(0x3 << 26)) | (0x2 << 26);
-	RCBA32(RCBA_CIR7) = (RCBA32(RCBA_CIR7) & ~(0xf << 16)) | (0x5 << 16);
-	RCBA32(RCBA_CIR13) = (RCBA32(RCBA_CIR13) & ~(0xf << 16)) | (0x5 << 16);
+	i82801jx_program_required_fields();
 	/* RCBA32(RCBA_CIR5) |= (1 << 0); cf. Specification Update */
-	RCBA32(RCBA_CIR10) |= (3 << 16);
 }
 
 static void i82801jx_pcie_init(const config_t *const info)
@@ -76,27 +70,6 @@ static void i82801jx_pcie_init(const config_t *const info)
 	/* Lock R/WO ASPM support bits. */
 	for (i = 0; i < 6; ++i)
 		pci_update_config32(pciePort[i], 0x4c, ~0, 0);
-}
-
-static void i82801jx_ehci_init(void)
-{
-	struct device *const pciEHCI1 = pcidev_on_root(0x1d, 7);
-	if (!pciEHCI1)
-		die("EHCI controller (00:1d.7) not listed in devicetree.\n");
-	struct device *const pciEHCI2 = pcidev_on_root(0x1a, 7);
-	if (!pciEHCI2)
-		die("EHCI controller (00:1a.7) not listed in devicetree.\n");
-
-	u32 reg32;
-
-	/* TODO: Maybe we have to save and
-		 restore these settings across S3. */
-	reg32 = pci_read_config32(pciEHCI1, 0xfc);
-	pci_write_config32(pciEHCI1, 0xfc, (reg32 & ~(3 << 2)) |
-					   (1 << 29) | (1 << 17) | (2 << 2));
-	reg32 = pci_read_config32(pciEHCI2, 0xfc);
-	pci_write_config32(pciEHCI2, 0xfc, (reg32 & ~(3 << 2)) |
-					   (1 << 29) | (1 << 17) | (2 << 2));
 }
 
 static int i82801jx_function_disabled(const unsigned int devfn)

@@ -1,0 +1,27 @@
+# Failure-path cleanup for ich10-pit0-pic-irr0-probe-b06vp.xrs.  Run only
+# after archiving and discarding a retained failed transaction.  The PIT
+# one-shot count has then necessarily elapsed before this exact PIC reset.
+
+assert pci 001f0000 l ffffffff 3a168086
+write io 00000020 b 11 nr
+write io 000000a0 b 11 nr
+write io 00000021 b 20 nr
+write io 000000a1 b 28 nr
+write io 00000021 b 04 nr
+write io 000000a1 b 02 nr
+write io 00000021 b 01 nr
+write io 000000a1 b 01 nr
+write io 000000a1 b ff nr
+write io 00000021 b fb nr
+write io 00000020 b 0a nr
+write io 000000a0 b 0a nr
+assert io 00000020 b 01 00
+read io 00000020 b
+read io 000000a0 b
+assert io 00000021 b ff fb
+assert io 000000a1 b ff ff
+assert io 000004d0 b ff 00
+assert io 000004d1 b ff 02
+assert mem fee000f0 l 00000100 00000000
+assert mem fee00350 l 0001ff00 00010000
+assert pci 001f0000 l ffffffff 3a168086

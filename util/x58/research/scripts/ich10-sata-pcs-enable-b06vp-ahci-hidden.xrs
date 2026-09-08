@@ -1,0 +1,38 @@
+# Isolated ICH10R AHCI supported-port enable proof after MAP=0060 and the
+# separately proven FD_SAD2 hide.  This changes only PCS low-byte bits 5:0
+# from 00 to 3f.  Bits 7:6 and the complete high byte are preserved.
+#
+# Although the register field is writable, enabling SATA ports can start
+# physical-layer activity, so the mutation is classified non-reversible.
+# No BAR/decode, AHCI MMIO, SIDX/SDAT, reset, or disk command is touched.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f418 l ffffffff 02000001
+assert mem fed1f420 b ff 00
+assert pci 001f0500 l ffffffff ffffffff
+
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0000
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff 00000000
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w ffff 0000
+assert pci 001f0294 l ffffffff 00000000
+
+mask pci 001f0292 b 3f 3f nr
+
+assert pci 001f0292 b ff 3f
+read pci 001f0292 w
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0000
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff 00000000
+assert pci 001f0290 w ffff 0060
+assert pci 001f0294 l ffffffff 00000000
+assert pci 001f0500 l ffffffff ffffffff
+assert mem fed1f418 l ffffffff 02000001
+assert mem fed1f420 b ff 00
+assert pci 001f0000 l ffffffff 3a168086

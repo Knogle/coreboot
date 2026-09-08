@@ -1,0 +1,36 @@
+# Isolated target proof of coreboot's standard dual-8259 initialization plus
+# the one board/ACPI trigger-mode decision for SCI IRQ9.  The ICW sequence is
+# stateful and therefore deliberately non-reversible.  It leaves every slave
+# IRQ masked and every master IRQ except the cascade masked; it does not STI,
+# unmask IRQ9, touch LAPIC/IOAPIC, enable SCI, or acknowledge PM status.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert io 00000021 b ff 00
+assert io 000000a1 b ff 00
+assert io 000004d0 b ff 00
+assert io 000004d1 b ff 00
+
+# ICW1: start initialization, expect ICW4.
+write io 00000020 b 11 nr
+write io 000000a0 b 11 nr
+# ICW2: vectors 20h and 28h.
+write io 00000021 b 20 nr
+write io 000000a1 b 28 nr
+# ICW3: slave connected at master IRQ2, slave identity 2.
+write io 00000021 b 04 nr
+write io 000000a1 b 02 nr
+# ICW4: 8086/88 microprocessor mode.
+write io 00000021 b 01 nr
+write io 000000a1 b 01 nr
+# OCW1: mask every slave input and leave only master cascade IRQ2 open.
+write io 000000a1 b ff nr
+write io 00000021 b fb nr
+
+# IRQ9 is the board's SCI line.  Select level trigger without enabling it.
+mask io 000004d1 b 02 02 nr
+
+assert io 00000021 b ff fb
+assert io 000000a1 b ff ff
+assert io 000004d0 b ff 00
+assert io 000004d1 b ff 02
+assert pci 001f0000 l ffffffff 3a168086

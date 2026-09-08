@@ -1,0 +1,37 @@
+# Reproduce only SeaBIOS's bounded HBA reset prerequisite after the proven
+# PI and non-D link setup.  PCI bus mastering is off, all DMA engines are
+# off, and this program never supplies or issues a storage command.
+
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0002
+assert pci 001f0224 l ffffffff cfcff800
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w c0ff 003f
+assert pci 001f0294 l ffffffff 00000193
+assert pci 001f0500 l ffffffff ffffffff
+assert mem cfcff800 l ffffffff ff22ffc5
+assert mem cfcff804 l ffffffff 80000000
+assert mem cfcff80c l ffffffff 0000003f
+assert mem cfcffb98 l 00000017 00000006
+assert mem cfcffba8 l 0000000f 00000003
+
+mask mem cfcff804 l 00000001 00000001 nr
+poll mem cfcff804 l 00000001 00000000 000f4240
+
+read mem cfcff800 l
+read mem cfcff804 l
+read mem cfcff808 l
+read mem cfcff80c l
+read mem cfcff810 l
+read mem cfcffb98 l
+read mem cfcffba0 l
+read mem cfcffba4 l
+read mem cfcffba8 l
+read mem cfcffbac l
+read mem cfcffbb0 l
+read mem cfcffb90 l
+
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0002
+assert pci 001f0224 l ffffffff cfcff800
+assert pci 001f0500 l ffffffff ffffffff

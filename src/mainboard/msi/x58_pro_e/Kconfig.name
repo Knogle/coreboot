@@ -1,0 +1,4 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config BOARD_MSI_X58_PRO_E
+	bool "X58 Pro-E (MS-7522, experimental)"

@@ -1,0 +1,31 @@
+# Isolate the documented ICH10 HPET decode field after the separately proven
+# OIC=03 IOAPIC decode.  Only HPTC bit 7 is set while address-select bits 1:0
+# are held at zero, selecting the FED00000 aperture.  This script does not
+# enable the HPET main counter, configure a comparator or route an interrupt.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f420 b ff 00
+assert mem fed1f1ff b ff 03
+assert mem fed1f404 l ffffffff 00000000
+assert mem fed00000 l ffffffff ffffffff
+assert mem fed00004 l ffffffff ffffffff
+
+mask mem fed1f404 l 00000083 00000080 nr
+
+assert mem fed1f404 l ffffffff 00000080
+read mem fed00000 l
+read mem fed00004 l
+read mem fed00010 l
+read mem fed00014 l
+read mem fed00020 l
+read mem fed00024 l
+read mem fed000f0 l
+read mem fed000f4 l
+read mem fed00100 l
+read mem fed00104 l
+read mem fed00108 l
+read mem fed0010c l
+assert mem fed1f1ff b ff 03
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0000 l ffffffff 3a168086

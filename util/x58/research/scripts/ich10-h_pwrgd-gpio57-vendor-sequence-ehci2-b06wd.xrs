@@ -1,0 +1,42 @@
+# Invasive CAR-only reconstruction of the exact MSI GPIO57/H_PWRGD lifecycle:
+# select output while the observed latch is low, wait, then drive it high.
+# The first preload-high experiment established that GP_LVL2[25] cannot be
+# changed while GPIO57 is configured as input.
+#
+# EHCI2 remains halted throughout.  All four mutations are reversible.  The
+# reverse-order rollback restores GPIO57 low before returning it to input,
+# then removes EHCI decode and BAR0.  A one-second AC cycle is the recovery if
+# UART or rollback fails.
+
+assert pci 001a0700 l ffffffff 3a3c8086
+assert pci 001a0704 w ffff 0000
+assert pci 001a0710 l ffffffff 00000000
+assert pci 001a07fc l ffffffff 20001706
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0048 l ffffffff 00000581
+assert pci 001f004c b ff 10
+assert io 000005b0 l ffffffff 030300ff
+assert io 000005b7 b ff 0f
+assert io 000005bb b ff 15
+write pci 001a0710 l cfcff000 rev
+assert pci 001a0710 l ffffffff cfcff000
+write pci 001a0704 w 00000002 rev
+assert pci 001a0704 w ffff 0002
+assert mem cfcff000 b ff 20
+assert mem cfcff004 l 0000000f 00000006
+assert mem cfcff020 l 00000003 00000000
+assert mem cfcff024 l 00001000 00001000
+assert mem cfcff064 l ffffffff 00003030
+assert mem cfcff078 l ffffffff 00003030
+mask io 000005b7 b 02 00 rev
+assert io 000005b7 b ff 0d
+delay 00010000
+mask io 000005bb b 00 02 rev
+assert io 000005bb b ff 17
+delay 00010000
+read mem cfcff064 l
+read mem cfcff068 l
+read mem cfcff06c l
+read mem cfcff070 l
+read mem cfcff074 l
+read mem cfcff078 l

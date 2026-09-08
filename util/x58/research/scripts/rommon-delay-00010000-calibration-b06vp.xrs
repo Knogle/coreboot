@@ -1,0 +1,4 @@
+# Read/write-free timing control.  This is 1/256 of the original 0x01000000
+# count and is intended to complete within a bounded interactive window.
+
+delay 00010000

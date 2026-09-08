@@ -1,0 +1,39 @@
+# Stage C restores every programmable field changed by Stages A/B except the
+# ICH10 HPTC decode bit.  Entry 20 returns to its exact same-session captured
+# pair, LAPIC SVR returns to its CAR reset state, and HPET timer/comparator/
+# counter state returns to the decoded reset tuple.  The delivered vector may
+# remain pending in LAPIC IRR and is deliberately not serviced in CAR; perform
+# the documented exact one-second AC cycle immediately after this succeeds.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fed1f404 l ffffffff 00000080
+assert mem fed00010 l ffffffff 00000000
+assert mem fed00100 l ffffffff 00002830
+assert mem fee000f0 l ffffffff 0000010f
+assert mem fee00220 l 00020000 00020000
+assert mem fec00000 l ffffffff 00000038
+assert mem fec00010 l ffffffff 00010051
+write mem fec00000 l 00000039 nr
+assert mem fec00010 l ffffffff 00000000
+write mem fec00010 l 10000000 nr
+assert mem fec00010 l ffffffff 10000000
+write mem fec00000 l 00000038 nr
+write mem fec00010 l 00010197 nr
+assert mem fec00010 l ffffffff 00010197
+write mem fec00000 l 00000000 nr
+assert mem fec00000 l ffffffff 00000000
+write mem fee000f0 l 000000ff nr
+assert mem fee000f0 l ffffffff 000000ff
+write mem fed00100 l 00000000 nr
+assert mem fed00100 l ffffffff 00000030
+write mem fed00108 l ffffffff nr
+write mem fed0010c l ffffffff nr
+assert mem fed00108 l ffffffff ffffffff
+assert mem fed0010c l ffffffff ffffffff
+write mem fed000f0 l 00000000 nr
+write mem fed000f4 l 00000000 nr
+assert mem fed000f0 l ffffffff 00000000
+assert mem fed000f4 l ffffffff 00000000
+assert mem fed00010 l ffffffff 00000000

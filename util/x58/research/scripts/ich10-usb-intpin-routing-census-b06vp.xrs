@@ -1,0 +1,40 @@
+# Read-only PCI interrupt-pin and ICH10 route census for the six UHCI and two
+# EHCI functions.  PCI_INTERRUPT_LINE and PCI_INTERRUPT_PIN are captured as
+# separate bytes; no route, IOAPIC, controller or status register is written.
+
+assert pci 001f0000 l ffffffff 3a168086
+
+assert pci 001a0000 l ffffffff 3a378086
+assert pci 001a0100 l ffffffff 3a388086
+assert pci 001a0200 l ffffffff 3a398086
+assert pci 001a0700 l ffffffff 3a3c8086
+assert pci 001d0000 l ffffffff 3a348086
+assert pci 001d0100 l ffffffff 3a358086
+assert pci 001d0200 l ffffffff 3a368086
+assert pci 001d0700 l ffffffff 3a3a8086
+
+read pci 001a003c b
+read pci 001a003d b
+read pci 001a013c b
+read pci 001a013d b
+read pci 001a023c b
+read pci 001a023d b
+read pci 001a073c b
+read pci 001a073d b
+read pci 001d003c b
+read pci 001d003d b
+read pci 001d013c b
+read pci 001d013d b
+read pci 001d023c b
+read pci 001d023d b
+read pci 001d073c b
+read pci 001d073d b
+
+read mem fed1f108 l
+read mem fed1f114 l
+read mem fed1f144 w
+read mem fed1f14c w
+read pci 001f0060 l
+read pci 001f0068 l
+
+assert pci 001f0000 l ffffffff 3a168086

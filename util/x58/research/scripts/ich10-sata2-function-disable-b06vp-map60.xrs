@@ -1,0 +1,44 @@
+# Isolated ICH10R SATA #2 function-disable proof after the separately captured
+# B06VP MAP=0060 transition.  Historical i82801jx coreboot identifies RCBA
+# FD bit 25 as FD_SAD2.  The live MAP experiment proved that MAP alone does not
+# hide 00:1f.5, so this script changes only that documented disable bit.
+#
+# FDSW remains unlocked and is not modified.  The write is non-reversible:
+# function-disable semantics may be sticky even if read-back looks writable.
+# Recovery is an exact one-second AC cycle.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f418 l ffffffff 00000001
+assert mem fed1f420 b ff 00
+
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0000
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff 00000000
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w ffff 0000
+assert pci 001f0294 l ffffffff 00000000
+
+assert pci 001f0500 l ffffffff 3a268086
+assert pci 001f0504 w ffff 0000
+assert pci 001f0508 l ffffffff 01018500
+assert pci 001f050e b 7f 00
+assert pci 001f0524 l ffffffff 00000001
+assert pci 001f0590 w ffff 0000
+
+mask mem fed1f418 l 00000000 02000000 nr
+
+assert mem fed1f418 l ffffffff 02000001
+assert pci 001f0500 l ffffffff ffffffff
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0000
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff 00000000
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w ffff 0000
+assert pci 001f0294 l ffffffff 00000000
+assert mem fed1f420 b ff 00
+assert pci 001f0000 l ffffffff 3a168086

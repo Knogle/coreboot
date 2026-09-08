@@ -1,0 +1,12 @@
+# B06V1 reversible engine test using the 16550 COM1 Scratch Register.
+# Port 0x3ff is COM1 base 0x3f8 + SCR offset 7. The 16550 defines SCR as an
+# eight-bit software scratchpad; it does not control baud rate or data flow.
+# Run in keep mode, inspect the transaction, then request manual rollback.
+
+read io 03ff b
+write io 03ff b 5a rev
+assert io 03ff b ff 5a
+mask io 03ff b 0f 05 rev
+assert io 03ff b ff 55
+poll io 03ff b ff 55 10
+delay 100

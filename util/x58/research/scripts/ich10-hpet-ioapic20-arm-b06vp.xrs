@@ -1,0 +1,40 @@
+# Stage A of the first HPET -> IOAPIC -> LAPIC delivery experiment.
+#
+# The exact entry-20 pair was captured immediately beforehand in this cold
+# B06VP session.  Every IOAPIC data write occurs while the entry is masked.
+# This stage enables only the BSP LAPIC software-enable bit, installs a future
+# comparator value, and leaves HPET timer 0 disabled and the main counter
+# stopped.  It therefore cannot generate an interrupt by itself.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fed1f404 l ffffffff 00000080
+assert mem fed00000 l ffffffff 8086a301
+assert mem fed00004 l ffffffff 0429b17f
+assert mem fed00010 l ffffffff 00000000
+assert mem fed00014 l ffffffff 00000000
+assert mem fed00020 l ffffffff 00000000
+assert mem fed00024 l ffffffff 00000000
+assert mem fed000f0 l ffffffff 00000000
+assert mem fed000f4 l ffffffff 00000000
+assert mem fed00100 l ffffffff 00000030
+assert mem fed00104 l ffffffff 00f00000
+assert mem fed00108 l ffffffff ffffffff
+assert mem fed0010c l ffffffff ffffffff
+assert mem fee00080 l ffffffff 00000000
+assert mem fee000f0 l ffffffff 000000ff
+assert mem fee00220 l ffffffff 00000000
+assert mem fec00000 l ffffffff 00000000
+write mem fec00000 l 00000038 nr
+assert mem fec00010 l ffffffff 00010197
+assert mem fec00010 l 00010000 00010000
+write mem fec00000 l 00000039 nr
+assert mem fec00010 l ffffffff 10000000
+write mem fec00010 l 00000000 nr
+write mem fec00000 l 00000038 nr
+write mem fec00010 l 00010051 nr
+write mem fec00000 l 00000000 nr
+write mem fee000f0 l 0000010f nr
+write mem fed00108 l 00100000 nr
+write mem fed0010c l 00000000 nr

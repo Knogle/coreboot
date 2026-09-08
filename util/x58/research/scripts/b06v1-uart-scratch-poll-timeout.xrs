@@ -1,0 +1,7 @@
+# B06V1 bounded failure-path test using the 16550 COM1 Scratch Register.
+# The scratch register must be 0x00 before this test.  The impossible expected
+# value makes the bounded poll exhaust exactly 0x10 reads without modifying it.
+
+read io 03ff b
+assert io 03ff b ff 00
+poll io 03ff b ff 5a 10

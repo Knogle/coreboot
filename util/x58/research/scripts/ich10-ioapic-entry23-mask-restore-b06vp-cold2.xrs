@@ -1,0 +1,49 @@
+# Hardware-specific, same-session IOAPIC write/readback/restore probe.
+#
+# The exact entry-23 pair below was captured immediately before this script
+# in the B06VP cold-02 CAR session.  The low dword is already masked.  Every
+# data-window mutation therefore leaves the entry masked, including all
+# failure prefixes.  IOREGSEL/IOWIN is an indexed pair, so no write is marked
+# generically reversible: restoration is explicit and ordered in this table.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fec00000 l ffffffff 00000000
+assert mem fec00010 l ffffffff 00000000
+
+# Prove the expected 24-entry implementation without locking MRE.
+write mem fec00000 l 00000001 nr
+assert mem fec00010 l ffffffff 00170020
+
+# Capture gates for entry 23 (selectors 0x3e/0x3f).
+write mem fec00000 l 0000003e nr
+assert mem fec00010 l ffffffff 000102d1
+assert mem fec00010 l 00010000 00010000
+write mem fec00000 l 0000003f nr
+assert mem fec00010 l ffffffff 01860000
+
+# Canonical masked pair: destination zero, fixed delivery/vector fields zero.
+write mem fec00010 l 00000000 nr
+assert mem fec00010 l ffffffff 00000000
+write mem fec00000 l 0000003e nr
+write mem fec00010 l 00010000 nr
+assert mem fec00010 l ffffffff 00010000
+write mem fec00000 l 0000003f nr
+assert mem fec00010 l ffffffff 00000000
+
+# Explicitly restore the exact captured pair while the low dword stays masked.
+write mem fec00010 l 01860000 nr
+assert mem fec00010 l ffffffff 01860000
+write mem fec00000 l 0000003e nr
+write mem fec00010 l 000102d1 nr
+assert mem fec00010 l ffffffff 000102d1
+write mem fec00000 l 0000003f nr
+assert mem fec00010 l ffffffff 01860000
+
+# Leave the indexed interface at its documented idle selector and reconfirm.
+write mem fec00000 l 00000000 nr
+assert mem fec00000 l ffffffff 00000000
+assert mem fec00010 l ffffffff 00000000
+assert mem fed1f1ff b ff 03
+assert pci 001f00f0 l ffffffff fed1c001

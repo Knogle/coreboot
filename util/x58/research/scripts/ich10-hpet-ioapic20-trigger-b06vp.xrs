@@ -1,0 +1,43 @@
+# Stage B of the first HPET -> IOAPIC -> LAPIC delivery experiment.
+#
+# Stage A must have left timer 0 disabled, the HPET main counter stopped,
+# IOAPIC entry 20 canonical and masked, and the BSP LAPIC enabled.  This table
+# selects the documented HPET route 20, arms a one-shot edge interrupt at
+# main-counter value 0x100000, unmasks only entry 20, and starts the counter.
+# CPU interrupts remain disabled in CAR ROMMON, so successful delivery is
+# observed as vector 0x51 (bit 17) in LAPIC IRR bank 2.  Before asserting that
+# result, the table always stops HPET, disables timer interrupts, and masks the
+# IOAPIC entry again.  A one-second AC cycle is mandatory after Stage C.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fed1f404 l ffffffff 00000080
+assert mem fed00010 l ffffffff 00000000
+assert mem fed000f0 l ffffffff 00000000
+assert mem fed000f4 l ffffffff 00000000
+assert mem fed00100 l ffffffff 00000030
+assert mem fed00104 l ffffffff 00f00000
+assert mem fed00108 l ffffffff 00100000
+assert mem fed0010c l ffffffff 00000000
+assert mem fee00080 l ffffffff 00000000
+assert mem fee000f0 l ffffffff 0000010f
+assert mem fee00220 l ffffffff 00000000
+assert mem fec00000 l ffffffff 00000000
+write mem fec00000 l 00000038 nr
+assert mem fec00010 l ffffffff 00010051
+write mem fed00100 l 00002834 nr
+assert mem fed00100 l ffffffff 00002834
+write mem fec00010 l 00000051 nr
+assert mem fec00010 l ffffffff 00000051
+write mem fec00000 l 00000000 nr
+write mem fed00010 l 00000001 nr
+delay 00010000
+read mem fed000f0 l
+read mem fee00220 l
+write mem fed00010 l 00000000 nr
+write mem fed00100 l 00002830 nr
+write mem fec00000 l 00000038 nr
+write mem fec00010 l 00010051 nr
+assert mem fec00010 l ffffffff 00010051
+assert mem fee00220 l 00020000 00020000

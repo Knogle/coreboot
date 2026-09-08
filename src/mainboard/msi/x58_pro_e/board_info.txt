@@ -1,0 +1,7 @@
+Category: desktop
+Board URL: https://www.msi.com/Motherboard/X58_ProE/Specification
+ROM package: DIP-8 socket
+ROM protocol: SPI
+ROM socketed: y
+Flashrom support: n
+Release year: 2009

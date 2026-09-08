@@ -1,0 +1,35 @@
+# Isolated ICH10R SATA IDE-to-AHCI type/map transition for the exact B06VP
+# CAR reset tuple.  Mirrors B06VR: select MAP[7:5]=011b, then immediately
+# clear the newly exposed AHCI BAR5.  No decode, AHCI MMIO, port, clock or
+# disk access occurs.  Both writes are non-reversible because their register
+# semantics change with controller mode.  Recovery is an exact one-second AC
+# cycle, or a separately reviewed reverse transition after all traces exist.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0200 l ffffffff 3a208086
+assert pci 001f0204 w ffff 0000
+assert pci 001f0208 l ffffffff 01018a00
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff 00000001
+assert pci 001f0290 w ffff 0000
+assert pci 001f0292 w ffff 0000
+assert pci 001f0294 l ffffffff 00000000
+assert pci 001f0500 l ffffffff 3a268086
+assert pci 001f0504 w ffff 0000
+assert pci 001f0508 l ffffffff 01018500
+assert pci 001f050e b 7f 00
+
+# Preserve the exact B06VR helper order with no intervening access.
+mask pci 001f0290 w 00e0 0060 nr
+write pci 001f0224 l 00000000 nr
+
+assert pci 001f0290 w ffff 0060
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w 0007 0000
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff 00000000
+assert pci 001f0500 l ffffffff ffffffff
+assert pci 001f0292 w ffff 0000
+assert pci 001f0294 l ffffffff 00000000
+assert pci 001f0000 l ffffffff 3a168086

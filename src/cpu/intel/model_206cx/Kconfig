@@ -1,0 +1,10 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+# Experimental Westmere-EP/Gulftown CPU selection for the MSI X58 Pro-E
+# reset/CAR milestone.  This deliberately provides no ramstage CPU policy yet.
+config CPU_INTEL_MODEL_206CX
+	bool
+	select ARCH_X86
+	select HAVE_X86_64_SUPPORT
+	select SSE2
+	select SUPPORT_CPU_UCODE_IN_CBFS

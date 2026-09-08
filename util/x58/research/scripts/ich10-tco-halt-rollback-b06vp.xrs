@@ -1,0 +1,35 @@
+# Reversible, exact-gated proof of ICH10 TCO_TMR_HLT.  The single mutation
+# sets only TCO1_CNT bit 11.  The host executor must run this in auto mode,
+# verify its complete trace, and roll back to the exact captured value 0000.
+# Timeout status, SMI policy, NO_REBOOT and timer initial value are untouched.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0040 l ffffffff 00000501
+assert pci 001f0044 b ff 80
+assert mem fed1f410 l ffffffff 00200404
+assert io 00000564 w ffff 0008
+assert io 00000566 w ffff 0002
+assert io 00000568 w ffff 0000
+assert io 0000056a w ffff 0008
+assert io 00000572 w ffff 0004
+assert io 000005b0 l ffffffff 030300ff
+
+write io 00000568 w 00000800 rev
+assert io 00000568 w ffff 0800
+read io 00000560 w
+delay 00100000
+read io 00000560 w
+delay 00100000
+read io 00000560 w
+assert io 00000568 w ffff 0800
+
+assert io 00000564 w ffff 0008
+assert io 00000566 w ffff 0002
+assert io 0000056a w ffff 0008
+assert io 00000572 w ffff 0004
+assert io 000005b0 l ffffffff 030300ff
+assert pci 001f0044 b ff 80
+assert pci 001f0040 l ffffffff 00000501
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0000 l ffffffff 3a168086

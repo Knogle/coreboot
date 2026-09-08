@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "generated_date": "2026-08-04",
+  "tool": {
+    "name": "UEFIExtract NE alpha 76",
+    "source_commit": "dac91b26733ca21cb204e41614c1b8c81cc50860",
+    "executable_size": 1511504,
+    "executable_sha256": "44c5ffe12c37170b429086f561f279a869fe4de46c3d607ac9626478e9eb81c1"
+  },
+  "policy": "Reports and exact diagnostic streams remain beside private inputs under blobs-local. This checked-in file binds only hashes, sizes, counts, and diagnostic summaries.",
+  "reports": [
+    {
+      "corpus_id": "intel-dx58so2-og-0920",
+      "input_sha256": "4e6b895898db07e78d8627ae6fb9c81df8df9ad950f24c1617ad4bb7ac5ce52c",
+      "report_size": 157348,
+      "report_sha256": "25e029e832dd31bda69ef93a496abb5292bdaf9097e9b779d80e85832a7afdc1",
+      "diagnostic_line_count": 37,
+      "diagnostic_summary": "unknown DEPEX opcodes 2E/F6/18 (two each); 31 unusual TE ImageBase warnings"
+    },
+    {
+      "corpus_id": "intel-dx58so-5600",
+      "input_sha256": "d26337570c7a8efde9cce5002310a4f96583e667f063a691e4d582f55c0f866b",
+      "report_size": 154696,
+      "report_sha256": "f639c06736062ba3d3902826d8e9194bf0164967ab9c232ff090d6bd1088e025",
+      "diagnostic_line_count": 43,
+      "diagnostic_summary": "unknown DEPEX opcodes B6/E6, non-END/misplaced-BEFORE diagnostics (two each); 35 unusual TE ImageBase warnings"
+    },
+    {
+      "corpus_id": "intel-s55xx-r0033",
+      "input_sha256": "850c24fb50168660ddf5b23dbb42b6bd642c1a35e254e3575c71bb01b2cb5046",
+      "report_size": 133353,
+      "report_sha256": "e03b557c48f4a57851da46f40ea267e234a9749d274e2695eb11ffe781af7810",
+      "diagnostic_line_count": 1,
+      "diagnostic_summary": "non-UEFI data in a padding file"
+    },
+    {
+      "corpus_id": "intel-s55xx-r0069",
+      "input_sha256": "b44982dc2d8d46bf161ce13107d3822a861a03bb4167af474f7186b2ae5e1032",
+      "report_size": 140473,
+      "report_sha256": "e792bd1eaf5641abec2d99f7673c975ca1ce25d4e2d6028d0db88f1e2c84fdcc",
+      "diagnostic_line_count": 22,
+      "diagnostic_summary": "invalid file checksum, non-UEFI free/padding data, and FIT discovery/checksum diagnostics; exact output retained privately"
+    },
+    {
+      "corpus_id": "apple-macpro41-efi-1.4",
+      "input_sha256": "6a5dd6190b1de163a4bc59956be12e60236708fd006e6451280859437ca68df3",
+      "report_size": 114822,
+      "report_sha256": "99d36254064c8e5354827b47f4f613b403e2f30f8ca59d7d7b91074573ed5e8c",
+      "diagnostic_line_count": 0,
+      "diagnostic_summary": "none"
+    },
+    {
+      "corpus_id": "apple-macpro51-efi-1.5",
+      "input_sha256": "45728fd04b6b173a1741c2795cb8b18ec726d1a40389f65e90b9b0fda243f5b9",
+      "report_size": 122187,
+      "report_sha256": "466226d2cedfe0d9f13cb6359855d0f98ebf91d389f204f58ed12b6c428fc7f8",
+      "diagnostic_line_count": 3,
+      "diagnostic_summary": "unknown filesystem/FFS-version diagnostics and one unusual TE ImageBase warning"
+    }
+  ]
+}

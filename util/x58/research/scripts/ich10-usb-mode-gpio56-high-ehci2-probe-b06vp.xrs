@@ -1,0 +1,39 @@
+# Hardware hypothesis: on MS-7522, GPIO56/USB_MODE enables the common USB
+# VBUS switches.  The current pin samples high while configured as an input.
+# Drive only that same high level by changing direction to output, leave every
+# controller halted, and compare all six EHCI2 PORTSC values.  BAR0, MEM decode
+# and GPIO direction are reversible transaction entries; the host must retain
+# the trace and execute an exact transaction rollback immediately afterwards.
+
+assert pci 001a0700 l ffffffff 3a3c8086
+assert pci 001a0704 w ffff 0000
+assert pci 001a0710 l ffffffff 00000000
+assert pci 001a0754 w 0003 0000
+assert pci 001a07fc l ffffffff 20001706
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0048 l ffffffff 00000581
+assert pci 001f004c b ff 10
+assert io 000005b4 l ffffffff 0f55fff0
+assert io 000005b8 l ffffffff 15ff00d3
+write pci 001a0710 l cfcff000 rev
+assert pci 001a0710 l ffffffff cfcff000
+write pci 001a0704 w 00000002 rev
+assert pci 001a0704 w ffff 0002
+assert mem cfcff000 b ff 20
+assert mem cfcff002 w ffff 0100
+assert mem cfcff004 l 0000000f 00000006
+read mem cfcff064 l
+read mem cfcff068 l
+read mem cfcff06c l
+read mem cfcff070 l
+read mem cfcff074 l
+read mem cfcff078 l
+mask io 000005b4 l 01000000 00000000 rev
+assert io 000005b4 l ffffffff 0e55fff0
+delay 01000000
+read mem cfcff064 l
+read mem cfcff068 l
+read mem cfcff06c l
+read mem cfcff070 l
+read mem cfcff074 l
+read mem cfcff078 l

@@ -40,6 +40,7 @@ static int get_fsb_tsc(int *fsb, int *ratio)
 			*ratio = (rdmsr(IA32_PERF_STATUS).hi >> 8) & 0x1f;
 			break;
 		case 0x25: /* Arrandale BCLK fixed at 133MHz */
+		case 0x2c: /* Westmere-EP/Gulftown BCLK fixed at 133MHz */
 			*fsb = 133;
 			*ratio = (rdmsr(MSR_PLATFORM_INFO).lo >> 8) & 0xff;
 			break;

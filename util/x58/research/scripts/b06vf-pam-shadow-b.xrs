@@ -1,0 +1,33 @@
+# B06VF live preflight B: cover the remaining D/E half-windows, four
+# F-segment quarters, and the exact SeaBIOS load-segment endpoints.
+write pci ff000140 b 30 rev
+write pci ff000141 b 33 rev
+write pci ff000142 b 33 rev
+write pci ff000143 b 33 rev
+write pci ff000144 b 33 rev
+write pci ff000145 b 33 rev
+write pci ff000146 b 33 rev
+write mem 000d8000 l 5aa50001 rev
+write mem 000dc000 l 5aa50002 rev
+write mem 000e0000 l 5aa50003 rev
+write mem 000e4000 l 5aa50004 rev
+write mem 000e8000 l 5aa50005 rev
+write mem 000ec000 l 5aa50006 rev
+write mem 000f0000 l 5aa50007 rev
+write mem 000f4000 l 5aa50008 rev
+write mem 000f8000 l 5aa50009 rev
+write mem 000fc000 l 5aa5000a rev
+write mem 000f87e0 l 5aa5000b rev
+write mem 000ffffc l 5aa5000c rev
+assert mem 000d8000 l ffffffff 5aa50001
+assert mem 000dc000 l ffffffff 5aa50002
+assert mem 000e0000 l ffffffff 5aa50003
+assert mem 000e4000 l ffffffff 5aa50004
+assert mem 000e8000 l ffffffff 5aa50005
+assert mem 000ec000 l ffffffff 5aa50006
+assert mem 000f0000 l ffffffff 5aa50007
+assert mem 000f4000 l ffffffff 5aa50008
+assert mem 000f8000 l ffffffff 5aa50009
+assert mem 000fc000 l ffffffff 5aa5000a
+assert mem 000f87e0 l ffffffff 5aa5000b
+assert mem 000ffffc l ffffffff 5aa5000c

@@ -1,0 +1,39 @@
+# Read-only AHCI port-register census for ports 0..2.  The complete PCI and
+# global-register gates were proven by the immediately preceding census.
+
+assert mem cfcff80c l ffffffff 0000003f
+assert mem cfcff804 l ffffffff 80000000
+
+# PxCLB, PxFB, PxIS, PxIE, PxCMD, PxTFD, PxSIG, PxSSTS, PxSCTL, PxSERR
+read mem cfcff900 l
+read mem cfcff908 l
+read mem cfcff910 l
+read mem cfcff914 l
+read mem cfcff918 l
+read mem cfcff920 l
+read mem cfcff924 l
+read mem cfcff928 l
+read mem cfcff92c l
+read mem cfcff930 l
+
+read mem cfcff980 l
+read mem cfcff988 l
+read mem cfcff990 l
+read mem cfcff994 l
+read mem cfcff998 l
+read mem cfcff9a0 l
+read mem cfcff9a4 l
+read mem cfcff9a8 l
+read mem cfcff9ac l
+read mem cfcff9b0 l
+
+read mem cfcffa00 l
+read mem cfcffa08 l
+read mem cfcffa10 l
+read mem cfcffa14 l
+read mem cfcffa18 l
+read mem cfcffa20 l
+read mem cfcffa24 l
+read mem cfcffa28 l
+read mem cfcffa2c l
+read mem cfcffa30 l

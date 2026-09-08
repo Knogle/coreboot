@@ -158,7 +158,7 @@ static void acpi_create_madt(acpi_header_t *header, void *unused)
 	header->length = current - (unsigned long)madt;
 }
 
-static unsigned long acpi_fill_mcfg(unsigned long current)
+static unsigned long acpi_fill_mcfg_from_config(unsigned long current)
 {
 	for (int i = 0; i < PCI_SEGMENT_GROUP_COUNT; i++) {
 		current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
@@ -181,8 +181,15 @@ static void acpi_create_mcfg(acpi_header_t *header, void *unused)
 	if (acpi_fill_header(header, "MCFG", MCFG, sizeof(acpi_mcfg_t)) != CB_SUCCESS)
 		return;
 
-	if (CONFIG(ECAM_MMCONF_SUPPORT))
+	/*
+	 * Table publication and coreboot's own PCI configuration access are
+	 * separate contracts.  A platform can expose a proven ECAM aperture to
+	 * the OS while deliberately retaining another access mechanism itself.
+	 */
+	if (CONFIG(ACPI_CUSTOM_MCFG))
 		current = acpi_fill_mcfg(current);
+	else if (CONFIG(ECAM_MMCONF_SUPPORT))
+		current = acpi_fill_mcfg_from_config(current);
 
 	/* (Re)calculate length */
 	header->length = current - (unsigned long)mcfg;

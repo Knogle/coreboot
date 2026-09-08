@@ -1,0 +1,1488 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+if BOARD_MSI_X58_PRO_E
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select BOARD_ROMSIZE_KB_4096
+	select CPU_INTEL_SOCKET_LGA1366
+	select MISSING_BOARD_RESET
+	select NO_ECAM_MMCONF_SUPPORT
+	select NO_MONOTONIC_TIMER
+	select NO_SMM
+	select HAVE_ACPI_TABLES if X58_PRO_E_B06WC_INTEGRATED_PLATFORM
+	select ACPI_CUSTOM_MADT if X58_PRO_E_B06WC_INTEGRATED_PLATFORM
+	select ACPI_CUSTOM_MCFG if X58_PRO_E_B06WC_INTEGRATED_PLATFORM
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 2
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 3
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 4
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 5
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 6
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 7
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 8
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 9
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 10
+	select SUPERIO_FINTEK_COMMON_PRE_RAM if X58_PRO_E_BRINGUP_STAGE = 11
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE if X58_PRO_E_BRINGUP_STAGE = 4
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE if X58_PRO_E_BRINGUP_STAGE = 5
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE if X58_PRO_E_BRINGUP_STAGE = 6
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE if X58_PRO_E_BRINGUP_STAGE = 7
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE if X58_PRO_E_BRINGUP_STAGE = 8
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE if X58_PRO_E_BRINGUP_STAGE = 9
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE if X58_PRO_E_BRINGUP_STAGE = 10
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE if X58_PRO_E_BRINGUP_STAGE = 11
+	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS if X58_PRO_E_BRINGUP_STAGE = 4
+	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS if X58_PRO_E_BRINGUP_STAGE = 5
+	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS if X58_PRO_E_BRINGUP_STAGE = 6
+	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS if X58_PRO_E_BRINGUP_STAGE = 7
+	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS if X58_PRO_E_BRINGUP_STAGE = 8
+	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS if X58_PRO_E_BRINGUP_STAGE = 9
+	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS if X58_PRO_E_BRINGUP_STAGE = 10
+	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS if X58_PRO_E_BRINGUP_STAGE = 11
+	select DRAM_SUPPORT_DDR3 if X58_PRO_E_BRINGUP_STAGE = 8
+	select DRAM_SUPPORT_DDR3 if X58_PRO_E_BRINGUP_STAGE = 10
+	select DRAM_SUPPORT_DDR3 if X58_PRO_E_BRINGUP_STAGE = 11
+	select NO_CBFS_MCACHE if X58_PRO_E_B06V0_VENDOR_INIT
+
+config MAINBOARD_DIR
+	default "msi/x58_pro_e"
+
+config DEVICETREE
+	default "devicetree_b06wc.cb" if X58_PRO_E_B06WI_VENDOR_IRQ_ACPI
+	default "devicetree_b06wc.cb" if X58_PRO_E_B06WH_QUIET_USB_SEABIOS
+	default "devicetree_b06wc.cb" if X58_PRO_E_B06WG_AUTO_USB_SEABIOS
+	default "devicetree_b06wc.cb" if X58_PRO_E_B06WF_USB_LAB
+	default "devicetree_b06wc.cb" if X58_PRO_E_B06WE_ACPI_SAD_BDF_FIX
+	default "devicetree_b06wc.cb" if X58_PRO_E_B06WD_SEABIOS_INPUT
+	default "devicetree_b06wc.cb" if X58_PRO_E_B06WC_INTEGRATED_PLATFORM
+	default "devicetree_b06wb.cb" if X58_PRO_E_B06WB_TCO_HALT
+	default "devicetree_b06wa.cb" if X58_PRO_E_B06WA_HPET_DECODE
+	default "devicetree_b06vz.cb" if X58_PRO_E_B06VZ_FIXED_RESOURCES
+	default "devicetree_b06vy.cb" if X58_PRO_E_B06VY_IOAPIC_MASK
+	default "devicetree_b06vx.cb" if X58_PRO_E_B06VX_AHCI_USB_TRACE
+	default "devicetree_b06vw.cb" if X58_PRO_E_B06VW_ICH10_AHCI_MMIO
+	default "devicetree_b06vv.cb" if X58_PRO_E_B06VV_ICH10_PCS_SCLK
+	default "devicetree_b06vu.cb" if X58_PRO_E_B06VU_ICH10_AHCI_ROUTE
+	default "devicetree_b06vo.cb" if X58_PRO_E_B06VQ_ICHBASE1
+	default "devicetree_b06vo.cb" if X58_PRO_E_B06VQ_PLATRO1
+	default "devicetree_b06vo.cb" if X58_PRO_E_B06VQ_USB_TRACE1
+	default "devicetree_b06vr.cb" if X58_PRO_E_B06VT_ICH10_SATA_CLOCK
+	default "devicetree_b06vr.cb" if X58_PRO_E_B06VS_ICH10_AHCI_PORTS
+	default "devicetree_b06vr.cb" if X58_PRO_E_B06VR_ICH10_AHCI_MAP
+	default "devicetree_b06vo.cb" if X58_PRO_E_B06VQ_ICH10_EHCI_INIT
+	default "devicetree_b06vo.cb" if X58_PRO_E_B06VP_LAPIC_EXTINT
+	default "devicetree_b06vo.cb" if X58_PRO_E_B06VO_IOHBUSNO_ROUTE
+	default "devicetree_b06vn.cb" if X58_PRO_E_B06VN_IOU0_PCIE_PHYS_VBIOS
+	default "devicetree_b06vm.cb" if X58_PRO_E_B06VM_AUTO_PCI_VGA_IPXE
+	default "devicetree.cb"
+
+config X58_PRO_E_B06M_BASEINIT
+	bool "Enable B06M one-channel baseinit experiment"
+	depends on X58_PRO_E_BRINGUP_STAGE = 11
+	default n
+	help
+	  Add an explicitly armed baseinit command for the exact E5645, Slow-QPI,
+	  DDR-ratio-6, channel-2, dual-rank SPD-0x54 configuration proven during
+	  B06J-HW-01.  It uses vendor-observed policy values, bounded RCOMP/ZQCL
+	  polls, and serialized UART markers between DIMM-reset phases.  It does
+	  not explicitly wait for the final character to reach TEMT; B06N adds
+	  that corrected timing path.  It neither sets MC_CONTROL.INIT_DONE nor
+	  accesses ordinary DRAM or SPI flash.
+
+config X58_PRO_E_B06N_TIMED_MRS
+	bool "Enable B06N measured MRS timing"
+	depends on X58_PRO_E_B06M_BASEINIT
+	default n
+	help
+	  Preserve B06M while adding an explicit UART-TEMT delay after every
+	  DDR3 MRS command.  At 115200 baud each transmitted progress byte takes
+	  about 86.8 microseconds, conservatively exceeding the vendor's observed
+	  one-microsecond wait without assuming a TSC frequency.  Reset phase
+	  markers also receive an explicit bounded TEMT completion check.
+
+config X58_PRO_E_B06V0_VENDOR_INIT
+	bool "Enable B06V0 local MSI vendor-init probe"
+	depends on X58_PRO_E_BRINGUP_STAGE = 11
+	depends on ARCH_ROMSTAGE_X86_32
+	default n
+	help
+	  Add a default-off, explicitly armed research path for locally extracted
+	  MSI A7522IMS.8F0 CSI_INITDLL and MINITDLL code.  No proprietary bytes
+	  are part of the coreboot source or ordinary coreboot image; a separate
+	  hash-pinned local composition step places them at their original XIP
+	  addresses.  The ROM monitor verifies every complete inserted range,
+	  entry metadata, exact SPD topology, and the CAR scratch layout before
+	  permitting a manual call.  It never calls either
+	  module automatically and never continues to ramstage or a payload.
+
+	  This option disables the pre-RAM CBFS metadata cache to leave bounded
+	  CAR space for the vendor state, workspace, guarded stack, and result
+	  snapshot.  It also loads and requires the CPUID-206c2 Intel microcode
+	  revision 0x1f before CAR.  The path is restricted to the current
+	  E5645/sole-SPD-0x54 lab configuration and is not a native X58
+	  memory-init implementation.
+
+config X58_PRO_E_B06V1_REG_SCRIPT
+	bool "Enable B06V1 transactional register scripting"
+	depends on X58_PRO_E_B06V0_VENDOR_INIT
+	default n
+	help
+	  Add a bounded pre-DRAM register-script engine to the B06V0 ROM monitor.
+	  A script can contain up to 32 read, write, mask, poll, pause-delay, and
+	  assert operations over I/O, PCI configuration, MMIO, and MSR spaces.
+	  The table must first be sealed; execution then requires a separate
+	  one-shot SCRIPT arm and the exact digest of the complete operation table.
+	  Every step is logged before and after access; polling and delay loops have
+	  hard limits.  Scripted memory writes overlapping CAR are rejected.
+
+	  Writes explicitly marked reversible retain their prior values.  Manual
+	  rollback and rollback-on-failure replay those values in reverse order,
+	  but cannot undo write-once fields, W1C semantics, triggered side effects,
+	  resets, a stopped CPU, or a lost QPI link.  This remains an experimental
+	  recovery-lab feature and performs no operation automatically at boot.
+
+config X58_PRO_E_B06V2_CSI_HEADER_FIX
+	bool "Identify the corrected CSI-header build as B06V2"
+	depends on X58_PRO_E_B06V1_REG_SCRIPT
+	default n
+	help
+	  Give the B06V1 transactional monitor a distinct B06V2 identity after
+	  correcting the CSI_INITDLL DOS e_lfanew gate from the disproven 0x80
+	  value to the measured, hash-pinned 0xb0 value.  This option changes no
+	  automatic execution policy: CSI and MINIT remain separately armed and
+	  the firmware remains terminal in CAR.
+
+config X58_PRO_E_B06V3_WARM_RESUME
+	bool "Accept the exact post-CSI I801 state as B06V3"
+	depends on X58_PRO_E_B06V2_CSI_HEADER_FIX
+	default n
+	help
+	  Permit romstage to continue after a reset only when the ICH10R SMBus
+	  function is already in the exact state programmed by this firmware:
+	  BAR4 0x401, HOSTC 0x01, and PCI command 0x0001.  The original cold
+	  tuple remains accepted and every other tuple still fails closed.
+
+	  This is an observation aid for the reset deliberately triggered by the
+	  locally supplied MSI CSI module.  It does not automatically call CSI,
+	  MINIT, or any register script, and it does not claim that RAM or QPI has
+	  been initialized.
+
+config X58_PRO_E_B06V4_POLICY_TELEMETRY
+	bool "Enable B06V4 MSI policy-input telemetry"
+	depends on X58_PRO_E_B06V3_WARM_RESUME
+	default n
+	help
+	  Add a read-only report of the two distinct CMOS banks used by the
+	  original MSI MINIT wrapper and of ICH10 ALT_GP_SMI_EN.  Correct the
+	  experimental policy builder to follow the original wrapper's
+	  CMOS-diagnostic-invalid path: extended CMOS byte 0x8e is bounded in
+	  the generated policy without writing CMOS, while optional CMOS-derived
+	  policy fields remain zero when the standard diagnostic byte is invalid.
+
+	  The valid-CMOS path remains restricted to the previously captured
+	  field-6:4 value 1 profile because its other branches are not yet fully
+	  reconstructed.  This option does not automatically call CSI or MINIT,
+	  write CMOS data, or access ordinary DRAM.
+
+config X58_PRO_E_B06V5_COLD_MINIT
+	bool "Enable B06V5 explicit cold-MINIT policy experiment"
+	depends on X58_PRO_E_B06V4_POLICY_TELEMETRY
+	default n
+	help
+	  Add a separately armed vpolicy cold command restricted to the exact
+	  returned CSI tuple EAX/EBX/ECX = 2/2/0x106 and the exact B06V4 policy
+	  candidate that returned with EAX=0 and workspace bytes 1/2 both zero.
+	  Static analysis and B06V4 hardware evidence show that the original
+	  status-derived policy bit 18 is copied to MINIT workspace byte 0x4f bit
+	  2, causing MINIT to return after phase B3 without running phases B4
+	  through B8.  The command clears that bit and the policy status byte to
+	  test the explicit hypothesis that the isolated coreboot path must request
+	  a cold initialization rather than the vendor wrapper's unresolved
+	  multi-pass/recovery path.
+
+	  This override is not automatic, is marked as a modified policy, and
+	  still requires the normal full-policy digest installation and separate
+	  MINIT arm.  A returned call reports MINIT's internal completion marker
+	  and selected Uncore registers but never accesses ordinary DRAM.
+
+config X58_PRO_E_B06V6_AUTO_HANDOFF
+	bool "Enable B06V6 automatic fixed-configuration RAM-init handoff"
+	depends on X58_PRO_E_B06V5_COLD_MINIT
+	depends on CONSOLE_SERIAL && DRIVERS_UART_8250IO
+	depends on !OVERRIDE_UART_FOR_CONSOLE && UART_FOR_CONSOLE = 0
+	depends on !UART_OVERRIDE_BAUDRATE && CONSOLE_SERIAL_115200
+	depends on TTYS0_LCS = 3
+	depends on !DRIVERS_UART_8250IO_SKIP_INIT
+	depends on !NO_XIP_EARLY_STAGES && BOOT_DEVICE_MEMORY_MAPPED
+	default n
+	help
+	  Automatically replay only the hardware-observed B06V5 path for the
+	  exact E5645, sole-SPD-0x54, Slow-QPI, DDR-ratio-6 configuration.  Every
+	  complete SPD, CSI-state, policy and MINIT-workspace digest and the
+	  selected post-MINIT Uncore registers must match the recorded values.
+	  Any mismatch returns to the interactive CAR ROM monitor.
+
+	  CSI is a two-pass operation.  The automatic transaction must start from
+	  the exact cold-default I801 tuple.  Before the first call this experiment
+	  puts a five-byte, complemented volatile signature in the idle I801 host
+	  registers; only the exact configured-I801 reset continuation with the
+	  complete retained signature may make the second call.  A distinct
+	  in-progress signature blocks a third automatic call if CSI or MINIT resets
+	  unexpectedly.  Signature retention is an explicit hardware hypothesis: if
+	  it is not retained by the observed configured-I801 continuation, the path
+	  falls back to ROMMON.  A second marker uses bit 7 of the exact observed
+	  CMOS diagnostic byte 0x0e (0x6c -> 0xec); both values select the same
+	  reverse-engineered MSI diagnostic-invalid policy branch.  This marker also
+	  prevents a reset which restores complete I801 cold defaults from starting
+	  pass one again.  It is restored only after exact MINIT success.  A failed
+	  run therefore needs the separately armed ROMMON "autoguard clear" command
+	  followed by an AC power cycle before another automatic attempt.
+
+	  Any marker write or readback failure stops and requires CMOS clear or
+	  external recovery rather than leaving an ambiguous reset path.
+
+	  On an exact MINIT return this option returns from board romstage so the
+	  normal coreboot post-CAR/ramstage path can continue.  The locally composed
+	  vendor modules remain non-redistributable research inputs; this option
+	  adds no proprietary bytes and is not native X58 memory initialization.
+
+config X58_PRO_E_B06V7_ROBUST_SLOWQPI
+	bool "Enable B06V7 robust Slow-QPI automatic RAM-init handoff"
+	depends on X58_PRO_E_B06V6_AUTO_HANDOFF
+	default n
+	help
+	  Keep the complete B06V6 automatic, reset-guarded Slow-QPI path, but
+	  recognize two hardware-observed classes of bytes which vary across
+	  otherwise successful runs.  CSI state byte 0x2a6 must be exactly 0x08
+	  or 0x0c and is zeroed only for a canonical-state digest.  Nine bounded,
+	  hardware-derived MINIT workspace ranges are likewise zeroed only for a
+	  canonical-workspace digest.  The raw buffers are never modified, and
+	  both raw and canonical digests are retained in the version-2 handoff.
+
+	  CPU, microcode, sole SPD at 0x54, policy, CSI register tuple, Slow-QPI
+	  Uncore state, MTRRs, and destructive DRAM gates remain identical to
+	  B06V6.  The independently observed High-QPI CSI state does not pass the
+	  canonical Slow-QPI digest.  This option is a separate default-off
+	  experiment and does not generalize DIMM, CPU, QPI, or memory policy.
+
+config X58_PRO_E_B06V8_HIGH_QPI_3PASS
+	bool "Enable B06V8 experimental High-QPI three-pass CSI probe"
+	depends on X58_PRO_E_B06V7_ROBUST_SLOWQPI
+	default n
+	help
+	  Add a separate, terminal three-pass CSI experiment for the exact E5645,
+	  sole-SPD-0x54, DDR-ratio-6 lab configuration.  Pass one uses CSI's
+	  internal SYRE reset.  Pass two accepts only the hardware-observed logical
+	  return tuple and paired CPU/IOH pre-reset state, then emits the exact MSI
+	  IOH SYRE edge sequence once.  Pass three requires the complete observed
+	  High-QPI endpoint state, invokes CSI once, records raw state and endpoint
+	  telemetry if it returns, and always remains in the CAR ROM monitor.
+
+	  This option never invokes MINIT and never hands off to postcar, ramstage,
+	  or a payload.  The explicit live High-QPI authorization 0x2c at standard
+	  CMOS byte 0x0e is changed to the in-progress value 0xec, and three distinct
+	  retained I801 signatures form a one-shot phase/retry guard; any ambiguous
+	  state fails closed.  The outer
+	  QPI reset uses IOH 00:14.2 CC bit 10 and never CF9.  The I801 signature
+	  retention across that outer reset is still an untested hardware
+	  hypothesis.
+
+	  B06V8 additionally requires a deterministic one-byte branch patch in the
+	  local, user-supplied MSI CSI wrapper.  It forces the complete CMOS-input
+	  parser even while the persistent standard-CMOS guard is 0xec; exact
+	  read-only extended-CMOS inputs 80/81/82/88/89=b3/19/d7/67/cb are required
+	  before every call.  No extended-CMOS data is written.  Neither the patched
+	  wrapper nor any other proprietary bytes may be committed or redistributed.
+	  The ordinary B06V7 image and behavior are unchanged when this option is
+	  off.
+
+	  Historical warning: the original B06V8 experiment did not enable ICH10
+	  RCBA+0x3400 bit 2.  Consequently, ports 0x72/0x73 aliased the standard
+	  RTC bank and the claimed extended-CMOS tuple was time-dependent.  Keep
+	  this option only to reproduce the recorded B06V8 experiment; use B06V9
+	  for the corrected deterministic profile.
+
+config X58_PRO_E_B06V9_DETERMINISTIC_QPI_3PASS
+	bool "Enable B06V9 deterministic High-QPI three-pass CSI probe"
+	depends on X58_PRO_E_B06V8_HIGH_QPI_3PASS
+	default n
+	help
+	  Correct the B06V8 RTC-bank alias and remove the wrapper's dependence on
+	  time-varying CMOS input bytes.  After the existing early ICH10 BAR setup,
+	  B06V9 accepts RCBA+0x3400 only as 0 or BIT(2), sets BIT(2), and requires
+	  exact read-back before any vendor call.  The local, user-supplied CSI
+	  wrapper is hash-pinned and patched at six documented regions so its
+	  High-QPI CSI state is deterministic for the exact E5645, sole-SPD-0x54,
+	  DDR-ratio-6 experiment.
+
+	  B06V9 retains the B06V8 three-pass I801/CMOS retry guards, exact CPU/IOH
+	  state gates, MSI IOH SYRE reset edge, terminal CAR ROMMON, and complete
+	  pass-3 telemetry.  It never invokes MINIT or hands off to postcar,
+	  ramstage, or a payload.  The patched wrapper and other proprietary bytes
+	  remain local-only and must not be committed or redistributed.
+
+config X58_PRO_E_B06VA_HIGH_QPI_A0_SET
+	bool "Enable B06VA observed High-QPI A0-set pass-three probe"
+	depends on X58_PRO_E_B06V9_DETERMINISTIC_QPI_3PASS
+	default n
+	help
+	  Extend only the pass-three High-QPI read-only predicate for CPU function
+	  ff:02.1 register 0xa0.  B06V9 accepted only 0x00017600 from the first
+	  successful post-SYRE target observation.  A controlled B06V9 run and the
+	  vendor-booted ratio-6 reference both instead reported 0x00017000 while
+	  every decisive CPU/IOH High-QPI endpoint predicate matched.  B06VA accepts
+	  exactly those two observed values; it does not mask unknown bits or write
+	  this register.
+
+	  All B06V9 wrapper hashes, deterministic state, RTC upper-bank checks,
+	  three-pass I801/CMOS guards, MSI IOH SYRE reset edge and terminal CAR
+	  behavior remain unchanged.  This option never invokes MINIT and never
+	  hands off to postcar, ramstage, or a payload.
+
+config X58_PRO_E_B06VB_HIGH_QPI_MINIT_OBSERVE
+	bool "Enable B06VB exact High-QPI MINIT observation"
+	depends on X58_PRO_E_B06VA_HIGH_QPI_A0_SET
+	default n
+	help
+	  Extend only the exact B06VA pass-three return observed on the E5645,
+	  sole-SPD-0x54, DDR-ratio-6 lab configuration.  B06VB requires the complete
+	  CSI-state FNV, the returned 0/0/0x11 tuple, bounded state bytes, final
+	  CPU/IOH High-QPI endpoint, memory-clock tuple and stable IOH stage
+	  fingerprint.  CPU-link pointer/stage residues are telemetry only.
+
+	  After separately recording that result as a High-QPI observation, B06VB
+	  constructs the deterministic invalid-CMOS policy, applies the seven
+	  already reviewed byte edits, installs exact FNV 0x3c0f3a0b, and invokes
+	  MINIT once in the same CAR context.  A distinct complemented I801 marker
+	  plus CMOS 0x0e value 0xec prevents an unexpected reset from repeating the
+	  call.  Any returned workspace, runtime and endpoint state is reported
+	  observationally and retained for ROMMON inspection.
+
+	  B06VB never accesses ordinary DRAM, never declares training successful,
+	  never clears its automatic retry guard, and never hands off to postcar,
+	  ramstage, or a payload.  The locally composed proprietary modules remain
+	  hash-pinned, private research inputs and are not redistributed.
+
+config X58_PRO_E_B06VC_HIGH_QPI_A0_4SET_MINIT
+	bool "Enable B06VC four-value High-QPI A0-set MINIT observation"
+	depends on X58_PRO_E_B06VB_HIGH_QPI_MINIT_OBSERVE
+	default n
+	help
+	  Extend only the read-only pre-pass-three CPU ff:02.1 register 0xa0
+	  predicate used by B06VB.  Four independent G3 sequences reached the
+	  otherwise exact High-QPI endpoint with 0xa0 values 0x00017a00,
+	  0x00017800, 0x00017a00, and 0x00017a00.  B06VC therefore accepts exactly
+	  the four observed values 0x00017000, 0x00017600, 0x00017800, and
+	  0x00017a00 before the third CSI call.  It uses neither a mask nor a
+	  numeric range and never writes this register.
+
+	  The post-CSI B06VB observation gate remains unchanged and still requires
+	  CPU 0xa0=0x00017000, CSI-state FNV 0x8b38506a, the exact 0/0/0x11 return
+	  tuple, and every other recorded state predicate.  Policy construction,
+	  the one-shot MINIT guard and call, complete-buffer telemetry, terminal
+	  CAR behavior, and the manual-vendor-call lock are inherited unchanged.
+	  B06VC never accesses ordinary DRAM and never hands off to postcar,
+	  ramstage, or a payload.
+
+config X58_PRO_E_B06VD_HIGH_QPI_CSI2A6_MINIT
+	bool "Enable B06VD paired CSI-byte-2a6 High-QPI MINIT observation"
+	depends on X58_PRO_E_B06VC_HIGH_QPI_A0_4SET_MINIT
+	default n
+	help
+	  Extend only B06VC's read-only pre-pass-three CPU ff:02.1 register
+	  0xa0 predicate and its exact post-CSI state-digest contract.  B06VD
+	  admits the additional independently observed pre-pass-three value
+	  0x00017c00, yielding the finite exact set 0x00017000, 0x00017600,
+	  0x00017800, 0x00017a00, and 0x00017c00.  It uses neither a mask nor a
+	  numeric range and never writes this register.
+
+	  At the pass-three return, state byte 0x2a6 and the raw state digest are
+	  accepted only as the observed pairs 0x08/0x03e3d24e or
+	  0x0c/0x8b38506a.  Both must also produce canonical FNV-1a 0x908dabb6
+	  when, solely in the digest stream, offset 0x2a6 is treated as zero.  The
+	  raw CSI buffer is never changed.  Every ABI, sparse-byte, canary,
+	  pointer/stack and final platform predicate remains mandatory; notably
+	  post-CSI CPU 0xa0 remains exactly 0x00017000, CPU 0x9c remains
+	  0x00b00502, CPU 0x6c remains 0x0040a0a8, and IOH 0xc8 remains
+	  0x0616fc00.  Thus the B06VC run with post-CSI 0xa0=0x00017a00 and
+	  0x9c=0x00a00502 still fails closed.
+
+	  Policy construction, one-shot persistent MINIT guard, observational
+	  return logging, terminal CAR ROMMON, and the manual-vendor-call lock are
+	  inherited unchanged.  B06VD never accesses ordinary DRAM and never
+	  hands off to postcar, ramstage, or a payload.
+
+config X58_PRO_E_B06VE_HIGH_QPI_AUTO_HANDOFF
+	bool "Enable B06VE exact High-QPI automatic RAM-init handoff"
+	depends on X58_PRO_E_B06VD_HIGH_QPI_CSI2A6_MINIT
+	default n
+	help
+	  Promote only the single B06VD High-QPI MINIT return which has direct
+	  volatile-memory evidence.  The shared B06VD pair and endpoint gates run
+	  first, but only CSI byte 0x2a6=0x08 with raw state FNV-1a 0x03e3d24e may
+	  be accepted or authorize MINIT.  The independently observed 0x0c/
+	  0x8b38506a pair remains a diagnostic fallback to the CAR ROM monitor.
+
+	  A returned MINIT call must match the exact raw workspace FNV-1a
+	  0x94299f43, completion bytes, complete High-QPI/one-channel Uncore
+	  endpoint, vendor-stack ABI relationship, and all CAR canaries.  A
+	  separate post-MINIT vendor gate requires the observed IOH 00:14.1
+	  register 0x9c value 0xbf000000; the pre-MINIT 0xea000000 predicate is not
+	  reused after MINIT.
+
+	  On an exact return, the existing B06V6 post-memory path first checks the
+	  UC MTRRs, the simultaneous 14-address alias set, both complete 8-MiB
+	  scratch windows, and a read-back-verified version-3 CBMEM handoff.  Only
+	  after every one of those checks passes are the I801 phase signature and
+	  standard CMOS byte 0x0e restored to their exact clear/0x2c values.  Any
+	  mismatch keeps the persistent guard armed and falls back or stops.
+
+	  This remains a default-off, fixed E5645/sole-SPD-0x54, locally
+	  vendor-assisted experiment.  It is not native X58 memory initialization
+	  and does not enable normal PCI enumeration, graphics, or a payload.
+
+config X58_PRO_E_B06VF_SEABIOS_ENTRY
+	bool "Enable B06VF minimal SeaBIOS entry probe"
+	depends on X58_PRO_E_B06VE_HIGH_QPI_AUTO_HANDOFF
+	depends on PAYLOAD_SEABIOS
+	default n
+	help
+	  Continue beyond the B06VE High-QPI, MINIT, DRAM-test, CBMEM, postcar,
+	  and ramstage gates only far enough to load and enter a deliberately
+	  reduced SeaBIOS 1.17.0 payload.  The payload keeps serial and CBMEM
+	  diagnostics but omits PCI BIOS services, drives, USB, option ROMs,
+	  graphics helpers, and the boot interface.  It is an entry probe, not a
+	  disk-, graphics-, or operating-system boot claim.
+
+	  Accept only the two observed post-MINIT workspace hashes and their
+	  coupled byte tuples: 0x94299f43 with 00:00:00:00/fe, or 0xb6346533
+	  with ff:ff:ff:ff/ff.  Both must canonicalize to 0xa6f9c2e6.  Before
+	  CBMEM, destructively verify and clear the complete 0-640-KiB payload
+	  RAM window.  In ramstage, verify the CPU SAD identity, open every PAM
+	  half-window with exact readback, and test/restore distinct endpoints
+	  throughout C0000-FFFFF before the SELF loader writes SeaBIOS there.
+
+	  Any failed prerequisite retains the existing diagnostic path.  Once
+	  SeaBIOS is entered it may perform conventional legacy PIT, DMA, CMOS,
+	  and read-only PCI-discovery accesses despite the reduced feature set.
+	  This
+	  remains a default-off experiment for the exact fixed E5645/sole-SPD-0x54
+	  configuration and the locally composed, hash-pinned vendor-assisted
+	  initialization path.
+
+config X58_PRO_E_B06VG_COUPLED_MINIT_SEABIOS
+	bool "Enable B06VG coupled High-QPI MINIT/SeaBIOS experiment"
+	depends on X58_PRO_E_B06VF_SEABIOS_ENTRY
+	default n
+	help
+	  Extend only the B06VF pass-three classifier using the controlled B06VF
+	  G3 captures.  B06VG adds the exact pre-CSI CPU ff:02.1 register 0xa0
+	  value 0x00017400 to the previously observed values 0x00017000,
+	  0x00017600, 0x00017800, 0x00017a00, and 0x00017c00.  Two consecutive
+	  reads must agree before CSI; no mask, numeric range, or write is used.
+
+	  Two disjoint post-CSI profiles are recognized.  The PRIMARY profile is
+	  the unchanged B06VF payload path: pre/post A0 0x00017000, CPU 0x9c
+	  0x00b00502, and the CSI 0x08/0x03e3d24e byte/digest pair.  An
+	  OBSERVATION profile instead requires one of the other five exact pre-A0
+	  values to survive unchanged, CPU 0x9c 0x00a00502, and either exact
+	  0x08/0x03e3d24e or 0x0c/0x8b38506a pair.  Crossed pairs and all other
+	  combinations fail closed.
+
+	  An OBSERVATION may make one guarded MINIT call so its complete returned
+	  state can be measured, but it always stops in the CAR recovery ROMMON.
+	  It cannot reach AUTO_READY, ordinary DRAM tests, CBMEM, ramstage, or
+	  SeaBIOS.  Only the PRIMARY profile may use the inherited B06VF promotion
+	  and reduced SeaBIOS payload.  Persistent CMOS/I801 reset-loop guards,
+	  local proprietary-module hashes, and every post-MINIT B06VF gate remain
+	  unchanged.
+
+config X58_PRO_E_B06VH_PRIMARY_WORKSPACE_REARM_SEABIOS
+	bool "Enable B06VH exact PRIMARY workspace/rearm SeaBIOS experiment"
+	depends on X58_PRO_E_B06VG_COUPLED_MINIT_SEABIOS
+	default n
+	help
+	  Promote only the B06VG PRIMARY profile after one guarded MINIT call.
+	  In addition to the inherited 0x94299f43/0xa6f9c2e6 and
+	  0xb6346533/0xa6f9c2e6 raw/canonical workspace pairs, admit the two
+	  exact PRIMARY captures 0xeb15c076/0xc313e060 and
+	  0x5fb636d9/0xb3fafec0.  Each raw digest remains coupled to its observed
+	  marker and residual bytes; crossed pairs and the OBSERVATION workspace
+	  remain terminal.
+
+	  B06VG hardware showed that successful MINIT deterministically transforms
+	  the pre-call I801 phase marker 08:64:9b:5c:a3 into
+	  08:00:5d:01:a3.  B06VH requires that exact returned tuple and CMOS 0xec,
+	  then, only after every PRIMARY result gate passes, safely re-arms the
+	  original 08:64:9b:5c:a3 marker with a fresh exact readback.  This lets
+	  the inherited post-memory finalizer retain reset-loop protection while
+	  the complete low-memory, alias, CBMEM, and object-window tests execute.
+
+	  A successful path may continue through postcar and ramstage into the
+	  reduced serial-only SeaBIOS entry probe.  It still provides no graphics,
+	  storage, PCI BIOS, or operating-system boot support and remains a
+	  default-off, hash-pinned vendor-assisted experiment.
+
+config X58_PRO_E_B06VI_COUPLED_PROFILE_O_SEABIOS
+	bool "Enable B06VI coupled profile-O SeaBIOS experiment"
+	depends on X58_PRO_E_B06VH_PRIMARY_WORKSPACE_REARM_SEABIOS
+	default n
+	help
+	  Preserve the complete B06VH PRIMARY A/B/P/N path and additionally
+	  promote only the exact B06VH-HW-G3-04 profile O.  O is one indivisible
+	  tuple: saved/pre/post CPU A0 0x00017c00, CPU 9c 0x00a00502, CSI
+	  2a6/raw/canonical 0x0c/0x8b38506a/0x908dabb6, and workspace
+	  raw/canonical 0x50f67315/0x92c70df4 with its complete observed marker
+	  pattern.  A single producer/consumer truth table rejects crossed values.
+
+	  The version-6 CBMEM handoff carries the selected profile ID plus the
+	  saved and post-MINIT CPU endpoints.  O must retain MINIT's exact
+	  08:00:5d:01:a3 I801 return until the inherited bounded UC low-memory,
+	  14-address alias, complete CBMEM/object-window, and handoff readback
+	  tests all pass; only then is the guard rearmed and finalized.  PRIMARY
+	  retains B06VH's original pre-post-memory rearm timing.
+
+	  For this next bring-up only, successful exact gates and the bounded tests
+	  are provisionally treated as sufficient to attempt postcar, ramstage, and
+	  the reduced serial-only SeaBIOS payload automatically.  This is an
+	  explicit experimental assumption, not final DRAM stability validation;
+	  repeated cold/warm boots and extended memory tests are still required for
+	  a stability claim.  The build remains default-off, fixed-platform,
+	  hash-pinned and locally vendor-assisted, with no graphics or boot claim.
+
+config X58_PRO_E_B06VJ_COUPLED_PROFILE_Q_SEABIOS
+	bool "Enable B06VJ coupled profile-Q SeaBIOS experiment"
+	depends on X58_PRO_E_B06VI_COUPLED_PROFILE_O_SEABIOS
+	default n
+	help
+	  Preserve B06VI's exact PRIMARY A/B/P/N and profile-O rows unchanged,
+	  then add only the controlled-G3 B06VI-HW-G3-02 workspace as wire profile
+	  Q (the second O-family observation).  Q is one indivisible tuple:
+	  saved/pre/post CPU A0 0x00017c00, CPU 9c 0x00a00502, CSI
+	  2a6/raw/canonical 0x0c/0x8b38506a/0x908dabb6, and workspace
+	  raw/canonical 0x69b4c386/0x0b161f01.
+
+	  The workspace digest pair is additionally coupled to the complete
+	  observed neutral-marker tuple: 18d1..18d3=43:18:00, 23a2=06, 2402=00,
+	  2459..2461=00:00:00:00:ff:ff:ff:ff:ff,
+	  26b6..26bb=0c:78:37:0c:78:37, and
+	  26c0..26c5=0a:7a:39:0a:7a:39.  The existing universal completion-byte,
+	  endpoint, ABI, policy, I801 and CMOS predicates remain mandatory.  No
+	  range, wildcard, or independent raw/canonical allowlist is introduced.
+
+	  Profiles O and Q both retain MINIT's exact 08:00:5d:01:a3 return tuple
+	  through every bounded UC low-memory, alias, object-window, CBMEM and
+	  handoff-readback test.  Only then may the I801 guard be rearmed and the
+	  inherited reduced serial-only SeaBIOS payload be attempted.  This remains
+	  a default-off, fixed-platform, hash-pinned vendor-assisted experiment; it
+	  does not establish general DRAM stability, graphics, storage or OS boot.
+
+config X58_PRO_E_B06VK_Q_CANONICAL_CLASS_SEABIOS
+	bool "Enable B06VK profile-Q canonical-class SeaBIOS experiment"
+	depends on X58_PRO_E_B06VJ_COUPLED_PROFILE_Q_SEABIOS
+	default n
+	help
+	  Preserve B06VJ's exact PRIMARY A/B/P/N and profile-O behavior.  For
+	  profile Q only, admit the existing canonical workspace class instead of
+	  pinning one raw FNV.  The B06VI profile-Q capture and B06VJ hardware return
+	  had raw FNVs 0x69b4c386 and 0xdd61cb51 but the same canonical FNV
+	  0x0b161f01; their 16 differing bytes are all inside the existing B06VF
+	  canonical ranges.
+	  B06VK does not add or expand a canonical range and does not add raw rows.
+
+	  Q remains wire profile 6 and still requires the exact saved/pre/post CPU
+	  A0 0x00017c00, CPU 9c 0x00a00502, CSI
+	  2a6/raw/canonical 0x0c/0x8b38506a/0x908dabb6, policy 0x3c0f3a0b, all 26
+	  B06VJ Q marker bytes, the universal completion bytes, platform endpoint,
+	  I801 and CMOS predicates.  Only Q's raw workspace FNV is informational;
+	  every PRIMARY and O raw digest remains exact.  The version-8 handoff
+	  distinguishes this producer/consumer contract from B06VJ version 7.
+
+	  Q keeps the same O-family delayed-I801-rearm path, complete bounded UC
+	  memory tests, CBMEM/handoff readback, recovery CAR ROMMON, and reduced
+	  serial-only SeaBIOS payload.  This remains a default-off, fixed-platform,
+	  hash-pinned vendor-assisted experiment and is not a general DRAM, graphics,
+	  storage or operating-system boot claim.
+
+config X58_PRO_E_B06VL_BROAD_HARD_GATE_SEABIOS
+	bool "Enable B06VL broad hard-gated SeaBIOS experiment"
+	depends on X58_PRO_E_B06VK_Q_CANONICAL_CLASS_SEABIOS
+	default n
+	help
+	  Replace B06VK's exact coupled-profile admission with one deliberately
+	  broader, separately versioned experiment.  Before pass-three CSI, require
+	  two identical reads matching one of seven explicit observed CPU-A0 values:
+	  0x00017000, 0x00017200, 0x00017400, 0x00017600, 0x00017800,
+	  0x00017a00, or 0x00017c00.  After CSI, require A0 to remain unchanged,
+	  CPU 9c to be exactly 0x00a00502 or 0x00b00502, one of the two exact
+	  CSI byte/raw/canonical forms, the complete CSI marker tuple, an ABI-clean
+	  return, and the unchanged High-QPI/IOH/memory-clock endpoint before one
+	  persistently guarded MINIT call.
+
+	  On return, workspace raw and canonical hashes are telemetry only.  The
+	  producer still requires intact local-code signatures and CAR canaries,
+	  MINIT EAX zero with a self-consistent ABI record, exact policy, all four
+	  universal completion bytes, exact I801/CMOS state, SPD identity, and the
+	  complete QPI/IOH/memory-controller endpoint.  A distinct broad profile,
+	  handoff version 9, and required evidence flag prevent a B06VK consumer
+	  from accepting this result.
+
+	  The I801 guard remains deferred until the inherited UC MTRR gate,
+	  complete 0--640-KiB test, simultaneous alias test, both complete 8-MiB
+	  window tests, CBMEM creation, and handoff readback all pass.  Any earlier
+	  failure retains the CAR recovery monitor.  This is an explicitly risky,
+	  default-off, fixed-platform, locally vendor-assisted attempt to reach the
+	  reduced serial-only SeaBIOS payload; it is not validated DRAM training,
+	  general platform support, graphics, storage, or an operating-system boot.
+
+config X58_PRO_E_B06VM_AUTO_PCI_VGA_IPXE
+	bool "Enable B06VM selective PCI/VGA/iPXE first-boot experiment"
+	depends on X58_PRO_E_B06VL_BROAD_HARD_GATE_SEABIOS
+	depends on PCI
+	depends on PCI_ALLOW_BUS_MASTER
+	depends on PCI_SET_BUS_MASTER_PCI_BRIDGES
+	depends on !PCI_ALLOW_BUS_MASTER_ANY_DEVICE
+	select HAVE_CONFIGURABLE_RAMSTAGE
+	select CONFIGURABLE_RAMSTAGE
+	select MINIMAL_PCI_SCANNING
+	select CPU_INTEL_COMMON
+	select CPU_INTEL_COMMON_TIMEBASE
+	select UDELAY_TSC
+	default n
+	help
+	  Continue only from B06VL's exact version-9 handoff into a deliberately
+	  selective ramstage PCI/resource experiment.  The alternate devicetree
+	  marks only X58 port 00:03.0 and its GF108 VGA function, ICH10R port
+	  00:1c.4 and its RTL8168, the eight captured ICH10R UHCI/EHCI functions,
+	  and the two captured legacy-IDE SATA functions as mandatory.  Generic
+	  probing of X58 internal host functions 00:0d.* through 00:16.* remains
+	  forbidden.
+
+	  Every selected function must match its captured ID, class and header
+	  shape before standard BAR sizing.  Endpoint-wide bus mastering is a hard
+	  Kconfig exclusion; only the two selected PCI bridges receive BME through
+	  coreboot's standard bridge-resource path so payload drivers can DMA
+	  through them.  Resource allocation is confined to I/O 0x1000--0xffff and
+	  MMIO 0xc0000000--0xdfffffff; a post-allocation callback rejects missing,
+	  unassigned, overlapping or out-of-aperture resources before decode is
+	  enabled.
+
+	  The selected common Intel timebase derives the pinned E5645's invariant
+	  TSC from Westmere model 0x2c's fixed 133-MHz BCLK and
+	  MSR_PLATFORM_INFO[15:8].  Its nominal ratio 18 rounds to the expected
+	  2400 MHz; B06VM does not retain the earlier zero-frequency delay stub.
+
+	  After exact one-DIMM SAD, IOH TOLM/TOHM and PCIEXBAR readback, B06VM
+	  publishes the fixed 4-GiB physical RAM map: 1 MiB--3 GiB plus the
+	  remapped 4-GiB--5-GiB range.  This bold first-boot experiment assumes
+	  that memory outside B06VL's bounded smoke windows is stable; it does not
+	  turn that explicit assumption into hardware validation.  B06VL remains
+	  unchanged when this option is disabled.
+
+config X58_PRO_E_B06VN_IOU0_PCIE_PHYS_VBIOS
+	bool "Enable B06VN IOU0 PCIe-start and physical-VBIOS experiment"
+	depends on X58_PRO_E_B06VM_AUTO_PCI_VGA_IPXE
+	depends on PAYLOAD_SEABIOS
+	depends on NO_GFX_INIT
+	depends on !VGA_BIOS
+	default n
+	help
+	  Preserve B06VM while replacing its fixed GT630 endpoint policy with one
+	  separately selected X58 IOU0 hypothesis.  After B06VM's exact handoff,
+	  memory-map, PCIEXBAR and root-identity gates, B06VN writes only the
+	  documented PCIE_PRTx_BIF_CTRL start value 0x000c at ECAM address
+	  0xe0018190 for root port 00:03.0, and only when Link Status reports that
+	  the data-link layer is inactive.  Ports 00:01.0 and 00:07.0 receive
+	  read-only PRE/POST telemetry.  No Link Control retrain is requested.
+
+	  Link Status polling is bounded to one second.  A link timeout or absent
+	  VGA endpoint is recorded but continues to the serial SeaBIOS path.  A
+	  present endpoint must identify as AMD vendor 0x1002 with VGA class and a
+	  normal header before BAR sizing; its device ID is observed at runtime,
+	  not guessed.  The RTL8168, USB and SATA identities remain mandatory and
+	  fail closed.
+
+	  Coreboot does not embed or execute an AMD option ROM.  SeaBIOS may use
+	  only the physical VGA ROM exposed by the card, with normal option-ROM
+	  checksum validation retained.  The existing CBFS RTL8168 iPXE ROM stays
+	  independent of this physical-VBIOS experiment.
+
+config X58_PRO_E_B06VO_IOHBUSNO_ROUTE
+	bool "Enable B06VO IOHBUSNO routing-repair probe"
+	depends on X58_PRO_E_B06VN_IOU0_PCIE_PHYS_VBIOS
+	default n
+	help
+	  Preserve B06VN's complete guarded memory, IOU0, selective PCI, SeaBIOS
+	  and iPXE path while testing one additional X58 configuration-routing
+	  hypothesis.  After the complete root identity preflight and before IOU0
+	  start or PCI scanning, read CSRCFG 00:14.0 IOHBUSNO at direct PCIEXBAR
+	  address 0xe00a010a.  Accept only 0x0000 or the vendor-observed 0x0100;
+	  write the complete documented 0x0100 value only for 0x0000 and require
+	  an exact readback before continuing.
+
+	  Direct PCIEXBAR reads record the 01:0d.0 and 02:0d.0 alias identities
+	  before and after that write.  The documented LCFGBUS and GCFGBUS base
+	  and limit bytes are telemetry only.  After root 00:03.0 receives its
+	  temporary secondary bus number, B06VO compares legacy-CF8 and direct-
+	  PCIEXBAR reads of secondary:00.0 at 0, 1, 10 and 100 milliseconds, then
+	  invokes the unchanged standard PCI scanner.
+
+	  B06VO adds no bridge-control reset, Link Control/retrain, link-capability,
+	  GPU, interrupt, or payload write.  A post-write alias may remain and a
+	  GPU may still be absent; both are measurements rather than reasons to
+	  add another hardware hypothesis to this image.
+
+config X58_PRO_E_B06VP_LAPIC_EXTINT
+	bool "Enable B06VP BSP LAPIC virtual-wire interrupt probe"
+	depends on X58_PRO_E_B06VO_IOHBUSNO_ROUTE
+	depends on !SMP
+	depends on XAPIC_ONLY
+	depends on !NO_PCAT_8259
+	depends on SEABIOS_HARDWARE_IRQ
+	depends on BUILD_IPXE
+	depends on !IPXE_NO_PROMPT
+	default n
+	help
+	  Preserve B06VO's complete guarded memory, IOH routing, Radeon physical-
+	  VBIOS, selective PCI, SeaBIOS and prompted iPXE path.  During the single
+	  BSP CPU-cluster init, log IA32_APIC_BASE and the LAPIC TPR, SVR, LVT0 and
+	  LVT1 state, invoke coreboot's existing setup_lapic_interrupts() exactly
+	  once, and log the resulting state.
+
+	  Continue only when the BSP remains in the expected enabled xAPIC mode,
+	  TPR priority is zero, SVR is enabled at spurious vector 0x0f, LVT0 is
+	  unmasked edge/high ExtINT, and LVT1 is unmasked edge/high NMI.  Any
+	  mismatch halts with a distinct POST code.  This experiment does not
+	  initialize APs, the PIC, PIT or IOAPIC and changes no memory, QPI, IOH,
+	  GPU, SeaBIOS or iPXE policy.
+
+config X58_PRO_E_ROMMON_IRQPROBE_PIT
+	bool "Enable guarded ROMMON PIT-to-ExtINT probe"
+	depends on X58_PRO_E_B06VP_LAPIC_EXTINT
+	depends on X58_PRO_E_B06V1_REG_SCRIPT
+	default n
+	help
+	  Add the default-off `irqprobe pit` ROMMON experiment.  With the existing
+	  one-operation WRITE unlock, it first proves that PIT channel 0 raises
+	  master-PIC IRR0 while IRQ0 remains masked.  It then installs a temporary
+	  CAR IDT, briefly enables BSP LAPIC LINT0 ExtINT and CPU interrupts, and
+	  requires one vector-0x20 handler entry with PIC ISR0 asserted.
+
+	  Every normal completion and timeout masks the PIC, restores its baseline
+	  vector/mask state, masks LINT0, software-disables the LAPIC and restores
+	  the prior IDT.  PIT mode/count is write-only state and cannot be restored;
+	  a cold reset is required after invoking this diagnostic.
+
+config X58_PRO_E_B06VQ_ICH10_EHCI_INIT
+	bool "Enable B06VQ ICH10 EHCI required-field initialization"
+	depends on X58_PRO_E_B06VP_LAPIC_EXTINT
+	select SOUTHBRIDGE_INTEL_I82801JX_EHCI_INIT
+	default n
+	help
+	  Preserve B06VP's complete guarded memory, IOH routing, Radeon VBIOS,
+	  LAPIC virtual-wire, SeaBIOS and prompted iPXE path.  Before PCI scan,
+	  invoke the existing ICH10 helper once to program only the two EHCI
+	  controllers' BIOS-required fields in PCI configuration register 0xfc.
+	  The helper performs a masked read-modify-write so all unselected fields
+	  are preserved; B06VQ records PRE/POST values and requires exact selected-
+	  field readback before continuing.
+
+	  After normal PCI resource enablement, read-only telemetry records both
+	  EHCI capability/operational registers and all six UHCI controller port
+	  status registers before SeaBIOS starts.  SeaBIOS still owns controller
+	  reset, DMA setup, port routing and device enumeration.  This option does
+	  not change memory, QPI, IOH, GPU, SATA, LPC, ACPI or payload policy.
+
+config X58_PRO_E_B06VQ_USB_TRACE1
+	bool "Enable B06VQ-USBTRACE1 deferred SeaBIOS USB trace"
+	depends on X58_PRO_E_B06VQ_ICH10_EHCI_INIT
+	depends on !X58_PRO_E_B06VR_ICH10_AHCI_MAP
+	depends on PAYLOAD_SEABIOS
+	depends on SEABIOS_REVISION
+	default n
+	help
+	  Preserve the isolated B06VQ platform path and use a locally constructed,
+	  hash-pinned SeaBIOS revision that records a bounded 96-entry USB event
+	  journal in RAM.  The journal is printed only after controller scanning,
+	  so no serial output occurs in controller-reset or control-transfer paths.
+	  It covers EHCI/UHCI reset and port state, companion ownership, USB address
+	  and descriptor transfers, configuration selection, and HID setup.
+
+	  This diagnostic variant also gives directly attached devices a 1000-ms
+	  signal-attach interval through a CBFS runtime setting and extends the
+	  existing pre-SeaBIOS USB report with read-only ICH10 routing/disable
+	  fields.  It adds no coreboot hardware write beyond inherited B06VQ and
+	  deliberately excludes the later experimental SATA stages.
+
+config X58_PRO_E_B06VQ_PLATRO1
+	bool "Enable B06VQ-PLATRO1 read-only platform census"
+	depends on X58_PRO_E_B06VQ_ICH10_EHCI_INIT
+	depends on !X58_PRO_E_B06VQ_USB_TRACE1
+	depends on !X58_PRO_E_B06VR_ICH10_AHCI_MAP
+	default n
+	help
+	  Preserve the isolated B06VQ hardware and stable SeaBIOS/iPXE path, then
+	  run exactly one non-fatal, read-only platform census after PCI resources
+	  and decodes are enabled but before SeaBIOS starts. Record the LPC bridge
+	  bases, decode and PIRQ policy, PM status and 24-bit timer movement, RCBA
+	  IOAPIC/HPET decode state, conditionally decoded HPET state and the eight
+	  existing PCI-domain resources.
+
+	  Apart from diagnostic UART output and the address cycle inherent in PCI
+	  configuration reads, the added census performs no state-changing PCI,
+	  RCBA, PM, GPIO, IOAPIC, HPET, LPC or Super-I/O write, creates no resource
+	  and emits no ACPI table. The image still inherits B06VQ's explicitly
+	  documented EHCI required-field writes. It is a
+	  qualification image for later isolated resource, IRQ, HPET and ACPI work;
+	  USBTRACE1 and the later SATA experiments remain separate.
+
+config X58_PRO_E_B06VQ_ICHBASE1
+	bool "Enable B06VQ-ICHBASE1 six-field ICH10 baseline"
+	depends on X58_PRO_E_B06VQ_ICH10_EHCI_INIT
+	depends on !X58_PRO_E_B06VQ_USB_TRACE1
+	depends on !X58_PRO_E_B06VQ_PLATRO1
+	depends on !X58_PRO_E_B06VR_ICH10_AHCI_MAP
+	select SOUTHBRIDGE_INTEL_I82801JX_REQUIRED_FIELDS
+	default n
+	help
+	  Preserve the complete B06VQ hardware and SeaBIOS/iPXE path. After the
+	  strict root preflight and before IOH routing, EHCI setup, link start or
+	  PCI enumeration, admit only the exact six-register reset tuple observed
+	  in B06VP CAR or this image's complete target tuple. For the reset tuple,
+	  apply exactly the six live-proven masked ICH10 BIOS-required fields in
+	  the historical common-driver order and require complete-dword readback.
+
+	  This isolated baseline does not touch GCS, CIR5, FDSW, function hiding,
+	  RPFN, MAP, locks, watchdog, PMIR, interrupts, SATA or GPIO policy. Mixed
+	  pre-state is terminal before any register write. The full historical
+	  ICH10 device model remains disabled.
+
+config X58_PRO_E_B06VR_ICH10_AHCI_MAP
+	bool "Enable B06VR ICH10 SATA AHCI map selection"
+	depends on X58_PRO_E_B06VQ_ICH10_EHCI_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_AHCI_MAP
+	default n
+	help
+	  Preserve B06VQ's complete guarded memory, IOH, PCIe, LAPIC, USB,
+	  Radeon-VBIOS, SeaBIOS and iPXE path. Before PCI enumeration, accept
+	  only either the observed dual-controller IDE reset identity or this
+	  image's already-programmed AHCI identity, then explicitly program only
+	  SATA D31:F2 MAP bits 7:5 to 011b. This selects AHCI and maps all six
+	  ports to F2.
+
+	  Only exact MAP 0000 or the retained target 0060 is accepted. The helper
+	  performs a 16-bit masked MAP update and the mandatory BAR5 clear after
+	  its type changes from I/O to memory. The normal PCI allocator may assign
+	  the resulting memory BAR later; this helper does not choose an address.
+	  Complete MAP/BAR readback, D31:F2 transition to 8086:3a22/010601 and
+	  disappearance of D31:F5 are required before PCI scanning. This option
+	  does not enable ports, program SATA clocks, access AHCI MMIO, or run the
+	  broad ICH10 driver.
+
+config X58_PRO_E_B06VS_ICH10_AHCI_PORTS
+	bool "Enable B06VS ICH10 AHCI port-enable selection"
+	depends on X58_PRO_E_B06VR_ICH10_AHCI_MAP
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_PORT_ENABLE
+	default n
+	help
+	  Preserve B06VR's exact AHCI-mode transition and complete inherited
+	  platform path. After normal PCI enumeration, BAR sizing, allocation and
+	  resource storage have all passed their existing fail-closed audits,
+	  require D31:F2 to remain exact 8086:3a22/010601 with D31:F5 absent,
+	  MAP 0060, and hardware I/O, memory and bus-master command bits clear.
+
+	  Require BAR5 to be an assigned and stored 2-KiB, 32-bit,
+	  non-prefetchable memory resource with exactly MEM|ASSIGNED|STORED flags
+	  inside the existing PCI MMIO aperture,
+	  with its raw BAR matching the allocated base. Then change only
+	  PCS[5:0] to 0x3f using an 8-bit low-byte masked read-modify-write as
+	  required by ICH10 section 14.1.31. Exact pre-enable values 0x00 and 0x3f
+	  are admitted; bits 7:6 and reserved bit 14 must remain zero. The
+	  high-byte presence fields are read-only telemetry and are not admission
+	  keys, while OOB Retry Mode bit 15 is deliberately preserved.
+
+	  Any partial mode, decode, resource or PCS state halts before device
+	  enablement. This option does not change ORM, presence fields, SATA
+	  clocks, PI or any AHCI MMIO register, and does not run the broad ICH10
+	  driver.
+
+config X58_PRO_E_B06VT_ICH10_SATA_CLOCK
+	bool "Enable B06VT ICH10 required SATA clock field"
+	depends on X58_PRO_E_B06VS_ICH10_AHCI_PORTS
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_CLOCK_FIELD
+	default n
+	help
+	  Preserve B06VS's complete inherited path and exact post-allocation AHCI
+	  identity, resource and PCS gates. Immediately after B06VS succeeds,
+	  require D31:F2 SCLKCG at offset 0x94 to be either its exact reset value
+	  0x00000000 or the retained target 0x00000193. Both admitted states have
+	  all six port-clock-disable bits and every documented reserved bit clear.
+
+	  If needed, change only SCLKCG Field 1, bits 8:0, to Intel's documented
+	  required value 0x193 with one 32-bit masked read-modify-write. Require
+	  exact complete-dword readback before device enablement. Any partial or
+	  unexpected state halts without retry or reset. This option does not set
+	  the reserved bit 30 formerly described as clock request by the broad
+	  driver, does not gate a port clock, change PCS/ORM/MAP/BAR/command state,
+	  access AHCI MMIO, issue COMRESET/OOB, or touch a disk.
+
+config X58_PRO_E_B06VU_ICH10_AHCI_ROUTE
+	bool "Enable B06VU corrected ICH10 AHCI routing sequence"
+	depends on X58_PRO_E_B06VQ_ICHBASE1
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_AHCI_MAP
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA2_DISABLE
+	default n
+	help
+	  Preserve the complete B06VQ path and require the live-proven ICHBASE1
+	  six-field baseline first. Then admit only the exact measured quiescent
+	  D31:F2/D31:F5 IDE reset topology. In one attempt, first program SATA MAP
+	  to 0060 and perform the mandatory BAR5 clear, require the measured
+	  intermediate state in which D31:F5 is still visible, and only then set
+	  RCBA FD_SAD2 bit 25 in a separately named and logged stage.
+
+	  Continue to normal PCI enumeration only after complete FD readback is
+	  02000001, FDSW remains unlocked at 00, D31:F2 is exactly
+	  8086:3a22/010601 with decode disabled, and D31:F5 is absent. This image
+	  does not lock FDSW, enable SATA ports, program SATA clocks, access AHCI
+	  MMIO, issue COMRESET/OOB, or run the broad ICH10 driver. Any retained or
+	  partial SATA state fails closed instead of retrying.
+
+config X58_PRO_E_B06VV_ICH10_PCS_SCLK
+	bool "Enable B06VV corrected-route SATA PCS and clock fields"
+	depends on X58_PRO_E_B06VU_ICH10_AHCI_ROUTE
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_PORT_ENABLE
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_CLOCK_FIELD
+	default n
+	help
+	  Preserve B06VU's baseline-first MAP/BAR5/FD_SAD2 route and complete
+	  fail-closed readback. After normal PCI enumeration, BAR allocation and
+	  the existing resource-overlap audit, require the dynamically assigned
+	  2-KiB AHCI BAR resource while hardware decode and bus mastering remain
+	  disabled. Then change only PCS[5:0] from exact 00 to 3f, or accept the
+	  exact retained target, and require selected-field/policy readback.
+
+	  Only after the PCS stage passes, change only SCLKCG[8:0] from exact
+	  00000000 to 00000193, or accept the complete retained target, and
+	  require full-dword readback. Each stage is attempted once and preserves
+	  the corrected FD=02000001/FDSW=00/F5-absent route. This option does not
+	  enable PCI decode or bus mastering, access ABAR, set GHC or PI, touch
+	  per-port AHCI registers, issue COMRESET/OOB, or touch a disk.
+
+config X58_PRO_E_B06VW_ICH10_AHCI_MMIO
+	bool "Enable B06VW minimal ICH10 AHCI MMIO handoff"
+	depends on X58_PRO_E_B06VV_ICH10_PCS_SCLK
+	default n
+	help
+	  Preserve the complete corrected B06VV route, PCS and SCLKCG sequence.
+	  After the same PCI resource audit, require a dynamically assigned and
+	  stored 2-KiB ABAR, exact AHCI identity/MAP/PCS/SCLKCG state, and an
+	  endpoint policy containing memory decode but no I/O decode or bus
+	  mastering. Enable only PCI_COMMAND.MEM and require exact readback before
+	  the first access to the allocated ABAR.
+
+	  Admit only the exact live-observed AHCI global reset tuple or the complete
+	  retained target tuple. For the reset tuple, set only GHC.AE and verify
+	  GHC before writing only PI's low byte to 3f. Require exact complete
+	  CAP/GHC/PI/VS and PCI/configuration readback. This option does not choose
+	  an ABAR address, set BME, set GHC.HR or GHC.IE, write CAP/VS, touch CLB,
+	  FB or PxCMD, issue COMRESET/IDENTIFY, or perform DMA. SeaBIOS retains
+	  responsibility for HBA reset, bus mastering and all port operation.
+
+config X58_PRO_E_B06VX_AHCI_USB_TRACE
+	bool "Enable B06VX corrected AHCI plus deferred SeaBIOS USB trace"
+	depends on X58_PRO_E_B06VW_ICH10_AHCI_MMIO
+	depends on PAYLOAD_SEABIOS
+	depends on SEABIOS_REVISION
+	default n
+	help
+	  Preserve B06VW's complete corrected SATA route, PCS/SCLKCG fields and
+	  minimal global AHCI handoff together with the already-proven B06VQ EHCI
+	  required-field path.  Use the same hash-pinned, bounded deferred SeaBIOS
+	  USB journal and 1000-ms CBFS signal-attach interval as the standalone
+	  B06VQ-USBTRACE1 image, while adding only its read-only ICH10 USB routing
+	  telemetry to coreboot.
+
+	  This is a separate diagnostic successor, not part of B06VV or B06VW.
+	  It adds no coreboot register write beyond B06VW, does not enable the broad
+	  historical ICH10 driver, and does not change SATA, AHCI, USB-controller or
+	  payload ownership.  B06VQ-USBTRACE1 remains an independently selectable
+	  standalone image.
+
+config X58_PRO_E_B06VY_IOAPIC_MASK
+	bool "Enable B06VY deterministic ICH10 IOAPIC mask state"
+	depends on X58_PRO_E_B06VX_AHCI_USB_TRACE
+	default n
+	help
+	  Preserve B06VX exactly, including its corrected AHCI path, B06VQ EHCI
+	  required fields, deferred SeaBIOS USB trace, Radeon physical VBIOS and
+	  iPXE payload.  After the inherited six-field ICH10 baseline and corrected
+	  SATA route, admit only the exact ICH10R LPC identity, enabled fixed RCBA,
+	  and OIC values 00 or 03.  Enable OIC only from exact 00 and require 03.
+
+	  Require IOAPIC ID 0, version 20h, maximum redirection entry 17h, and all
+	  24 initial redirection entries to be masked before changing one.  Then
+	  canonicalize every pair to high 00000000 and low 00010000, with exact
+	  selector and per-write readback, a complete final census, and IOREGSEL
+	  restored to zero.  The sequence was first exercised reversibly on entry
+	  23 in the B06VP CAR monitor.
+
+	  This isolated stage does not install an IOAPIC ExtINT route or write the
+	  IOAPIC MRE lock,
+	  route PIRQ or SCI, enable HPET, emit ACPI, add fixed resources, alter USB
+	  GPIOs, or enable the broad historical ICH10 driver.  SeaBIOS remains the
+	  owner of interrupt routing after this deterministic masked handoff.
+
+config X58_PRO_E_B06VZ_FIXED_RESOURCES
+	bool "Enable B06VZ fixed platform resource reservations"
+	depends on X58_PRO_E_B06VY_IOAPIC_MASK
+	default n
+	help
+	  Preserve B06VY's exact hardware behavior, topology, SeaBIOS USB trace,
+	  Radeon physical-VBIOS path and RTL8168 iPXE payload.  Add only fixed
+	  domain resource metadata at indices 8 through 14 for the already
+	  decoded SMBus (0400/20), PM (0500/80), GPIO (0580/40), IOAPIC
+	  (fec00000/1000), RCBA (fed1c000/4000), LAPIC (fee00000/1000), and
+	  16-MiB top-of-flash ROM (ff000000/1000000) ranges.
+
+	  Fail closed unless all resources 0 through 14 have exact bounds and
+	  flags, all domain ranges are pairwise disjoint by resource type, and
+	  the new fixed ranges do not overlap any assigned leaf BAR.  The PCI I/O
+	  and MMIO allocator apertures remain exactly 1000-ffff and
+	  c0000000-dfffffff.
+
+	  This build-only successor performs no additional PCI, port-I/O, MMIO or
+	  MSR programming.  It adds no HPET resource, decode or table; no ACPI,
+	  SMBIOS, interrupt, SCI, USB or 8042 policy; and does not enable the broad
+	  historical ICH10 driver.  Do not flash it until B06VY has a recorded
+	  hardware PASS.
+
+config X58_PRO_E_B06WA_HPET_DECODE
+	bool "Enable B06WA deterministic quiescent ICH10 HPET decode"
+	depends on X58_PRO_E_B06VZ_FIXED_RESOURCES
+	default n
+	help
+	  Preserve B06VZ's complete hardware path, fixed resources 0 through 14,
+	  topology, diagnostic console, SeaBIOS USB trace and RTL8168 iPXE payload.
+	  Add one isolated ICH10 HPTC transition and one resource: after exact
+	  LPC/RCBA/OIC and HPTC allowlist gates, change only HPTC selector/enable
+	  bits from observed 00000000 to exact 00000080, or accept the already
+	  decoded observed value 00000080 without writing it.  Selector zero maps
+	  the HPET at fed00000.
+
+	  Require exact HPTC readback, live HPET identity
+	  0429b17f:8086a301, zero 64-bit general configuration and interrupt status,
+	  timer-0 interrupt enable clear, and an unchanged 64-bit main counter over
+	  a bounded 4096-us interval.  HPET MMIO is read-only.  Append only reserved
+	  MMIO resource index 15, fed00000/400, and extend the exact resource and
+	  non-overlap contract while preserving the B06VZ allocator apertures.
+
+	  This build-only successor does not start or write the counter, configure a
+	  comparator or route, enable legacy replacement, SCI, SMI or ACPI, publish
+	  an HPET/ACPI table, or add IOAPIC-entry, USB, PIC or LAPIC programming.
+	  Do not flash it until B06VZ has a recorded hardware PASS.
+
+config X58_PRO_E_B06WB_TCO_HALT
+	bool "Enable B06WB deterministic ICH10 TCO halt"
+	depends on X58_PRO_E_B06WA_HPET_DECODE
+	default n
+	help
+	  Preserve B06WA's complete diagnostic, PCI, SATA, masked-IOAPIC,
+	  quiescent-HPET, exact-resource, SeaBIOS USB-trace and RTL8168 iPXE path.
+	  Add one earlier ramstage hypothesis after the exact LPC/PM decode gates:
+	  admit only complete TCO1_CNT 0000 or already halted 0800; from 0000 use
+	  one 16-bit masked read-modify-write to set only TCO_TMR_HLT bit 11, then
+	  require complete-word 0800 readback.
+
+	  Log GCS, TCO_RLD, TCO1_STS, TCO2_STS, TCO1_CNT, TCO2_CNT and TCO_TMR
+	  before and after.  Require both status words, GCS, TCO2_CNT and TCO_TMR
+	  to remain unchanged and repeat the complete identity, decode, status and
+	  control gate before any later platform stage may run.  TCO_RLD is logged
+	  but not compared because it can advance before the halt write.
+
+	  This build-only successor does not write GCS.NR or TCO_LOCK, reload the
+	  watchdog, change its initial timer value, acknowledge status, or touch
+	  PM/SMI/GPE, PIC/ELCR, IOAPIC, HPET, USB, SATA or ACPI policy.  It adds no
+	  resource and retains B06WA resources 0 through 15 exactly.  Do not flash
+	  it until B06VY, B06VZ and B06WA each have a recorded hardware PASS.
+
+config X58_PRO_E_B06WC_INTEGRATED_PLATFORM
+	bool "Enable B06WC integrated experimental platform path"
+	depends on X58_PRO_E_B06WB_TCO_HALT
+	select X58_PRO_E_ROMMON_IRQPROBE_PIT
+	default n
+	help
+	  Integrate the complete B06WB memory/QPI, PCIe, SATA/AHCI, USB,
+	  masked-IOAPIC, quiescent-HPET, fixed-resource, TCO, SeaBIOS and iPXE
+	  path with experimentally justified interrupt, ACPI and USB facilities.
+
+	  Before any later ICH10 ramstage mutation, accept only the observed
+	  power-on or canonical legacy-PIC tuples, replay coreboot's standard
+	  8259 initialization at vectors 20/28, leave every IRQ masked except the
+	  master cascade and make only SCI/IRQ9 level triggered in the ELCR.  CPU
+	  interrupts remain disabled; the inherited BSP LAPIC virtual-wire setup
+	  and SeaBIOS own subsequent interrupt delivery.
+
+	  Once the TCO, PIC, IOAPIC and HPET gates have all passed, require every
+	  PM1/GPE/SMI event source and both IRQ9 delivery paths to remain masked.
+	  Acknowledge only PRBTNOR_STS and set only PM1_CNT.SCI_EN, with exact
+	  readback.  Publish a minimal BSP-only FADT/MADT/MCFG/DSDT contract: SCI9
+	  level/high, IOAPIC0, the proven E0000000 ECAM window and fixed resources.
+	  SMI, sleep/wake, reset, 8042, _PRT and HPET-table claims remain absent.
+
+	  After PCI resources and decodes are enabled, run a read-only USB
+	  admission pass.  It gates all eight ICH10R USB identities, BARs, command
+	  state, native over-current routing and EHCI capabilities, then reports
+	  complete EHCI/UHCI connect, enable and over-current bitmaps.  Electrical
+	  over-current remains telemetry and does not trigger a GPIO, PORTSC or
+	  controller write.  The guarded ROMMON PIT-to-ExtINT probe is compiled in
+	  for explicitly unlocked, destructive diagnostics.
+
+	  This intentionally integrated experimental successor may be tested
+	  without separate B06VY/B06VZ/B06WA/B06WB qualification.  It retains all
+	  fail-closed gates and serial/POST diagnostics, but requires the socketed
+	  flash recovery path and is not yet hardware-qualified itself.
+
+config X58_PRO_E_B06WD_SEABIOS_INPUT
+	bool "Enable B06WD SeaBIOS SATA-policy and keyboard experiment"
+	depends on X58_PRO_E_B06WC_INTEGRATED_PLATFORM
+	depends on PAYLOAD_SEABIOS
+	select DRIVERS_PS2_KEYBOARD
+	default n
+	help
+	  Preserve B06WC's complete memory/QPI, PCIe, ICH10R, ACPI,
+	  physical-VBIOS, SeaBIOS and iPXE path while correcting the one
+	  software-only SATA policy mismatch measured by B06WC-HW-01.  After
+	  resource allocation, require the complete corrected AHCI route,
+	  assigned ABAR, hardware command 0000, PCS 0000, SCLKCG 00000000 and
+	  the exact coreboot policy command 0003.  Clear only the policy IO bit
+	  to obtain 0002; do not write the hardware PCI command register.
+
+	  Late in ramstage, require the measured ICH10R LPC decode and complete
+	  Fintek DID=4105/VID=3419 keyboard logical-device tuple before setting
+	  only LPC_EN.KBC (2001 -> 2401).  Run coreboot's bounded PS/2 keyboard
+	  initialization as a diagnostic, then publish only the keyboard
+	  controller (PNP0303, ports 60/64, IRQ1) and the matching FADT 8042
+	  flag.  A missing physical keyboard is non-fatal and remains visible in
+	  the serial log; an identity, decode or readback mismatch fails closed.
+
+	  SeaBIOS retains its existing UHCI/EHCI/USB-keyboard drivers and deferred
+	  USB trace.  This option adds no USB GPIO, over-current, PORTSC or
+	  controller write and does not advertise a PS/2 mouse.
+
+config X58_PRO_E_B06WE_ACPI_SAD_BDF_FIX
+	bool "Enable B06WE corrected ACPI SAD/PCIEXBAR gate"
+	depends on X58_PRO_E_B06WD_SEABIOS_INPUT
+	default n
+	help
+	  Preserve the complete B06WD SeaBIOS, SATA and input experiment, but
+	  correct the ACPI MCFG runtime gate to read the Nehalem SAD function at
+	  ff:00.1 instead of the absent 00:00.1 function.  Require the measured
+	  SAD identity 8086:2d81, PCIEXBAR e0000001:00000000 and the already
+	  decoded X58 host identity before publishing the MCFG allocation.
+
+	  This successor adds no PCI, MMIO, USB, PS/2 or power-policy write.  It
+	  keeps the existing fail-closed ACPI behavior and adds distinct POST and
+	  serial evidence around the corrected read-only gate.
+
+config X58_PRO_E_B06WF_USB_LAB
+	bool "Enable B06WF late USB diagnostic lab"
+	depends on X58_PRO_E_B06WE_ACPI_SAD_BDF_FIX
+	default n
+	help
+	  Preserve the complete B06WE SeaBIOS/iPXE platform path and add a
+	  separately compiled, default-off late USB diagnostic lab. The lab is
+	  intended for explicitly unlocked, bounded USB GPIO and controller
+	  experiments after normal device initialization and before ACPI tables and
+	  the payload, including an opt-in vendor-correlated GPIO57/H_PWRGD sequence
+	  that may remain asserted for SeaBIOS.  It performs no automatic hardware
+	  mutation and exposes no generic register writer.  It is experimental and
+	  requires the socketed-flash recovery path; it must not be enabled in a
+	  normal B06WE image.
+
+config X58_PRO_E_B06WG_AUTO_USB_SEABIOS
+	bool "Enable B06WG automatic GPIO57 USB release for SeaBIOS"
+	depends on X58_PRO_E_B06WE_ACPI_SAD_BDF_FIX
+	depends on PAYLOAD_SEABIOS
+	depends on !X58_PRO_E_B06WF_USB_LAB
+	default n
+	help
+	  Preserve the complete B06WE SeaBIOS/iPXE platform path and promote only
+	  the live-proven GPIO57/H_PWRGD experiment to an automatic, fail-closed
+	  late-ramstage action.  After PCI resource assignment and device init, the
+	  path requires the measured B06WD control/decode/controller state and live
+	  over-current on all twelve EHCI/UHCI port views.  It then drives only the
+	  GPIO57 target output-low, waits 65,536 calibrated microseconds, drives it
+	  high, and requires every live OCA indication to clear.  Sticky OCC/OCI and
+	  asynchronous connection/speed fields are logged but never gate success.
+	  To shorten this USB-focused experiment, B06WG alone treats the previously
+	  qualified RAM/QPI path as provisionally stable: it retains the exact
+	  result and MTRR gates plus the transactional alias smoke, but replaces
+	  phase-A/inverted/full-read memory passes with one deterministic clear pass
+	  over lowmem, CBMEM and object windows and nine sparse readbacks per window.
+	  The serial log labels this weaker admission ASSUMED_STABLE.  Historical
+	  images retain their exhaustive memory tests unchanged.
+
+	  A second read-only gate immediately before the payload requires GPIO57 to
+	  remain output/high and every live OCA indication to remain clear.  SeaBIOS
+	  retains complete ownership of EHCI/UHCI reset, companion routing, USB
+	  enumeration and HID setup; this option never writes PCI configuration,
+	  USB controller registers or PORTSC.  A failed post-mutation check attempts
+	  a decode-revalidated GPIO57 low/input rollback and blocks the payload.
+	  This default-off experiment is separate from B06WF's interactive lab and
+	  requires the socketed-flash and one-second AC recovery path.
+
+config X58_PRO_E_B06WH_QUIET_USB_SEABIOS
+	bool "Enable B06WH quieter automatic USB/SeaBIOS successor"
+	depends on X58_PRO_E_B06WE_ACPI_SAD_BDF_FIX
+	depends on PAYLOAD_SEABIOS
+	depends on !X58_PRO_E_B06WF_USB_LAB
+	depends on !X58_PRO_E_B06WG_AUTO_USB_SEABIOS
+	default n
+	help
+	  Preserve the complete B06WG platform, RAM/QPI fast-postmem, automatic
+	  GPIO57/H_PWRGD and SeaBIOS USB/HID paths without changing a hardware
+	  operation, gate, delay, POST code or payload feature.  The sole functional
+	  delta is a B06WH-specific SeaBIOS configuration with global debug level 6
+	  instead of 8.  CONFIG_DEBUG_USB_TRACE remains enabled, so its bounded
+	  dprintf(1) USB journal is retained while level-7/8 general SeaBIOS traffic
+	  is suppressed.  The image has distinct stage and build identities and
+	  remains an experimental, socketed-flash-recovery build.
+
+config X58_PRO_E_B06WI_VENDOR_IRQ_ACPI
+	bool "Enable B06WI exact vendor-correlated IRQ/ACPI successor"
+	depends on X58_PRO_E_B06WH_QUIET_USB_SEABIOS
+	depends on PAYLOAD_SEABIOS
+	default n
+	help
+	  Preserve the complete B06WH RAM/QPI, PCI, automatic GPIO57 USB and
+	  quieter SeaBIOS path, then add one isolated interrupt-routing and ACPI
+	  experiment.  Before PCI enumeration it requires the exact post-B06VY
+	  RCBA, disabled-PIRQ, PCI interrupt-pin and canonical masked-IOAPIC tuple
+	  observed on the target.  Masked writes change only the vendor-correlated
+	  D31/D29/D28/D27/D26 route fields, the D26:F2 pin field, and the IOAPIC ID
+	  from 0 to the BSP-unique value 1.  Every write is read back; a failed
+	  postcondition attempts rollback and blocks boot.
+
+	  The matching ACPI experiment publishes direct-GSI _PRT packages for the
+	  measured root devices and the HD5450/RTL8168 bridges, IRQ0-to-GSI2 and
+	  IOAPIC ID 1 in MADT, plus the vendor-observed disabled GPE0 register
+	  block.  It deliberately leaves every IOAPIC redirection entry masked and
+	  every PIRQ byte disabled, writes no INT_LINE, GPIO or GPIO level register,
+	  and suppresses the unproved B06WD 8042/PNP0303 advertisement.
+
+config X58_PRO_E_B06WJ_ACPI_PLATFORM
+	bool "Enable B06WJ ACPI processor and platform description"
+	depends on X58_PRO_E_B06WI_VENDOR_IRQ_ACPI
+	depends on PAYLOAD_SEABIOS
+	default n
+	help
+	  Preserve B06WI's hardware-tested IRQ transaction, RAM/QPI fast-postmem,
+	  automatic USB release and SeaBIOS path. Add the missing BSP ACPI device
+	  with UID 0 matching MADT, an LPC bridge with PIC/PIT/RTC devices, coherent
+	  low-I/O root resources and an HPET table/device for the existing decode.
+	  This changes OS-facing descriptions without new hardware programming,
+	  retries, memory tests, AP startup, SMM services or sleep/wake methods.
+	  It is an experimental response to the continuing Windows A5 stop, whose
+	  exact bugcheck parameters remain unknown; no Windows fix is asserted.
+
+config X58_PRO_E_B06WK_ACPI_REPAIR
+	bool "Enable B06WK ACPI resource and fixed-button repair experiment"
+	depends on X58_PRO_E_B06WJ_ACPI_PLATFORM
+	depends on PAYLOAD_SEABIOS
+	default n
+	help
+	  Preserve the B06WJ RAM/QPI, IRQ hardware transaction, quiet automatic
+	  USB and SeaBIOS/iPXE paths. Extend only the native OS descriptions with
+	  the vendor-referenced IOH root interrupt routes, legacy VGA memory
+	  producer windows and fixed-feature power-button advertisement.
+	  The accompanying common ACPI resource-consumer flag correction is a
+	  standards fix, not conditional platform programming. No new SMM, sleep,
+	  reset, memory training or interrupt-controller write path is enabled.
+	  This is an experimental response to Windows A5; no successful OS boot
+	  or fix for its still-unknown bugcheck subtype is asserted.
+
+config X58_PRO_E_SPD_SERIAL_INDEPENDENT
+	bool "Accept the same validated DDR3 profile with a different module serial"
+	depends on X58_PRO_E_B06VL_BROAD_HARD_GATE_SEABIOS
+	default n
+	help
+	  Ignore only DDR3 SPD serial bytes 122 through 125 in the automatic
+	  compatibility fingerprint. Keep the real full-SPD hash for diagnostics
+	  and require every other byte of the observed BLS4G3D1609DS1S00. profile.
+	  CRC, complete reads, part number, 4-GiB/two-rank geometry, timings and
+	  sole-SPD-0x54 topology checks remain unchanged. This does not enable
+	  one-rank DIMMs, alter training, or write the module's EEPROM.
+	  Producer and consumer use a version-10 CBMEM handoff containing separate
+	  raw and profile digests. Default-off preserves older experiment contracts.
+
+config HPET_MIN_TICKS
+	default 0x80 if X58_PRO_E_B06WJ_ACPI_PLATFORM
+
+config X58_PRO_E_BRINGUP_STAGE
+	int "Experimental bring-up stage"
+	range 0 11
+	default 0
+	help
+	  Stage 0 proves reset, cache-as-RAM, and C entry only.
+	  Stage 1 additionally identifies the ICH10R LPC function using a
+	  read-only PCI configuration-space transaction.
+	  Stage 2 programs only the narrow LPC decodes for Fintek configuration
+	  port 0x4e and COM1 at 0x3f8, verifies the Super-I/O identity, enables
+	  UART logical device 1, and transmits a bounded diagnostic banner.
+	  Stage 3 retains all stage-2 checks, then enters the separate XIP
+	  romstage from CBFS and halts there while still executing from CAR.
+	  Stage 4 additionally runs the existing ICH10 early BAR setup for
+	  RCBA, PMBASE, and GPIOBASE, then enables only the SMBus controller
+	  I/O BAR.  The proven narrow LPC/UART path remains unchanged and every
+	  programmed register is read back before the terminal POST code.
+	  Stage 5 additionally performs exactly one bounded SMBus byte-data read
+	  of DDR3 SPD type byte 2 at address 0x50.  It does not scan, retry,
+	  train memory, touch X58/QPI/IMC state, or continue beyond CAR.
+	  Stage 6 is the diagnostic follow-up: it records SMBus pin state, writes
+	  only the documented SMBCLK release bit, verifies both lines idle, and
+	  probes type byte 2 once at each standard SPD address 0x50 through 0x57.
+	  It treats an exact DEV_ERR as no usable response and continues, but never
+	  retries, dumps SPD, trains memory, or touches X58/QPI/IMC state.
+	  Stage 7 requires the stage-6 result at address 0x54, then reads the
+	  128-byte DDR3 SPD base block there with bounded byte-data commands and
+	  verifies its revision-dependent JEDEC CRC.  It neither retries nor reads
+	  the upper SPD block, and still does not touch X58/QPI/IMC or DRAM.
+	  Stage 8 requires a valid stage-7 base block whose header declares 176
+	  used bytes in a 256-byte DDR3 EEPROM.  It reads bytes 0x80 through 0xaf
+	  twice, requires both copies to match, then uses coreboot's DDR3 decoder
+	  to derive but not program one conservative DDR3-800 policy.  XMP bytes,
+	  X58/QPI/IMC registers, DRAM, and payload execution remain untouched.
+	  Stage 9 is the fail-closed header telemetry after a stage-8 rejection:
+	  it repeats only the stage-7 base-block/CRC path, emits progress code
+	  0x7a, and halts with 0x80 | (SPD byte 0 & 0x7f).  This reports the
+	  used/total-size fields without another SMBus transaction.  Bit 7 is
+	  omitted from the POST encoding because it only selects the base-CRC
+	  coverage that has already passed; UART still reports the complete byte.
+	  Stage 10 accepts only the now-observed 256-used/256-total header.  It
+	  reads bytes 0x80 through 0xff twice, requires exact agreement, then uses
+	  coreboot's DDR3 decoder and derives but does not program a conservative
+	  DDR3-800 policy.  It performs no IMC, QPI, X58, or DRAM write.
+	  Stage 11 enters an interactive UART ROM monitor after the same bounded
+	  CPU, ICH10R, and SMBus setup.  It supports CPUID, port-I/O, PCI config,
+	  linear/MMIO, MSR, and the stage-10 SPD/decode transaction.  Human writes
+	  require a separate one-shot unlock command.  A permanent SerialICE-v1.5
+	  stream mode provides emulator-facing accesses with immediate writes.  The
+	  B06L revision additionally provides bounded X58 PHY scan-chain
+	  accesses and opt-in channel-2/rank-0 RD and RCVEN experiment profiles.
+	  Its exact RD path repeats the statically recovered MRS2/MRS3/MRS1/MRS0
+	  and per-rank ZQCL sequence before a direct RD command, and can sweep all
+	  recovered coarse values with bounded polls; none runs automatically.
+	  With X58_PRO_E_B06M_BASEINIT selected, the opt-in baseinit command
+	  reproduces the already live-proven one-channel base state before those
+	  profiles.  B06N adds measured UART-TEMT MRS and phase gaps.  Both remain
+	  locked and never execute at boot.
+	  With X58_PRO_E_B06V0_VENDOR_INIT selected, separate VENDOR arming gates
+	  expose local-blob verification, PCIEXBAR preparation, CSI and MINIT
+	  research calls, guarded workspace inspection, and policy editing.  The
+	  vendor path remains manual and terminal inside CAR.
+	  With X58_PRO_E_B06V1_REG_SCRIPT selected, the same monitor additionally
+	  accepts digest-bound register tables with bounded execution tracing and
+	  optional best-effort rollback.  Script execution uses a distinct arm and
+	  permanently closes the vendor-call path until a cold reset.
+	  Invalid reads or writes can still hang or reset the machine; this stage
+	  is a recovery-lab tool only.
+
+config PAYLOAD_CONFIGFILE
+	string
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06wh_usbtrace6" if X58_PRO_E_B06WH_QUIET_USB_SEABIOS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06wg_usbtrace8" if X58_PRO_E_B06WG_AUTO_USB_SEABIOS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06WF_USB_LAB && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06WE_ACPI_SAD_BDF_FIX && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06WD_SEABIOS_INPUT && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06WC_INTEGRATED_PLATFORM && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06WB_TCO_HALT && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06WA_HPET_DECODE && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06VZ_FIXED_RESOURCES && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06VY_IOAPIC_MASK && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06VX_AHCI_USB_TRACE && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VW_ICH10_AHCI_MMIO && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VV_ICH10_PCS_SCLK && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VU_ICH10_AHCI_ROUTE && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VQ_ICHBASE1 && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VQ_PLATRO1 && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vq_usbtrace1" if X58_PRO_E_B06VQ_USB_TRACE1 && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VT_ICH10_SATA_CLOCK && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VS_ICH10_AHCI_PORTS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VR_ICH10_AHCI_MAP && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VQ_ICH10_EHCI_INIT && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VP_LAPIC_EXTINT && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VO_IOHBUSNO_ROUTE && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VN_IOU0_PCIE_PHYS_VBIOS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vm" if X58_PRO_E_B06VM_AUTO_PCI_VGA_IPXE && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vf" if X58_PRO_E_B06VL_BROAD_HARD_GATE_SEABIOS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vf" if X58_PRO_E_B06VK_Q_CANONICAL_CLASS_SEABIOS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vf" if X58_PRO_E_B06VJ_COUPLED_PROFILE_Q_SEABIOS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vf" if X58_PRO_E_B06VI_COUPLED_PROFILE_O_SEABIOS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vf" if X58_PRO_E_B06VH_PRIMARY_WORKSPACE_REARM_SEABIOS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vf" if X58_PRO_E_B06VG_COUPLED_MINIT_SEABIOS && PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios_b06vf" if X58_PRO_E_B06VF_SEABIOS_ENTRY && PAYLOAD_SEABIOS
+
+config MAINBOARD_PART_NUMBER
+	default "X58 Pro-E B06WK ACPI repair experiment" if X58_PRO_E_B06WK_ACPI_REPAIR
+	default "X58 Pro-E B06WJ ACPI platform experiment" if X58_PRO_E_B06WJ_ACPI_PLATFORM
+	default "X58 Pro-E B06WI exact IRQ ACPI experiment" if X58_PRO_E_B06WI_VENDOR_IRQ_ACPI
+	default "X58 Pro-E B06WH automatic GPIO57 USB SeaBIOS" if X58_PRO_E_B06WH_QUIET_USB_SEABIOS
+	default "X58 Pro-E B06WG automatic GPIO57 USB SeaBIOS" if X58_PRO_E_B06WG_AUTO_USB_SEABIOS
+	default "X58 Pro-E B06WF late USB diagnostic lab" if X58_PRO_E_B06WF_USB_LAB
+	default "X58 Pro-E B06WE ACPI SAD BDF fix experimental platform" if X58_PRO_E_B06WE_ACPI_SAD_BDF_FIX
+	default "X58 Pro-E B06WD SeaBIOS input experimental platform" if X58_PRO_E_B06WD_SEABIOS_INPUT
+	default "X58 Pro-E B06WC integrated experimental platform" if X58_PRO_E_B06WC_INTEGRATED_PLATFORM
+	default "X58 Pro-E B06VY deterministic ICH10 IOAPIC mask" if X58_PRO_E_B06VY_IOAPIC_MASK
+	default "X58 Pro-E B06VX AHCI USBTRACE" if X58_PRO_E_B06VX_AHCI_USB_TRACE
+	default "X58 Pro-E B06VW minimal ICH10 AHCI MMIO" if X58_PRO_E_B06VW_ICH10_AHCI_MMIO
+	default "X58 Pro-E B06VV corrected ICH10 PCS SCLK" if X58_PRO_E_B06VV_ICH10_PCS_SCLK
+	default "X58 Pro-E B06VU corrected ICH10 AHCI route" if X58_PRO_E_B06VU_ICH10_AHCI_ROUTE
+	default "X58 Pro-E B06VQ ICHBASE1" if X58_PRO_E_B06VQ_ICHBASE1
+	default "X58 Pro-E B06VQ PLATRO1" if X58_PRO_E_B06VQ_PLATRO1
+	default "X58 Pro-E B06VQ USBTRACE1" if X58_PRO_E_B06VQ_USB_TRACE1
+	default "X58 Pro-E B06VT ICH10 SATA clock" if X58_PRO_E_B06VT_ICH10_SATA_CLOCK
+	default "X58 Pro-E B06VS ICH10 AHCI ports" if X58_PRO_E_B06VS_ICH10_AHCI_PORTS
+	default "X58 Pro-E B06VR ICH10 AHCI map" if X58_PRO_E_B06VR_ICH10_AHCI_MAP
+	default "X58 Pro-E B06VQ ICH10 EHCI init" if X58_PRO_E_B06VQ_ICH10_EHCI_INIT
+	default "X58 Pro-E B06VP LAPIC ExtINT probe" if X58_PRO_E_B06VP_LAPIC_EXTINT
+	default "X58 Pro-E B06VO IOHBUSNO routing probe" if X58_PRO_E_B06VO_IOHBUSNO_ROUTE
+	default "X58 Pro-E B06VN IOU0 PCIe physical VBIOS" if X58_PRO_E_B06VN_IOU0_PCIE_PHYS_VBIOS
+	default "X58 Pro-E B06VM auto PCI VGA iPXE" if X58_PRO_E_B06VM_AUTO_PCI_VGA_IPXE
+	default "X58 Pro-E B06VL broad hard gate SeaBIOS probe" if X58_PRO_E_B06VL_BROAD_HARD_GATE_SEABIOS
+	default "X58 Pro-E B06VK profile Q canonical class SeaBIOS probe" if X58_PRO_E_B06VK_Q_CANONICAL_CLASS_SEABIOS
+	default "X58 Pro-E B06VJ coupled profile Q SeaBIOS probe" if X58_PRO_E_B06VJ_COUPLED_PROFILE_Q_SEABIOS
+	default "X58 Pro-E B06VI coupled profile O SeaBIOS probe" if X58_PRO_E_B06VI_COUPLED_PROFILE_O_SEABIOS
+	default "X58 Pro-E B06VH PRIMARY workspace rearm SeaBIOS probe" if X58_PRO_E_B06VH_PRIMARY_WORKSPACE_REARM_SEABIOS
+	default "X58 Pro-E B06VG coupled MINIT SeaBIOS probe" if X58_PRO_E_B06VG_COUPLED_MINIT_SEABIOS
+	default "X58 Pro-E B06VF minimal SeaBIOS entry probe" if X58_PRO_E_B06VF_SEABIOS_ENTRY
+	default "X58 Pro-E B06VE High-QPI auto RAM-stage ROMMON" if X58_PRO_E_B06VE_HIGH_QPI_AUTO_HANDOFF
+	default "X58 Pro-E B06VD High-QPI CSI2A6 MINIT ROMMON" if X58_PRO_E_B06VD_HIGH_QPI_CSI2A6_MINIT
+	default "X58 Pro-E B06VC High-QPI A0 four-set MINIT ROMMON" if X58_PRO_E_B06VC_HIGH_QPI_A0_4SET_MINIT
+	default "X58 Pro-E B06VB High-QPI MINIT observation ROMMON" if X58_PRO_E_B06VB_HIGH_QPI_MINIT_OBSERVE
+	default "X58 Pro-E B06VA High-QPI A0-set three-pass ROMMON" if X58_PRO_E_B06VA_HIGH_QPI_A0_SET
+	default "X58 Pro-E B06V9 deterministic High-QPI three-pass ROMMON" if X58_PRO_E_B06V9_DETERMINISTIC_QPI_3PASS
+	default "X58 Pro-E B06V8 High-QPI three-pass CSI ROMMON" if X58_PRO_E_B06V8_HIGH_QPI_3PASS
+	default "X58 Pro-E B06V7 robust Slow-QPI RAM-stage ROMMON" if X58_PRO_E_B06V7_ROBUST_SLOWQPI
+	default "X58 Pro-E B06V6 auto RAM-stage handoff ROMMON" if X58_PRO_E_B06V6_AUTO_HANDOFF
+	default "X58 Pro-E B06V5 cold MINIT gate ROMMON" if X58_PRO_E_B06V5_COLD_MINIT
+	default "X58 Pro-E B06V4 policy telemetry ROMMON" if X58_PRO_E_B06V4_POLICY_TELEMETRY
+	default "X58 Pro-E B06V3 CSI warm-resume ROMMON" if X58_PRO_E_B06V3_WARM_RESUME
+	default "X58 Pro-E B06V2 corrected CSI gate ROMMON" if X58_PRO_E_B06V2_CSI_HEADER_FIX
+	default "X58 Pro-E B06V1 transactional script ROMMON" if X58_PRO_E_B06V1_REG_SCRIPT
+	default "X58 Pro-E B06V0 vendor-assisted probe ROMMON" if X58_PRO_E_B06V0_VENDOR_INIT
+	default "X58 Pro-E B06N timed-MRS baseinit ROMMON" if X58_PRO_E_B06N_TIMED_MRS
+	default "X58 Pro-E B06M baseinit exact RD ROMMON" if X58_PRO_E_B06M_BASEINIT
+	default "X58 Pro-E B06L exact RD sweep ROMMON" if X58_PRO_E_BRINGUP_STAGE = 11
+	default "X58 Pro-E B06I SPD54 used-256 decode" if X58_PRO_E_BRINGUP_STAGE = 10
+	default "X58 Pro-E B06H SPD54 header telemetry" if X58_PRO_E_BRINGUP_STAGE = 9
+	default "X58 Pro-E B06C SPD54 used-176 decode" if X58_PRO_E_BRINGUP_STAGE = 8
+	default "X58 Pro-E B06B SPD54 base-block CRC" if X58_PRO_E_BRINGUP_STAGE = 7
+	default "X58 Pro-E B06A SPD address diagnostic" if X58_PRO_E_BRINGUP_STAGE = 6
+	default "X58 Pro-E B05 single SPD probe" if X58_PRO_E_BRINGUP_STAGE = 5
+	default "X58 Pro-E B04 ICH10R early core" if X58_PRO_E_BRINGUP_STAGE = 4
+	default "X58 Pro-E B03 XIP romstage" if X58_PRO_E_BRINGUP_STAGE = 3
+	default "X58 Pro-E B02 LPC Fintek UART" if X58_PRO_E_BRINGUP_STAGE = 2
+	default "X58 Pro-E B01 ICH10R probe" if X58_PRO_E_BRINGUP_STAGE = 1
+	default "X58 Pro-E B00 POST-CAR"
+
+endif

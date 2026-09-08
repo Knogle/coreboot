@@ -46,3 +46,24 @@ tarballs/
 *~
 *.kate-swp
 *.kdev4
+
+# X58 research: never publish local vendor material, captures or flash images.
+/blobs-local/
+/builds/
+/util/x58/blobs-local/
+/util/x58/builds/
+/util/x58/research/generated/
+/util/x58/research/**/captures/
+/util/x58/site-local/
+/util/x58/**/__pycache__/
+/util/x58/**/*.raw
+/util/x58/**/*.rom
+/util/x58/**/*.aml
+/util/x58/**/*.dat
+/util/x58/**/*.zip
+/util/x58/**/*.jsonl
+/util/x58/**/.env
+/util/x58/**/*.pem
+/util/x58/**/*.key
+/util/x58/**/id_rsa*
+/util/x58/**/id_ed25519*

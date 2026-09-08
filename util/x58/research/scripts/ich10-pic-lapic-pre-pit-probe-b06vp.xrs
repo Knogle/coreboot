@@ -1,0 +1,29 @@
+# Read-only admission census before any PIT -> 8259 -> LAPIC ExtINT probe.
+# The retained B06VP CAR session must already contain the separately proven
+# standard dual-8259 initialization and IRQ9 ELCR policy.  This script does
+# not write the PIC, PIT, LAPIC, IOAPIC, PM, SMI or any interrupt enable.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert io 00000021 b ff fb
+assert io 000000a1 b ff ff
+assert io 000004d0 b ff 00
+assert io 000004d1 b ff 02
+
+read msr 0000001b q
+read mem fee00020 l
+read mem fee00080 l
+read mem fee000f0 l
+read mem fee00350 l
+read mem fee00360 l
+
+read mem fee00100 l
+read mem fee00110 l
+read mem fee00180 l
+read mem fee00190 l
+read mem fee00200 l
+read mem fee00210 l
+
+read io 00000020 b
+read io 000000a0 b
+read io 00000061 b
+assert pci 001f0000 l ffffffff 3a168086

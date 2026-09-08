@@ -1,0 +1,90 @@
+# B06VM is the first boot-capable SeaBIOS profile for MSI X58 Pro-E.
+#
+# Keep parallel initialization disabled and keep allocations out of the
+# C0000-EFFFF option-ROM window.  Relocate one-shot init code after ramstage
+# has published the complete low-RAM map so VGA+iPXE retain enough shadow ROM.
+# The outer coreboot configuration must also select
+# CONFIG_SEABIOS_HARDWARE_IRQ=y and add etc/sercon-port for COM1.
+CONFIG_COREBOOT=y
+# CONFIG_QEMU is not set
+# CONFIG_CSM is not set
+# CONFIG_QEMU_HARDWARE is not set
+# CONFIG_THREADS is not set
+CONFIG_RELOCATE_INIT=y
+# CONFIG_MALLOC_UPPERMEMORY is not set
+
+# Coreboot/boot integration.
+CONFIG_BOOT=y
+CONFIG_BOOTMENU=y
+# CONFIG_BOOTSPLASH is not set
+CONFIG_BOOTORDER=y
+CONFIG_HOST_BIOS_GEOMETRY=y
+CONFIG_COREBOOT_FLASH=y
+CONFIG_LZMA=y
+# CONFIG_MULTIBOOT is not set
+CONFIG_ENTRY_EXTRASTACK=y
+
+# Local ICH10R storage.  CONFIG_DRIVES is not needed merely to execute an iPXE
+# BEV; it is enabled for SeaBIOS INT 13h local ATA/AHCI/USB-media support.
+# B06VL observed both SATA functions in legacy IDE class 0101, so ATA is
+# required even though AHCI is retained for a later class-0106 configuration.
+CONFIG_DRIVES=y
+CONFIG_ATA=y
+# CONFIG_ATA_DMA is not set
+# CONFIG_ATA_PIO32 is not set
+CONFIG_AHCI=y
+# CONFIG_SDCARD is not set
+# CONFIG_MEGASAS is not set
+# CONFIG_FLOPPY is not set
+# CONFIG_FLASH_FLOPPY is not set
+# CONFIG_NVME is not set
+CONFIG_CDROM_BOOT=y
+CONFIG_CDROM_EMU=y
+
+# ICH10 USB is UHCI/EHCI.  Exclude controllers and transports that this board
+# does not have; retain mass storage, hubs, and keyboard input for boot/menu.
+CONFIG_USB=y
+CONFIG_USB_UHCI=y
+# CONFIG_USB_OHCI is not set
+CONFIG_USB_EHCI=y
+# CONFIG_USB_XHCI is not set
+CONFIG_USB_MSC=y
+# CONFIG_USB_UAS is not set
+CONFIG_USB_HUB=y
+CONFIG_USB_KEYBOARD=y
+# CONFIG_USB_MOUSE is not set
+
+# PS/2 and serial-console input/output.
+CONFIG_KEYBOARD=y
+# CONFIG_KBD_CALL_INT15_4F is not set
+CONFIG_PS2PORT=y
+# CONFIG_MOUSE is not set
+CONFIG_SERIAL=y
+CONFIG_SERCON=y
+# CONFIG_LPT is not set
+
+# Real hardware IRQs are required by most boot loaders and by responsive
+# serial/keyboard input.  This line is intentionally duplicated by the outer
+# CONFIG_SEABIOS_HARDWARE_IRQ=y integration knob; otherwise the wrapper appends
+# a later "not set" line and overrides this fragment.
+CONFIG_HARDWARE_IRQ=y
+CONFIG_RTC_TIMER=y
+CONFIG_PMTIMER=y
+CONFIG_TSC_TIMER=y
+
+# Legacy interfaces used by physical VGA and NIC option ROMs.
+CONFIG_PCIBIOS=y
+# CONFIG_APMBIOS is not set
+CONFIG_PNPBIOS=y
+CONFIG_OPTIONROMS=y
+CONFIG_PMM=y
+# CONFIG_S3_RESUME is not set
+# CONFIG_VGAHOOKS is not set
+# CONFIG_DISABLE_A20 is not set
+
+# Keep diagnostics on COM1 and in CBMEM.  Coreboot's SeaBIOS wrapper supplies
+# the same serial values from the coreboot UART configuration.
+CONFIG_DEBUG_LEVEL=9
+CONFIG_DEBUG_SERIAL=y
+CONFIG_DEBUG_SERIAL_PORT=0x3f8
+CONFIG_DEBUG_COREBOOT=y

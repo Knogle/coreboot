@@ -1,0 +1,40 @@
+# Read-only/reversible census before the first HPET-to-IOAPIC delivery test.
+# OIC=03 must already have been established by the separately archived decode
+# primitive.  Only IOREGSEL is changed, and it is restored to selector zero.
+# The table captures IOAPIC boot-delivery register 3, entry 20, BSP LAPIC
+# control state, and all eight IRR banks.  No interrupt source is enabled.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fed1f404 l ffffffff 00000000
+assert mem fec00000 l ffffffff 00000000
+
+write mem fec00000 l 00000000 rev
+read mem fec00010 l
+write mem fec00000 l 00000001 rev
+read mem fec00010 l
+write mem fec00000 l 00000003 rev
+read mem fec00010 l
+write mem fec00000 l 00000038 rev
+read mem fec00010 l
+write mem fec00000 l 00000039 rev
+read mem fec00010 l
+write mem fec00000 l 00000000 rev
+assert mem fec00000 l ffffffff 00000000
+
+read mem fee00020 l
+read mem fee00030 l
+read mem fee00080 l
+read mem fee000f0 l
+read mem fee00350 l
+read mem fee00360 l
+read mem fee00280 l
+read mem fee00200 l
+read mem fee00210 l
+read mem fee00220 l
+read mem fee00230 l
+read mem fee00240 l
+read mem fee00250 l
+read mem fee00260 l
+read mem fee00270 l

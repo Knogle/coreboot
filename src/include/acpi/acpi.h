@@ -1541,6 +1541,8 @@ unsigned long fw_cfg_acpi_tables(unsigned long start);
 /* These are implemented by the target port or north/southbridge. */
 unsigned long write_acpi_tables(const unsigned long addr);
 unsigned long acpi_fill_madt(unsigned long current);
+/* Append platform-specific MMCONFIG allocation structures to an MCFG. */
+unsigned long acpi_fill_mcfg(unsigned long current);
 unsigned long acpi_arch_fill_madt(acpi_madt_t *madt, unsigned long current);
 
 void acpi_fill_fadt(acpi_fadt_t *fadt);

@@ -1,0 +1,35 @@
+# Return the quiescent HPET and masked IOAPIC to their exact B06VP CAR reset
+# decode state without an AC cycle.  The timer/counter/comparator, BSP LAPIC,
+# and same-session entry-20 tuple must already have been restored.  HPTC is
+# disabled first; only then is OIC.AEN/CEN cleared.  Open-bus reads prove that
+# both apertures actually closed.  No interrupt source is active.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fed1f404 l ffffffff 00000080
+assert mem fed00010 l ffffffff 00000000
+assert mem fed00020 l ffffffff 00000000
+assert mem fed000f0 l ffffffff 00000000
+assert mem fed000f4 l ffffffff 00000000
+assert mem fed00100 l ffffffff 00000030
+assert mem fed00108 l ffffffff ffffffff
+assert mem fed0010c l ffffffff ffffffff
+assert mem fee000f0 l ffffffff 000000ff
+assert mem fee00220 l ffffffff 00000000
+assert mem fec00000 l ffffffff 00000000
+write mem fec00000 l 00000038 nr
+assert mem fec00010 l ffffffff 00010197
+write mem fec00000 l 00000039 nr
+assert mem fec00010 l ffffffff 10000000
+write mem fec00000 l 00000000 nr
+write mem fed1f404 l 00000000 nr
+assert mem fed1f404 l ffffffff 00000000
+assert mem fed00000 l ffffffff ffffffff
+assert mem fed00004 l ffffffff ffffffff
+write mem fed1f1ff b 00 nr
+assert mem fed1f1ff b ff 00
+assert mem fec00000 l ffffffff ffffffff
+assert mem fec00010 l ffffffff ffffffff
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0000 l ffffffff 3a168086

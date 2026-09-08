@@ -1,0 +1,29 @@
+# Read-only TCO countdown and GCS no-reboot census.  Three current-value
+# samples are separated by bounded ROMMON delays; reading TCO_RLD does not
+# reload the timer.  No TCO/SMI status is acknowledged and no watchdog write
+# is issued.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0040 l ffffffff 00000501
+assert pci 001f0044 b ff 80
+
+read mem fed1f410 l
+read io 00000560 w
+delay 00100000
+read io 00000560 w
+delay 00100000
+read io 00000560 w
+
+read io 00000564 w
+read io 00000566 w
+read io 00000568 w
+read io 0000056a w
+read io 00000572 w
+read io 000005b0 l
+read io 000005b4 l
+
+assert pci 001f0044 b ff 80
+assert pci 001f0040 l ffffffff 00000501
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0000 l ffffffff 3a168086

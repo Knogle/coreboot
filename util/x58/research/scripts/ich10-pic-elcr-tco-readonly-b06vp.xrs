@@ -1,0 +1,36 @@
+# Read-only 8259/ELCR/TCO census for the retained B06VP CAR state.  This
+# captures the two legacy-PIC interrupt masks required before any SCI work,
+# both trigger-mode bytes, the PIT/KBC status ports, and the documented ICH10
+# TCO status/control words.  No status is acknowledged and no timer is fed.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0040 l ffffffff 00000501
+assert pci 001f0044 b ff 80
+
+read io 00000021 b
+read io 000000a1 b
+read io 000004d0 b
+read io 000004d1 b
+read io 00000061 b
+read io 00000064 b
+
+read io 00000564 w
+read io 00000566 w
+read io 00000568 w
+read io 0000056a w
+read io 00000572 w
+
+read io 00000500 w
+read io 00000502 w
+read io 00000504 w
+read io 000005b0 l
+read io 000005b4 l
+read pci 001f00b8 l
+read pci 001f00a0 w
+read pci 001f00a2 w
+read pci 001f00a4 b
+read pci 001f00ac l
+
+assert pci 001f0044 b ff 80
+assert pci 001f0040 l ffffffff 00000501
+assert pci 001f0000 l ffffffff 3a168086

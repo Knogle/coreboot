@@ -1,0 +1,628 @@
+diff --git a/src/Kconfig b/src/Kconfig
+index 332b52d6..6fe8bd77 100644
+--- a/src/Kconfig
++++ b/src/Kconfig
+@@ -308,6 +308,17 @@ menu "Hardware support"
+         help
+             Support USB mice.
+ 
++    config DEBUG_USB_TRACE
++        depends on USB && !THREADS && DEBUG_LEVEL != 0
++        bool "Record a deferred USB initialization trace"
++        default n
++        help
++            Store bounded USB controller, port, and enumeration events in
++            RAM while USB initialization is active, then print them after
++            all USB controllers have been scanned.  This low-perturbation
++            trace avoids serial I/O in timing-sensitive port reset and
++            control-transfer paths.
++
+     config SERIAL
+         bool "Serial port"
+         default y
+diff --git a/src/hw/usb-ehci.c b/src/hw/usb-ehci.c
+index d01fa853..1dce2c1c 100644
+--- a/src/hw/usb-ehci.c
++++ b/src/hw/usb-ehci.c
+@@ -58,14 +58,19 @@ ehci_hub_detect(struct usbhub_s *hub, u32 port)
+     if ((portsc & PORT_LINESTATUS_MASK) == PORT_LINESTATUS_KSTATE) {
+         // low speed device
+         writel(portreg, portsc | PORT_OWNER);
++        usb_trace_record(hub->cntl, USB_TRACE_EHCI_OWNER, port,
++                         USB_LOWSPEED, portsc, portsc | PORT_OWNER);
+         return -1;
+     }
+ 
+     // XXX - if just powered up, need to wait for USB_TIME_ATTDB?
+ 
+     // Begin reset on port
++    u32 before = portsc;
+     portsc = (portsc & ~PORT_PE) | PORT_RESET;
+     writel(portreg, portsc);
++    usb_trace_record(hub->cntl, USB_TRACE_EHCI_CONNECT, port, 1,
++                     before, portsc);
+     msleep(USB_TIME_DRSTR);
+     return 1;
+ }
+@@ -84,15 +89,22 @@ ehci_hub_reset(struct usbhub_s *hub, u32 port)
+     msleep(EHCI_TIME_POSTRESET);
+ 
+     portsc = readl(portreg);
+-    if (!(portsc & PORT_CONNECT))
++    if (!(portsc & PORT_CONNECT)) {
++        usb_trace_record(hub->cntl, USB_TRACE_EHCI_RESET, port, -1,
++                         portsc, 0);
+         // No longer connected
+         return -1;
++    }
+     if (!(portsc & PORT_PE)) {
+         // full speed device
+         writel(portreg, portsc | PORT_OWNER);
++        usb_trace_record(hub->cntl, USB_TRACE_EHCI_OWNER, port,
++                         USB_FULLSPEED, portsc, portsc | PORT_OWNER);
+         return -1;
+     }
+ 
++    usb_trace_record(hub->cntl, USB_TRACE_EHCI_RESET, port,
++                     USB_HIGHSPEED, portsc, 0);
+     return USB_HIGHSPEED;
+ }
+ 
+@@ -103,6 +115,8 @@ ehci_hub_disconnect(struct usbhub_s *hub, u32 port)
+     struct usb_ehci_s *cntl = container_of(hub->cntl, struct usb_ehci_s, usb);
+     u32 *portreg = &cntl->regs->portsc[port];
+     u32 portsc = readl(portreg);
++    usb_trace_record(hub->cntl, USB_TRACE_DISCONNECT, port, 0, portsc,
++                     portsc & ~PORT_PE);
+     writel(portreg, portsc & ~PORT_PE);
+ }
+ 
+@@ -128,6 +142,11 @@ check_ehci_ports(struct usb_ehci_s *cntl)
+     }
+     msleep(EHCI_TIME_POSTPOWER);
+ 
++    u32 configflag = readl(&cntl->regs->configflag);
++    for (i=0; i<cntl->checkports; i++)
++        usb_trace_record(&cntl->usb, USB_TRACE_EHCI_PORT, i, 0,
++                         readl(&cntl->regs->portsc[i]), configflag);
++
+     struct usbhub_s hub;
+     memset(&hub, 0, sizeof(hub));
+     hub.cntl = &cntl->usb;
+@@ -231,6 +250,9 @@ configure_ehci(void *data)
+ 
+     // Reset the HC
+     u32 cmd = readl(&cntl->regs->usbcmd);
++    usb_trace_record(&cntl->usb, USB_TRACE_EHCI_RESET_PRE,
++                     USB_TRACE_PORT_NONE, 0, cmd,
++                     readl(&cntl->regs->usbsts));
+     writel(&cntl->regs->usbcmd, (cmd & ~(CMD_ASE | CMD_PSE)) | CMD_HCRESET);
+     u32 end = timer_calc(250);
+     for (;;) {
+@@ -238,12 +260,18 @@ configure_ehci(void *data)
+         if (!(cmd & CMD_HCRESET))
+             break;
+         if (timer_check(end)) {
++            usb_trace_record(&cntl->usb, USB_TRACE_EHCI_RESET_POST,
++                             USB_TRACE_PORT_NONE, -1, cmd,
++                             readl(&cntl->regs->usbsts));
+             warn_timeout();
+             PendingEHCI--;
+             goto fail;
+         }
+         yield();
+     }
++    usb_trace_record(&cntl->usb, USB_TRACE_EHCI_RESET_POST,
++                     USB_TRACE_PORT_NONE, 0, cmd,
++                     readl(&cntl->regs->usbsts));
+ 
+     // Disable interrupts (just to be safe).
+     writel(&cntl->regs->usbintr, 0);
+@@ -273,6 +301,10 @@ configure_ehci(void *data)
+ 
+     // Set default of high speed for root hub.
+     writel(&cntl->regs->configflag, 1);
++    usb_trace_record(&cntl->usb, USB_TRACE_EHCI_RUN,
++                     USB_TRACE_PORT_NONE, 0,
++                     readl(&cntl->regs->usbcmd),
++                     readl(&cntl->regs->usbsts));
+     PendingEHCI--;
+ 
+     // Find devices
+@@ -309,13 +341,17 @@ ehci_controller_setup(struct pci_device *pci)
+     cntl->usb.pci = pci;
+     cntl->usb.type = USB_TYPE_EHCI;
+     cntl->caps = caps;
+-    cntl->checkports = readl(&cntl->caps->hcsparams) & HCS_N_PORTS_MASK;
++    u32 hcs_params = readl(&cntl->caps->hcsparams);
++    cntl->checkports = hcs_params & HCS_N_PORTS_MASK;
+     cntl->regs = (void*)caps + readb(&caps->caplength);
+     if (hcc_params & HCC_64BIT_ADDR)
+         cntl->regs->ctrldssegment = 0;
+     PendingEHCI++;
+ 
+     dprintf(1, "EHCI init on dev %pP (regs=%p)\n", pci, cntl->regs);
++    usb_trace_record(&cntl->usb, USB_TRACE_EHCI_CAPS,
++                     USB_TRACE_PORT_NONE, readb(&caps->caplength),
++                     hcs_params, hcc_params);
+ 
+     pci_enable_busmaster(pci);
+ 
+diff --git a/src/hw/usb-hid.c b/src/hw/usb-hid.c
+index 29a110b0..cae94739 100644
+--- a/src/hw/usb-hid.c
++++ b/src/hw/usb-hid.c
+@@ -96,13 +96,21 @@ usb_kbd_setup(struct usbdevice_s *usbdev
+ 
+     if (epdesc->wMaxPacketSize < sizeof(struct keyevent)
+         || epdesc->wMaxPacketSize > MAX_KBD_EVENT) {
++        usb_trace_record(usbdev->hub->cntl, USB_TRACE_HID_PIPE,
++                         usbdev->port, -3, epdesc->wMaxPacketSize,
++                         sizeof(struct keyevent));
+         dprintf(1, "USB keyboard wMaxPacketSize=%d; aborting\n"
+                 , epdesc->wMaxPacketSize);
+         return -1;
+     }
+ 
+     // Enable "boot" protocol.
+-    if (set_protocol(usbdev->defpipe, 0, usbdev->iface->bInterfaceNumber)) {
++    int ret = set_protocol(usbdev->defpipe, 0,
++                           usbdev->iface->bInterfaceNumber);
++    usb_trace_record(usbdev->hub->cntl, USB_TRACE_HID_PROTOCOL,
++                     usbdev->port, ret,
++                     usbdev->iface->bInterfaceNumber, 0);
++    if (ret) {
+         dprintf(3, "Failed to set boot protocol\n");
+         return -1;
+     }
+@@ -111,7 +119,11 @@ usb_kbd_setup(struct usbdevice_s *usbdev
+     if (set_idle(usbdev->defpipe, KEYREPEATMS))
+         dprintf(3, "Warning: Failed to set key repeat rate\n");
+ 
+-    if (add_pipe_node(&keyboards, usbdev, epdesc))
++    ret = add_pipe_node(&keyboards, usbdev, epdesc);
++    usb_trace_record(usbdev->hub->cntl, USB_TRACE_HID_PIPE,
++                     usbdev->port, ret, epdesc->wMaxPacketSize,
++                     epdesc->bInterval);
++    if (ret)
+         return -1;
+ 
+     dprintf(1, "USB keyboard initialized\n");
+@@ -168,6 +180,11 @@ usb_hid_setup(struct usbdevice_s *usbdev)
+     struct usb_endpoint_descriptor *epdesc = usb_find_desc(
+         usbdev, USB_ENDPOINT_XFER_INT, USB_DIR_IN);
+     if (!epdesc) {
++        usb_trace_record(usbdev->hub->cntl, USB_TRACE_HID_PIPE,
++                         usbdev->port, -2,
++                         ((u32)iface->bInterfaceClass << 16)
++                         | ((u32)iface->bInterfaceSubClass << 8)
++                         | iface->bInterfaceProtocol, 0);
+         dprintf(1, "No usb hid intr in?\n");
+         return -1;
+     }
+diff --git a/src/hw/usb-uhci.c b/src/hw/usb-uhci.c
+index 075ed02c..95e464f0 100644
+--- a/src/hw/usb-uhci.c
++++ b/src/hw/usb-uhci.c
+@@ -54,6 +54,8 @@ uhci_hub_detect(struct usbhub_s *hub, u32 port)
+ 
+     // Begin reset on port
+     outw(USBPORTSC_PR, ioport);
++    usb_trace_record(hub->cntl, USB_TRACE_UHCI_CONNECT, port, 1, status,
++                     USBPORTSC_PR);
+     msleep(USB_TIME_DRSTR);
+     return 1;
+ }
+@@ -69,10 +71,16 @@ uhci_hub_reset(struct usbhub_s *hub, u32 port)
+     outw(0, ioport);
+     udelay(6); // 64 high-speed bit times
+     u16 status = inw(ioport);
+-    if (!(status & USBPORTSC_CCS))
++    if (!(status & USBPORTSC_CCS)) {
++        usb_trace_record(hub->cntl, USB_TRACE_UHCI_RESET, port, -1,
++                         status, 0);
+         // No longer connected
+         return -1;
++    }
+     outw(USBPORTSC_PE, ioport);
++    usb_trace_record(hub->cntl, USB_TRACE_UHCI_RESET, port,
++                     !!(status & USBPORTSC_LSDA), status,
++                     USBPORTSC_PE);
+     return !!(status & USBPORTSC_LSDA);
+ }
+ 
+@@ -82,6 +90,8 @@ uhci_hub_disconnect(struct usbhub_s *hub, u32 port)
+ {
+     struct usb_uhci_s *cntl = container_of(hub->cntl, struct usb_uhci_s, usb);
+     u16 ioport = cntl->iobase + USBPORTSC1 + port * 2;
++    usb_trace_record(hub->cntl, USB_TRACE_DISCONNECT, port, 0,
++                     inw(ioport), 0);
+     outw(0, ioport);
+ }
+ 
+@@ -99,6 +109,13 @@ check_uhci_ports(struct usb_uhci_s *cntl)
+     // Wait for ehci init - in case this is a "companion controller"
+     ehci_wait_controllers();
+ 
++    int i;
++    for (i=0; i<2; i++)
++        usb_trace_record(&cntl->usb, USB_TRACE_UHCI_PORT, i, 0,
++                         inw(cntl->iobase + USBPORTSC1 + i * 2),
++                         inw(cntl->iobase + USBCMD)
++                         | ((u32)inw(cntl->iobase + USBSTS) << 16));
++
+     struct usbhub_s hub;
+     memset(&hub, 0, sizeof(hub));
+     hub.cntl = &cntl->usb;
+@@ -164,6 +181,12 @@ reset_uhci(struct usb_uhci_s *cntl, u16 bdf)
+ {
+     // XXX - don't reset if not needed.
+ 
++    usb_trace_record(&cntl->usb, USB_TRACE_UHCI_RESET_PRE,
++                     USB_TRACE_PORT_NONE, 0,
++                     inw(cntl->iobase + USBCMD)
++                     | ((u32)inw(cntl->iobase + USBSTS) << 16),
++                     pci_config_readw(bdf, USBLEGSUP));
++
+     // Reset PIRQ and SMI
+     pci_config_writew(bdf, USBLEGSUP, USBLEGSUP_RWC);
+ 
+@@ -174,6 +197,11 @@ reset_uhci(struct usb_uhci_s *cntl, u16 bdf)
+     // Disable interrupts and commands (just to be safe).
+     outw(0, cntl->iobase + USBINTR);
+     outw(0, cntl->iobase + USBCMD);
++    usb_trace_record(&cntl->usb, USB_TRACE_UHCI_RESET_POST,
++                     USB_TRACE_PORT_NONE, 0,
++                     inw(cntl->iobase + USBCMD)
++                     | ((u32)inw(cntl->iobase + USBSTS) << 16),
++                     pci_config_readw(bdf, USBLEGSUP));
+ }
+ 
+ static void
+@@ -224,6 +252,11 @@ configure_uhci(void *data)
+ 
+     // Mark as configured and running with a 64-byte max packet.
+     outw(USBCMD_RS | USBCMD_CF | USBCMD_MAXP, cntl->iobase + USBCMD);
++    usb_trace_record(&cntl->usb, USB_TRACE_UHCI_RUN,
++                     USB_TRACE_PORT_NONE, 0,
++                     inw(cntl->iobase + USBCMD)
++                     | ((u32)inw(cntl->iobase + USBSTS) << 16),
++                     inl(cntl->iobase + USBFLBASEADD));
+ 
+     // Find devices
+     int count = check_uhci_ports(cntl);
+diff --git a/src/hw/usb.c b/src/hw/usb.c
+index 409da8c5..5aad4b55 100644
+--- a/src/hw/usb.c
++++ b/src/hw/usb.c
+@@ -8,6 +8,7 @@
+ #include "config.h" // CONFIG_*
+ #include "malloc.h" // free
+ #include "output.h" // dprintf
++#include "pcidevice.h" // struct pci_device
+ #include "romfile.h" // romfile_loadint
+ #include "string.h" // memset
+ #include "usb.h" // struct usb_s
+@@ -22,6 +23,71 @@
+ #include "util.h" // msleep
+ #include "x86.h" // __fls
+ 
++#define USB_TRACE_MAX_EVENTS 96
++
++struct usb_trace_entry {
++    u32 value_a;
++    u32 value_b;
++    u16 bdf;
++    s16 result;
++    u8 event;
++    u8 type;
++    u8 port;
++    u8 reserved;
++};
++
++_Static_assert(sizeof(struct usb_trace_entry) == 16,
++               "USB trace entries must stay within the fixed RAM budget");
++
++static struct usb_trace_entry UsbTrace[USB_TRACE_MAX_EVENTS] VARVERIFY32INIT;
++static u16 UsbTraceCount VARVERIFY32INIT;
++static u16 UsbTraceDropped VARVERIFY32INIT;
++
++void
++usb_trace_record(struct usb_s *cntl, u8 event, u8 port, int result,
++                 u32 value_a, u32 value_b)
++{
++    ASSERT32FLAT();
++    if (! CONFIG_DEBUG_USB_TRACE)
++        return;
++    if (UsbTraceCount >= ARRAY_SIZE(UsbTrace)) {
++        UsbTraceDropped++;
++        return;
++    }
++
++    struct usb_trace_entry *entry = &UsbTrace[UsbTraceCount++];
++    entry->value_a = value_a;
++    entry->value_b = value_b;
++    entry->bdf = cntl && cntl->pci ? cntl->pci->bdf : 0xffff;
++    entry->result = result;
++    entry->event = event;
++    entry->type = cntl ? cntl->type : 0;
++    entry->port = port;
++    entry->reserved = 0;
++}
++
++static void
++usb_trace_dump(void)
++{
++    if (! CONFIG_DEBUG_USB_TRACE)
++        return;
++
++    dprintf(1, "[USBTRACE] BEGIN count=%u dropped=%u\n",
++            (u32)UsbTraceCount, (u32)UsbTraceDropped);
++    int i;
++    for (i = 0; i < UsbTraceCount; i++) {
++        struct usb_trace_entry *entry = &UsbTrace[i];
++        u16 bdf = entry->bdf;
++        dprintf(1,
++                "[USBTRACE] %02u EVT=%02x TYPE=%u BDF=%02x:%02x.%x PORT=%u RET=%d A=%08x B=%08x\n",
++                (u32)i, (u32)entry->event, (u32)entry->type,
++                (u32)(bdf >> 8), (u32)((bdf >> 3) & 0x1f),
++                (u32)(bdf & 7), (u32)entry->port,
++                entry->result, entry->value_a, entry->value_b);
++    }
++    dprintf(1, "[USBTRACE] END\n");
++}
++
+ 
+ /****************************************************************
+  * Controller function wrappers
+@@ -234,8 +300,9 @@ get_device_info8(struct usb_pipe *pipe, struct usb_device_descriptor *dinfo)
+ }
+ 
+ static struct usb_config_descriptor *
+-get_device_config(struct usb_pipe *pipe)
++get_device_config(struct usbdevice_s *usbdev)
+ {
++    struct usb_pipe *pipe = usbdev->defpipe;
+     struct usb_config_descriptor cfg;
+ 
+     struct usb_ctrlrequest req;
+@@ -245,20 +312,38 @@ get_device_config(struct usb_pipe *pipe)
+     req.wIndex = 0;
+     req.wLength = sizeof(cfg);
+     int ret = usb_send_default_control(pipe, &req, &cfg);
++    usb_trace_record(usbdev->hub->cntl, USB_TRACE_CONFIG_HEADER,
++                     usbdev->port, ret,
++                     ret ? 0 : (u32)cfg.bLength
++                     | ((u32)cfg.bDescriptorType << 8)
++                     | ((u32)cfg.wTotalLength << 16),
++                     ret ? 0 : (u32)cfg.bNumInterfaces
++                     | ((u32)cfg.bConfigurationValue << 8)
++                     | ((u32)cfg.iConfiguration << 16)
++                     | ((u32)cfg.bmAttributes << 24));
+     if (ret)
+         return NULL;
+ 
+     struct usb_config_descriptor *config = malloc_tmphigh(cfg.wTotalLength);
+     if (!config) {
+         warn_noalloc();
++        usb_trace_record(usbdev->hub->cntl, USB_TRACE_CONFIG_FULL,
++                         usbdev->port, -2, cfg.wTotalLength, 0);
+         return NULL;
+     }
+     req.wLength = cfg.wTotalLength;
+     ret = usb_send_default_control(pipe, &req, config);
+     if (ret || config->wTotalLength != cfg.wTotalLength) {
++        usb_trace_record(usbdev->hub->cntl, USB_TRACE_CONFIG_FULL,
++                         usbdev->port, ret ? ret : -3,
++                         cfg.wTotalLength,
++                         ret ? 0 : config->wTotalLength);
+         free(config);
+         return NULL;
+     }
++    usb_trace_record(usbdev->hub->cntl, USB_TRACE_CONFIG_FULL,
++                     usbdev->port, 0, cfg.wTotalLength,
++                     config->wTotalLength);
+     //hexdump(config, cfg.wTotalLength);
+     return config;
+ }
+@@ -295,8 +380,11 @@ usb_set_address(struct usbdevice_s *usbdev)
+     ASSERT32FLAT();
+     struct usb_s *cntl = usbdev->hub->cntl;
+     dprintf(3, "set_address %p\n", cntl);
+-    if (cntl->maxaddr >= USB_MAXADDR)
++    if (cntl->maxaddr >= USB_MAXADDR) {
++        usb_trace_record(cntl, USB_TRACE_SET_ADDRESS, usbdev->port, -3,
++                         cntl->maxaddr, 0);
+         return -1;
++    }
+ 
+     msleep(USB_TIME_RSTRCY);
+ 
+@@ -306,8 +394,11 @@ usb_set_address(struct usbdevice_s *usbdev)
+         .bmAttributes = USB_ENDPOINT_XFER_CONTROL,
+     };
+     usbdev->defpipe = usb_alloc_pipe(usbdev, &epdesc);
+-    if (!usbdev->defpipe)
++    if (!usbdev->defpipe) {
++        usb_trace_record(cntl, USB_TRACE_SET_ADDRESS, usbdev->port, -2,
++                         cntl->maxaddr + 1, 0);
+         return -1;
++    }
+ 
+     // Send set_address command.
+     struct usb_ctrlrequest req;
+@@ -317,6 +408,8 @@ usb_set_address(struct usbdevice_s *usbdev)
+     req.wIndex = 0;
+     req.wLength = 0;
+     int ret = usb_send_default_control(usbdev->defpipe, &req, NULL);
++    usb_trace_record(cntl, USB_TRACE_SET_ADDRESS, usbdev->port, ret,
++                     req.wValue, 0);
+     if (ret) {
+         usb_free_pipe(usbdev, usbdev->defpipe);
+         return -1;
+@@ -327,8 +420,11 @@ usb_set_address(struct usbdevice_s *usbdev)
+     cntl->maxaddr++;
+     usbdev->devaddr = cntl->maxaddr;
+     usbdev->defpipe = usb_realloc_pipe(usbdev, usbdev->defpipe, &epdesc);
+-    if (!usbdev->defpipe)
++    if (!usbdev->defpipe) {
++        usb_trace_record(cntl, USB_TRACE_SET_ADDRESS, usbdev->port, -4,
++                         usbdev->devaddr, 1);
+         return -1;
++    }
+     return 0;
+ }
+ 
+@@ -343,6 +439,14 @@ configure_usb_device(struct usbdevice_s *usbdev)
+     // Set the max packet size for endpoint 0 of this device.
+     struct usb_device_descriptor dinfo;
+     int ret = get_device_info8(usbdev->defpipe, &dinfo);
++    usb_trace_record(usbdev->hub->cntl, USB_TRACE_DESCRIPTOR8, usbdev->port,
++                     ret, ret ? 0 : (u32)dinfo.bLength
++                     | ((u32)dinfo.bDescriptorType << 8)
++                     | ((u32)dinfo.bcdUSB << 16),
++                     ret ? 0 : (u32)dinfo.bDeviceClass
++                     | ((u32)dinfo.bDeviceSubClass << 8)
++                     | ((u32)dinfo.bDeviceProtocol << 16)
++                     | ((u32)dinfo.bMaxPacketSize0 << 24));
+     if (ret)
+         return 0;
+     u16 maxpacket = dinfo.bMaxPacketSize0;
+@@ -362,7 +466,7 @@ configure_usb_device(struct usbdevice_s *usbdev)
+         return -1;
+ 
+     // Get configuration
+-    struct usb_config_descriptor *config = get_device_config(usbdev->defpipe);
++    struct usb_config_descriptor *config = get_device_config(usbdev);
+     if (!config)
+         return 0;
+ 
+@@ -390,6 +494,8 @@ configure_usb_device(struct usbdevice_s *usbdev)
+ 
+     // Set the configuration.
+     ret = set_configuration(usbdev->defpipe, config->bConfigurationValue);
++    usb_trace_record(usbdev->hub->cntl, USB_TRACE_SET_CONFIG, usbdev->port,
++                     ret, config->bConfigurationValue, 0);
+     if (ret)
+         goto fail;
+ 
+@@ -406,6 +512,10 @@ configure_usb_device(struct usbdevice_s *usbdev)
+             ret = usb_uas_setup(usbdev);
+     } else
+         ret = usb_hid_setup(usbdev);
++    usb_trace_record(usbdev->hub->cntl, USB_TRACE_DRIVER, usbdev->port, ret,
++                     ((u32)iface->bInterfaceClass << 16)
++                     | ((u32)iface->bInterfaceSubClass << 8)
++                     | iface->bInterfaceProtocol, iface->bInterfaceNumber);
+     if (ret)
+         goto fail;
+ 
+@@ -426,9 +536,12 @@ usb_hub_port_setup(void *data)
+     for (;;) {
+         // Detect if device present (and possibly start reset)
+         int ret = hub->op->detect(hub, port);
+-        if (ret > 0)
++        if (ret > 0) {
++            usb_trace_record(hub->cntl, USB_TRACE_DEVICE_DETECT, port, ret,
++                             0, 0);
+             // Device connected.
+             break;
++        }
+         if (ret < 0 || timer_check(hub->detectend))
+             // No device found.
+             goto done;
+@@ -440,6 +553,7 @@ usb_hub_port_setup(void *data)
+     // Reset port and determine device speed
+     mutex_lock(&hub->cntl->resetlock);
+     int ret = hub->op->reset(hub, port);
++    usb_trace_record(hub->cntl, USB_TRACE_DEVICE_RESET, port, ret, 0, 0);
+     if (ret < 0)
+         // Reset failed
+         goto resetfail;
+@@ -448,6 +562,7 @@ usb_hub_port_setup(void *data)
+     // Set address of port
+     ret = usb_set_address(usbdev);
+     if (ret) {
++        usb_trace_record(hub->cntl, USB_TRACE_DISCONNECT, port, ret, 1, 0);
+         hub->op->disconnect(hub, port);
+         goto resetfail;
+     }
+@@ -456,6 +571,8 @@ usb_hub_port_setup(void *data)
+     // Configure the device
+     int count = configure_usb_device(usbdev);
+     usb_free_pipe(usbdev, usbdev->defpipe);
++    if (!count)
++        usb_trace_record(hub->cntl, USB_TRACE_DISCONNECT, port, 0, 2, 0);
+     if (!count)
+         hub->op->disconnect(hub, port);
+     hub->devcount += count;
+@@ -503,10 +620,17 @@ usb_setup(void)
+     ASSERT32FLAT();
+     if (! CONFIG_USB)
+         return;
++    if (CONFIG_DEBUG_USB_TRACE)
++        UsbTraceCount = UsbTraceDropped = 0;
+     dprintf(3, "init usb\n");
+     usb_time_sigatt = romfile_loadint("etc/usb-time-sigatt", USB_TIME_SIGATT);
++    usb_trace_record(NULL, USB_TRACE_SETUP_BEGIN, USB_TRACE_PORT_NONE, 0,
++                     usb_time_sigatt, 0);
+     xhci_setup();
+     ehci_setup();
+     uhci_setup();
+     ohci_setup();
++    usb_trace_record(NULL, USB_TRACE_SETUP_END, USB_TRACE_PORT_NONE, 0,
++                     usb_time_sigatt, 0);
++    usb_trace_dump();
+ }
+diff --git a/src/hw/usb.h b/src/hw/usb.h
+index 887f2064..b4a886ba 100644
+--- a/src/hw/usb.h
++++ b/src/hw/usb.h
+@@ -73,6 +73,38 @@ struct usbhub_op_s {
+ 
+ #define USB_MAXADDR  127
+ 
++#define USB_TRACE_PORT_NONE 0xff
++
++enum usb_trace_event {
++    USB_TRACE_SETUP_BEGIN       = 0x01,
++    USB_TRACE_SETUP_END         = 0x02,
++    USB_TRACE_EHCI_CAPS         = 0x10,
++    USB_TRACE_EHCI_RESET_PRE    = 0x11,
++    USB_TRACE_EHCI_RESET_POST   = 0x12,
++    USB_TRACE_EHCI_RUN          = 0x13,
++    USB_TRACE_EHCI_PORT         = 0x14,
++    USB_TRACE_EHCI_CONNECT      = 0x15,
++    USB_TRACE_EHCI_RESET        = 0x16,
++    USB_TRACE_EHCI_OWNER        = 0x17,
++    USB_TRACE_UHCI_RESET_PRE    = 0x20,
++    USB_TRACE_UHCI_RESET_POST   = 0x21,
++    USB_TRACE_UHCI_RUN          = 0x22,
++    USB_TRACE_UHCI_PORT         = 0x23,
++    USB_TRACE_UHCI_CONNECT      = 0x24,
++    USB_TRACE_UHCI_RESET        = 0x25,
++    USB_TRACE_DEVICE_DETECT     = 0x30,
++    USB_TRACE_DEVICE_RESET      = 0x31,
++    USB_TRACE_SET_ADDRESS       = 0x32,
++    USB_TRACE_DESCRIPTOR8       = 0x33,
++    USB_TRACE_CONFIG_HEADER     = 0x34,
++    USB_TRACE_CONFIG_FULL       = 0x35,
++    USB_TRACE_SET_CONFIG        = 0x36,
++    USB_TRACE_DRIVER            = 0x37,
++    USB_TRACE_HID_PROTOCOL      = 0x38,
++    USB_TRACE_HID_PIPE          = 0x39,
++    USB_TRACE_DISCONNECT        = 0x3f,
++};
++
+ 
+ /****************************************************************
+  * usb structs and flags
+@@ -249,6 +281,8 @@ int usb_get_period(struct usbdevice_s *usbdev
+ int usb_xfer_time(struct usb_pipe *pipe, int datalen);
+ struct usb_endpoint_descriptor *usb_find_desc(struct usbdevice_s *usbdev
+                                               , int type, int dir);
++void usb_trace_record(struct usb_s *cntl, u8 event, u8 port, int result,
++                      u32 value_a, u32 value_b);
+ void usb_enumerate(struct usbhub_s *hub);
+ void usb_setup(void);
+ 

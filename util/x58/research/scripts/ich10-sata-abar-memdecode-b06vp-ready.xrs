@@ -1,0 +1,41 @@
+# Reversible ABAR placement and memory-decode proof after the independently
+# proven AHCI MAP, FD_SAD2, PCS and SCLKCG stages.  cfcff800 is 2-KiB aligned,
+# lies inside the audited c0000000..dfffffff PCI MMIO aperture, and was sampled
+# as open bus at offsets 00/04/0c immediately before this script.
+#
+# Only BAR5 and PCI_COMMAND.MEM are changed.  Bus mastering and I/O decode stay
+# clear.  The first and only ABAR access is GHC at +04, matching the historical
+# i82801jx requirement that GHC be accessed before other AHCI registers.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f418 l ffffffff 02000001
+assert mem fed1f420 b ff 00
+assert pci 001f0500 l ffffffff ffffffff
+
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0000
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff 00000000
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w c0ff 003f
+read pci 001f0292 w
+assert pci 001f0294 l ffffffff 00000193
+assert mem cfcff800 l ffffffff ffffffff
+assert mem cfcff804 l ffffffff ffffffff
+assert mem cfcff80c l ffffffff ffffffff
+
+write pci 001f0224 l cfcff800 rev
+assert pci 001f0224 l ffffffff cfcff800
+mask pci 001f0204 w 0002 0002 rev
+assert pci 001f0204 w ffff 0002
+read mem cfcff804 l
+
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0290 w ffff 0060
+assert pci 001f0294 l ffffffff 00000193
+assert pci 001f0500 l ffffffff ffffffff
+assert mem fed1f418 l ffffffff 02000001
+assert mem fed1f420 b ff 00
+assert pci 001f0000 l ffffffff 3a168086

@@ -1,0 +1,31 @@
+# Read-only AHCI global-register census after isolated GHC.AE enable.
+# No register is written and PCI bus mastering must remain disabled.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0500 l ffffffff ffffffff
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0002
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f0224 l ffffffff cfcff800
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w c0ff 003f
+assert pci 001f0294 l ffffffff 00000193
+assert mem cfcff804 l ffffffff 80000000
+
+read mem cfcff800 l
+read mem cfcff804 l
+read mem cfcff808 l
+read mem cfcff80c l
+read mem cfcff810 l
+read mem cfcff814 l
+read mem cfcff818 l
+read mem cfcff81c l
+read mem cfcff820 l
+read mem cfcff824 l
+read mem cfcff828 l
+read mem cfcff8a0 l
+
+assert pci 001f0204 w ffff 0002
+assert pci 001f0224 l ffffffff cfcff800
+assert mem cfcff804 l ffffffff 80000000
+assert pci 001f0500 l ffffffff ffffffff

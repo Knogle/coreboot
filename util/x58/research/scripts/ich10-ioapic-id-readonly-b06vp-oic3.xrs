@@ -1,0 +1,21 @@
+# Read IOAPIC ID, version and arbitration registers through IOREGSEL/IOWIN.
+# Only the reversible selector is written; no redirection entry is selected
+# for writing and no interrupt-routing state changes.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fed1f404 l ffffffff 00000000
+assert mem fec00000 l ffffffff 00000000
+
+write mem fec00000 l 00000000 rev
+read mem fec00010 l
+write mem fec00000 l 00000001 rev
+read mem fec00010 l
+write mem fec00000 l 00000002 rev
+read mem fec00010 l
+write mem fec00000 l 00000000 rev
+
+assert mem fec00000 l ffffffff 00000000
+assert mem fed1f1ff b ff 03
+assert pci 001f0000 l ffffffff 3a168086

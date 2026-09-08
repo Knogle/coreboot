@@ -1,0 +1,45 @@
+# ICH10R six-field baseline experiment for the exact recovered B06VP CAR state.
+#
+# Evidence:
+# - Intel ICH10 Datasheet 319973-003, sections 10.1.77--10.1.83;
+# - upstream coreboot i82801jx_early_settings() order;
+# - live B06VP read-only census on 2026-09-06.
+#
+# All identity, decode, lock and complete PRE values are asserted before the
+# first write. A mixed or previously programmed tuple therefore stops without
+# a mutation. All six writes are conservatively non-reversible (`nr`) even
+# though Intel documents the selected fields as R/W. Do not attempt ROMMON
+# rollback. Run with `keep`, archive the full trace, then discard only the
+# transaction record. Recovery from a missing POST is a one-second AC cycle.
+
+# Exact target identity, enabled RCBA and open function-disable lock.
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f420 b ff 00
+
+# Complete pre-state tuple; all gates precede every mutation.
+assert mem fed1f430 l ffffffff 00000000
+assert mem fed1f418 l ffffffff 00000000
+assert mem fed1f50c l ffffffff 00000020
+assert mem fed1e034 l ffffffff b2b477cc
+assert mem fed1cf20 l ffffffff b2b477cc
+assert mem fed1f52c l ffffffff 0008c008
+
+# Preserve the exact upstream order: CIR8, FD, CIR9, CIR7, CIR13, CIR10.
+mask mem fed1f430 l 00000003 00000002 nr
+assert mem fed1f430 l ffffffff 00000002
+mask mem fed1f418 l 00000000 00000001 nr
+assert mem fed1f418 l ffffffff 00000001
+mask mem fed1f50c l 0c000000 08000000 nr
+assert mem fed1f50c l ffffffff 08000020
+mask mem fed1e034 l 000f0000 00050000 nr
+assert mem fed1e034 l ffffffff b2b577cc
+mask mem fed1cf20 l 000f0000 00050000 nr
+assert mem fed1cf20 l ffffffff b2b577cc
+mask mem fed1f52c l 00000000 00030000 nr
+assert mem fed1f52c l ffffffff 000bc008
+
+# Re-prove that no decode/lock identity changed as a side effect.
+assert mem fed1f420 b ff 00
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0000 l ffffffff 3a168086

@@ -1,0 +1,4 @@
+# B06V1 preflight test. Auto mode must reject this complete table before the
+# non-reversible 16550 SCR write is attempted, leaving SCR and TXN state intact.
+
+write io 03ff b 5a nr

@@ -1,0 +1,10 @@
+# RETIRED AND INTENTIONALLY EMPTY — DO NOT RUN.
+#
+# The original B06V8 table assumed that selectors 0x80/0x81/0x82/0x88/0x89
+# at ports 0x72/0x73 addressed the upper RTC bank.  Live hardware inspection
+# proved ICH10 RCBA+0x3400 bit 2 was clear, so 0x72/0x73 aliased 0x70/0x71.
+# The table therefore wrote standard RTC clock/calendar registers.
+#
+# This file contains no operations so x58_rommon_script.py rejects it.  B06V9
+# no longer derives CSI state from RTC data and must be used for the corrected
+# deterministic experiment.

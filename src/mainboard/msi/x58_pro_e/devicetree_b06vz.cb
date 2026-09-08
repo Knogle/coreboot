@@ -1,0 +1,25 @@
+chip mainboard/msi/x58_pro_e
+	device cpu_cluster 0 on end
+	device domain 0 on
+		device pci 03.0 mandatory ops b06vn_root_port_ops
+			device pci 00.0 mandatory ops b06vn_endpoint_ops end # AMD VGA, exact device ID discovered at runtime
+		end
+
+		device pci 1a.0 mandatory ops b06vn_endpoint_ops end # UHCI 4
+		device pci 1a.1 mandatory ops b06vn_endpoint_ops end # UHCI 5
+		device pci 1a.2 mandatory ops b06vn_endpoint_ops end # UHCI 6
+		device pci 1a.7 mandatory ops b06vn_endpoint_ops end # EHCI 2
+
+		device pci 1c.4 mandatory ops b06vn_root_port_ops
+			device pci 00.0 mandatory ops b06vn_endpoint_ops end # RTL8168
+		end
+
+		device pci 1d.0 mandatory ops b06vn_endpoint_ops end # UHCI 1
+		device pci 1d.1 mandatory ops b06vn_endpoint_ops end # UHCI 2
+		device pci 1d.2 mandatory ops b06vn_endpoint_ops end # UHCI 3
+		device pci 1d.7 mandatory ops b06vn_endpoint_ops end # EHCI 1
+
+		# B06VZ keeps B06VY's topology and adds only domain resource metadata.
+		device pci 1f.2 mandatory ops b06vn_endpoint_ops end # SATA AHCI, all six ports
+	end
+end

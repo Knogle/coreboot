@@ -273,7 +273,8 @@ enum acpi_resource_subtype {
 #define ADDR_SPACE_GENERAL_FLAG_MIN_NOT_FIXED	0x0
 #define ADDR_SPACE_GENERAL_FLAG_DEC_SUB		(0x1 << 1)
 #define ADDR_SPACE_GENERAL_FLAG_DEC_POS		0x0
-#define ADDR_SPACE_GENERAL_FLAG_CONSUMER	0x10
+/* Consumer is bit 0, never reserved bit 4 (ACPI 2.0 Table 6-26). */
+#define ADDR_SPACE_GENERAL_FLAG_CONSUMER	(0x1 << 0)
 #define ADDR_SPACE_GENERAL_FLAG_PRODUCER	0x0
 
 struct opregion {

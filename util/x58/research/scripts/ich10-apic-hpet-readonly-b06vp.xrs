@@ -1,0 +1,25 @@
+# Read-only interrupt/timer decode census.  No IOAPIC selector, redirection,
+# HPET configuration, interrupt, SCI, SMI or timer register is written.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+read mem fed1f1ff b
+read mem fed1f404 l
+
+read mem fec00000 l
+read mem fec00010 l
+read mem fed00000 l
+read mem fed00004 l
+read mem fed00010 l
+read mem fed00020 l
+
+read msr 0000001b q
+read mem fee00020 l
+read mem fee00030 l
+read mem fee000f0 l
+
+read pci 00030150 l
+read pci 00030154 l
+read mem e0000000 l
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0000 l ffffffff 3a168086

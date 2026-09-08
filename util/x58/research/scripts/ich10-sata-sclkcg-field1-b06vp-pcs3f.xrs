@@ -1,0 +1,40 @@
+# Isolated ICH10R SATA SCLKCG Field 1 proof after MAP=0060, FD_SAD2 and
+# PCS[5:0]=3f were each separately proven.  Intel's required Field 1 value is
+# 0x193 at configuration offset 0x94 bits 8:0.  This script changes only those
+# bits and rejects any non-zero reserved or port-clock-disable prestate.
+#
+# The mutation is classified non-reversible because enabling clock policy may
+# cause external PHY activity.  It does not touch PCI decode/BARs, AHCI MMIO,
+# PCS, SIDX/SDAT, reset or storage commands.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f418 l ffffffff 02000001
+assert mem fed1f420 b ff 00
+assert pci 001f0500 l ffffffff ffffffff
+
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0000
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff 00000000
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w c0ff 003f
+read pci 001f0292 w
+assert pci 001f0294 l ffffffff 00000000
+
+mask pci 001f0294 l 000001ff 00000193 nr
+
+assert pci 001f0294 l ffffffff 00000193
+read pci 001f0292 w
+assert pci 001f0292 w c0ff 003f
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0000
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff 00000000
+assert pci 001f0290 w ffff 0060
+assert pci 001f0500 l ffffffff ffffffff
+assert mem fed1f418 l ffffffff 02000001
+assert mem fed1f420 b ff 00
+assert pci 001f0000 l ffffffff 3a168086

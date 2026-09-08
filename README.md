@@ -1,6 +1,35 @@
 coreboot README
 ===============
 
+MSI X58 Pro-E research branch
+----------------------------
+
+This fork's `coreboot-x58` branch contains the experimental MSI X58 Pro-E
+port and its public research tools. Start with the
+[X58 mainboard guide](Documentation/mainboard/msi/x58_pro_e.md) for status,
+limitations, build prerequisites and external-flash recovery. The tested
+historical path is vendor-assisted DDR3/QPI initialization followed by
+coreboot and SeaBIOS, not a native open memory controller implementation or
+a completed EDK2/UEFI port. The new SPD-compatibility source change has no
+successor firmware/hardware result yet.
+
+```sh
+git clone --branch coreboot-x58 https://github.com/Knogle/coreboot.git
+cd coreboot
+```
+
+The branch retains the previously exercised upstream base
+`fe3e08197177d3ce6ef6ea9ef238069e5b1d33a2`; it is not a fresh rebase onto
+upstream `main`. GitHub pull requests for this downstream work should target
+**Knogle/coreboot:coreboot-x58**. The upstream contribution instructions below
+describe the separate upstream coreboot project, which uses Gerrit.
+
+No proprietary firmware images, extracted vendor modules, private hardware
+captures, machine credentials or flash-ready images are distributed here.
+
+Upstream coreboot overview
+-------------------------
+
 coreboot is a Free Software project aimed at replacing the proprietary
 firmware (BIOS/UEFI) found in most computers. coreboot performs the
 required hardware initialization to configure the system, then passes

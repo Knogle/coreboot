@@ -1,0 +1,38 @@
+# Isolate the vendor-observed Ports Implemented policy write.  MSI's runtime
+# code writes the PI low byte to 3f after selecting AHCI and resolving BAR5.
+# No port command, reset, interrupt, bus-master or DMA register is written.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0500 l ffffffff ffffffff
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0002
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f0224 l ffffffff cfcff800
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w c0ff 003f
+assert pci 001f0294 l ffffffff 00000193
+assert mem cfcff800 l ffffffff ff22ffc5
+assert mem cfcff804 l ffffffff 80000000
+assert mem cfcff80c l ffffffff 00000000
+
+write mem cfcff80c b 3f nr
+
+assert mem cfcff80c l ffffffff 0000003f
+read mem cfcff918 l
+read mem cfcff928 l
+read mem cfcff998 l
+read mem cfcff9a8 l
+read mem cfcffa18 l
+read mem cfcffa28 l
+read mem cfcffa98 l
+read mem cfcffaa8 l
+read mem cfcffb18 l
+read mem cfcffb28 l
+read mem cfcffb98 l
+read mem cfcffba8 l
+
+assert pci 001f0204 w ffff 0002
+assert pci 001f0224 l ffffffff cfcff800
+assert pci 001f0500 l ffffffff ffffffff
+assert mem cfcff804 l ffffffff 80000000
+assert pci 001f0292 w c0ff 003f

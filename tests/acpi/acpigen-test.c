@@ -204,6 +204,58 @@ static void test_acpigen_scope_with_contents(void **state)
 	assert_int_equal(package_length, block_length);
 }
 
+static void test_acpigen_consumer_mmio32(void **state)
+{
+	char *buffer = *state;
+	/* ACPI DWORD descriptor, matching the observed X58 CTBL allocation. */
+	const u8 expected[] = {
+		0x87, 0x17, 0x00, 0x00, 0x0d, 0x02,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0xa0, 0x69, 0x01,
+		0xff, 0x1f, 0x6a, 0x01,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x80, 0x00, 0x00,
+	};
+
+	acpigen_set_current(buffer);
+	acpigen_resource_consumer_mmio(0x0169a000, 0x016a1fff,
+		MEM_RSRC_FLAG_MEM_READ_ONLY | MEM_RSRC_FLAG_MEM_ATTR_CACHE);
+	assert_int_equal(acpigen_get_current() - buffer, sizeof(expected));
+	assert_memory_equal(buffer, expected, sizeof(expected));
+}
+
+static void test_acpigen_consumer_mmio64(void **state)
+{
+	char *buffer = *state;
+	const u8 expected[46] = {
+		[0] = 0x8a, [1] = 0x2b, [4] = 0x0d, [5] = 0x02,
+		/* Minimum = 100000000, maximum = 100007fff, length = 8000. */
+		[18] = 0x01, [22] = 0xff, [23] = 0x7f, [26] = 0x01,
+		[39] = 0x80,
+	};
+
+	acpigen_set_current(buffer);
+	acpigen_resource_consumer_mmio(0x100000000ULL, 0x100007fffULL,
+		MEM_RSRC_FLAG_MEM_READ_ONLY | MEM_RSRC_FLAG_MEM_ATTR_CACHE);
+	assert_int_equal(acpigen_get_current() - buffer, sizeof(expected));
+	assert_memory_equal(buffer, expected, sizeof(expected));
+}
+
+static void test_acpigen_producer_mmio_flags(void **state)
+{
+	char *buffer = *state;
+	const u64 bases[] = { 0xc0000000ULL, 0x100000000ULL };
+
+	for (size_t i = 0; i < ARRAY_SIZE(bases); i++) {
+		acpigen_set_current(buffer);
+		acpigen_resource_producer_mmio(bases[i], bases[i] + 0x7fff,
+			MEM_RSRC_FLAG_MEM_READ_WRITE);
+		assert_int_equal((u8)buffer[0], i ? 0x8a : 0x87);
+		/* Producer bit remains zero; reserved general-flag bits stay clear. */
+		assert_int_equal((u8)buffer[4], 0x0c);
+	}
+}
+
 int main(void)
 {
 	const struct CMUnitTest tests[] = {
@@ -214,6 +266,12 @@ int main(void)
 		cmocka_unit_test_setup_teardown(test_acpigen_write_package, setup_acpigen,
 						teardown_acpigen),
 		cmocka_unit_test_setup_teardown(test_acpigen_scope_with_contents, setup_acpigen,
+						teardown_acpigen),
+		cmocka_unit_test_setup_teardown(test_acpigen_consumer_mmio32, setup_acpigen,
+						teardown_acpigen),
+		cmocka_unit_test_setup_teardown(test_acpigen_consumer_mmio64, setup_acpigen,
+						teardown_acpigen),
+		cmocka_unit_test_setup_teardown(test_acpigen_producer_mmio_flags, setup_acpigen,
 						teardown_acpigen),
 	};
 

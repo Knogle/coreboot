@@ -1,0 +1,5 @@
+# Read/write-free timing control for the B06VP ROMMON script backend.  This
+# uses the same delay count as the GPIO56 experiment so that host-side timing
+# can distinguish an intrinsically slow delay from a GPIO-triggered hang.
+
+delay 01000000

@@ -1,0 +1,22 @@
+# Isolated ICH10R LPC keyboard-controller decode probe.
+#
+# Hypothesis: the active Fintek KBC is invisible only because LPC_EN bit 10
+# does not decode ports 0x60/0x64.  The sole reversible mutation changes the
+# complete known B06VP value 0x2001 to 0x2401.  No command is written to the
+# KBC itself.  Archive the trace and explicitly roll the transaction back.
+# If serial is lost, recover with the defined one-second AC power cycle.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0080 w ffff 0010
+assert pci 001f0082 w ffff 2001
+assert io 00000064 b ff ff
+
+mask pci 001f0082 w 0400 0400 rev
+assert pci 001f0082 w ffff 2401
+
+# A decoded 8042 status register should no longer float at 0xff.
+read io 00000064 b
+read io 00000064 b
+read io 00000064 b
+
+assert pci 001f0000 l ffffffff 3a168086

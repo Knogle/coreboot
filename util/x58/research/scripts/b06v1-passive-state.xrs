@@ -1,0 +1,10 @@
+# Passive B06V1 example for the exact E5645 Slow-QPI/ratio-6 lab state.
+# PCI targets pack bus, device, function and register as BB DD FF RR.
+
+read pci ff020180 l
+assert pci ff020180 l ffffffff 030f0f03
+read pci ff030450 l
+assert pci ff030450 l ffffffff 0a000006
+read pci ff030454 l
+assert pci ff030454 l ffffffff 00000006
+delay 00000100

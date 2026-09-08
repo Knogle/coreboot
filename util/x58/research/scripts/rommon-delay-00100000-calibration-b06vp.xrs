@@ -1,0 +1,3 @@
+# Read/write-free timing control at 16 times the short calibration count.
+
+delay 00100000

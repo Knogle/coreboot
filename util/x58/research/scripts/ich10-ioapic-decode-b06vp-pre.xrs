@@ -1,0 +1,19 @@
+# Isolate ICH10 OIC decode enable.  This does not write IOREGSEL/IOWIN,
+# redirection entries, vectors, masks, PIRQ, PIC, LAPIC, SCI or SMI state.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f420 b ff 00
+assert mem fed1f1ff b ff 00
+assert mem fed1f404 l ffffffff 00000000
+assert mem fec00000 l ffffffff ffffffff
+assert mem fec00010 l ffffffff ffffffff
+
+write mem fed1f1ff b 03 nr
+
+assert mem fed1f1ff b ff 03
+read mem fec00000 l
+read mem fec00010 l
+assert mem fed1f404 l ffffffff 00000000
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0000 l ffffffff 3a168086

@@ -1,0 +1,22 @@
+raw_offset,stored_size,expanded_size,kind,identifier,evidence,notes
+0x0A0420,94216,94216,microcode,P6 microcode container,verified-static,"contains CPUID 106a0/106a1/106a2/106a4/106a5 and 206c0/206c1/206c2 updates"
+0x0B743C,2080,2080,AMI module,Interface,verified-static,
+0x0B7C70,,,AMI structure,ROM-ID,verified-static,
+0x0B7C94,48604,80896,PCI option ROM,8086:2822,verified-static,"Intel RAID; not required for initial AHCI bring-up"
+0x0C3A84,38488,65536,PCI option ROM,10ec:8168,verified-static,"Realtek PXE; not required"
+0x0CD0F0,1810,25686,AMI module,Small logo,verified-static,
+0x0CD818,936,2560,AMI module,DMI,verified-static,
+0x0CDBD4,839,1360,AMI module,PXE,verified-static,
+0x0D001C,212354,470008,AMI compressed module,SLAB,verified-static,"decomposes into POST/DIM/SMI/ACPI and related legacy segments"
+0x0986EC,23062,37905,AMI module,Setup,verified-static,"contains F71882F setup text"
+0x09E118,6141,16965,AMI module,ADM display,verified-static,
+0x09F92C,1435,4868,AMI module,ADM font,verified-static,
+0x09FED4,160,160,AMI module,Image info,verified-static,
+0x103DB4,121570,124545,AMI module,OEM Logo,verified-static,
+0x1218AC,120969,123905,AMI module,ACPI Table,verified-static,
+0x13F14C,17762,32768,PCI option ROM,197b:2363,verified-static,"JMicron storage; not required for first boot"
+0x1436C4,16913,42089,AMI module,Multilanguage,verified-static,
+0x1478EC,9116,28290,AMI module,ACPI AML,verified-static,
+0x3C0000,262144,262144,bootblock,AMIEBBLK,verified-static,"mapped at physical 0xfffc0000"
+0x3C1DC0,,0x18700,PE32 DLL,MINITDLL,verified-static,"image base 0xfffc1dc0; entry 0xfffc2000; no imports or exports"
+0x3E6DE0,,0x75e0,PE32 DLL,CSI_INITDLL,verified-static,"image base 0xfffe6de0; entry 0xfffe7000; no imports or exports"

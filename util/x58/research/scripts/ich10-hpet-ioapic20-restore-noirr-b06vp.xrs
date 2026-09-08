@@ -1,0 +1,38 @@
+# Failure-path restore after Stage B reached its mandatory safe shutdown but
+# observed no vector 0x51 in LAPIC IRR.  This table requires that exact
+# negative result, restores the same-session entry-20 pair and all directly
+# changed LAPIC/HPET fields, and leaves only the already proven HPTC decode.
+# Perform the documented exact one-second AC cycle immediately afterwards.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fed1f404 l ffffffff 00000080
+assert mem fed00010 l ffffffff 00000000
+assert mem fed00100 l ffffffff 00002830
+assert mem fee000f0 l ffffffff 0000010f
+assert mem fee00220 l ffffffff 00000000
+assert mem fec00000 l ffffffff 00000038
+assert mem fec00010 l ffffffff 00010051
+write mem fec00000 l 00000039 nr
+assert mem fec00010 l ffffffff 00000000
+write mem fec00010 l 10000000 nr
+assert mem fec00010 l ffffffff 10000000
+write mem fec00000 l 00000038 nr
+write mem fec00010 l 00010197 nr
+assert mem fec00010 l ffffffff 00010197
+write mem fec00000 l 00000000 nr
+assert mem fec00000 l ffffffff 00000000
+write mem fee000f0 l 000000ff nr
+assert mem fee000f0 l ffffffff 000000ff
+write mem fed00100 l 00000000 nr
+assert mem fed00100 l ffffffff 00000030
+write mem fed00108 l ffffffff nr
+write mem fed0010c l ffffffff nr
+assert mem fed00108 l ffffffff ffffffff
+assert mem fed0010c l ffffffff ffffffff
+write mem fed000f0 l 00000000 nr
+write mem fed000f4 l 00000000 nr
+assert mem fed000f0 l ffffffff 00000000
+assert mem fed000f4 l ffffffff 00000000
+assert mem fed00010 l ffffffff 00000000

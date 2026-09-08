@@ -1,0 +1,34 @@
+# Temporarily decode the three D26 UHCI companions in their previously proven
+# coreboot I/O windows.  Controllers remain halted; only BAR4 and PCI_COMMAND
+# change, both reversibly.  No USB command or port register is written.
+
+assert pci 001a0000 l ffffffff 3a378086
+assert pci 001a0100 l ffffffff 3a388086
+assert pci 001a0200 l ffffffff 3a398086
+assert pci 001a0004 w ffff 0000
+assert pci 001a0104 w ffff 0000
+assert pci 001a0204 w ffff 0000
+assert pci 001a0020 l ffffffff 00000001
+assert pci 001a0120 l ffffffff 00000001
+assert pci 001a0220 l ffffffff 00000001
+write pci 001a0020 l 0000dfe1 rev
+write pci 001a0004 w 00000001 rev
+write pci 001a0120 l 0000dfc1 rev
+write pci 001a0104 w 00000001 rev
+write pci 001a0220 l 0000dfa1 rev
+write pci 001a0204 w 00000001 rev
+read io 0000dfe0 w
+read io 0000dfe2 w
+read io 0000dff0 w
+read io 0000dff2 w
+read io 0000dfc0 w
+read io 0000dfc2 w
+read io 0000dfd0 w
+read io 0000dfd2 w
+read io 0000dfa0 w
+read io 0000dfa2 w
+read io 0000dfb0 w
+read io 0000dfb2 w
+assert pci 001a0000 l ffffffff 3a378086
+assert pci 001a0100 l ffffffff 3a388086
+assert pci 001a0200 l ffffffff 3a398086

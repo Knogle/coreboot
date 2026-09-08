@@ -1,0 +1,24 @@
+# Read-only census for a reset-retained B06WD CAR ROMMON.  The PCI decode
+# assertions distinguish this state from the fresh reset-state B06VP scripts.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert pci 001f0040 l ffffffff 00000501
+assert pci 001f0044 b ff 80
+assert pci 001f0048 l ffffffff 00000581
+assert pci 001f004c b ff 10
+read mem fed1f418 l
+read mem fed1f41c l
+read mem fed1f524 l
+read mem fed1f5f0 l
+read io 0000053c w
+read io 00000580 l
+read io 00000584 l
+read io 00000588 l
+read io 0000058c l
+read io 00000590 l
+read io 000005b0 l
+read io 000005b4 l
+read io 000005b8 l
+read io 00000500 w
+read io 00000504 l

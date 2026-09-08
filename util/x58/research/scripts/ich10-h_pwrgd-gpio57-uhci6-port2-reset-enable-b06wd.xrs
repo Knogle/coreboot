@@ -1,0 +1,40 @@
+# Invasive CAR-only companion for the full-speed attachment observed on
+# D26:F2 UHCI6 port 2.  It applies the already-proven GPIO57/H_PWRGD sequence,
+# then reproduces SeaBIOS's UHCI root-port reset/enable writes.
+#
+# PORTSC writes have W1C and physical bus-reset side effects and are therefore
+# non-reversible.  A one-second AC cycle is mandatory immediately afterward.
+
+assert pci 001a0200 l ffffffff 3a398086
+assert pci 001a0204 w ffff 0000
+assert pci 001a0220 l ffffffff 00000001
+assert io 000005b0 l ffffffff 030300ff
+assert io 000005b7 b ff 0f
+assert io 000005bb b ff 15
+write pci 001a0220 l 0000dfa1 rev
+write pci 001a0204 w 00000001 rev
+# Ignore a sticky CSC caused by earlier power transitions; gate live OCA/CCS.
+assert io 0000dfb2 w 0401 0400
+mask io 000005b7 b 02 00 rev
+assert io 000005b7 b 02 00
+delay 00010000
+mask io 000005bb b 00 02 rev
+assert io 000005bb b 02 02
+delay 00010000
+assert io 0000dfb2 w 0401 0001
+read io 0000dfb2 w
+write io 0000dfb2 w 0200 nr
+# The ROMMON delay is an uncalibrated PAUSE count.  0x01000000 exceeded the
+# 120-second capture budget on this CPU; 0x00100000 remains deliberately much
+# longer than the surrounding 0x00010000 settles while keeping one trace bounded.
+delay 00100000
+read io 0000dfb2 w
+write io 0000dfb2 w 0000 nr
+delay 00010000
+read io 0000dfb2 w
+assert io 0000dfb2 w 0401 0001
+write io 0000dfb2 w 0004 nr
+delay 00010000
+read io 0000dfb2 w
+assert io 0000dfb2 w 0405 0005
+read io 0000dfb0 w

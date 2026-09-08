@@ -1,0 +1,41 @@
+# Invasive hardware hypothesis: the target revision may require GPIO56/
+# USB_MODE low rather than the observed high level to enable the six common
+# USB power switches.  Use only in a reset-retained B06WD CAR ROMMON whose
+# complete late controller/GPIO tuple matches these assertions.
+#
+# The only mutations are byte-wide GPIO56 direction and output-level masks.
+# Both are reversible; rollback order restores high before returning the pin
+# to input.  A one-second AC cycle is the recovery if UART or rollback fails.
+
+assert pci 001a0700 l ffffffff 3a3c8086
+assert pci 001a0704 w ffff 0002
+assert pci 001a0710 l fffff000 cfcfe000
+assert pci 001a0754 w 0003 0000
+assert pci 001a07fc l ffffffff 2002170a
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0048 l ffffffff 00000581
+assert pci 001f004c b ff 10
+assert io 000005b0 l ffffffff 030300ff
+assert io 000005b7 b ff 0f
+assert io 000005bb b ff 15
+assert mem cfcfe000 b ff 20
+assert mem cfcfe004 l 0000000f 00000006
+assert mem cfcfe020 l ffffffff 00080000
+assert mem cfcfe060 l ffffffff 00000000
+assert mem cfcfe064 l ffffffff 00003030
+assert mem cfcfe068 l ffffffff 00003030
+assert mem cfcfe06c l ffffffff 00003030
+assert mem cfcfe070 l ffffffff 00003030
+assert mem cfcfe074 l ffffffff 00003030
+assert mem cfcfe078 l ffffffff 00003030
+mask io 000005b7 b 01 00 rev
+assert io 000005b7 b ff 0e
+mask io 000005bb b 01 00 rev
+assert io 000005bb b ff 14
+delay 00010000
+read mem cfcfe064 l
+read mem cfcfe068 l
+read mem cfcfe06c l
+read mem cfcfe070 l
+read mem cfcfe074 l
+read mem cfcfe078 l

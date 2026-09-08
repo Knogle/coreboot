@@ -1,0 +1,21 @@
+# B06VF is a serial/CBMEM SeaBIOS entry probe, not a boot-capable payload.
+# Keep allocations in the independently tested low-memory window and disable
+# state-changing support for devices without assigned coreboot resources.
+# CONFIG_THREADS is not set
+# CONFIG_RELOCATE_INIT is not set
+# CONFIG_MALLOC_UPPERMEMORY is not set
+# CONFIG_DRIVES is not set
+# CONFIG_USB is not set
+# CONFIG_SERIAL is not set
+# CONFIG_SERCON is not set
+# CONFIG_LPT is not set
+# CONFIG_PMTIMER is not set
+# CONFIG_PCIBIOS is not set
+# CONFIG_APMBIOS is not set
+# CONFIG_PNPBIOS is not set
+# CONFIG_OPTIONROMS is not set
+# CONFIG_BOOT is not set
+# CONFIG_KEYBOARD is not set
+# CONFIG_MOUSE is not set
+# CONFIG_S3_RESUME is not set
+# CONFIG_VGAHOOKS is not set

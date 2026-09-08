@@ -1,0 +1,39 @@
+# Read IOAPIC redirection entries 18..23 after the proved OIC=03 decode.
+# Only IOREGSEL is written and every selector write is reversible.  IOWIN,
+# redirection data, PIC, LAPIC, PIRQ, SCI and SMI state remain untouched.
+# Run in CAR/ROMMON with CPU interrupts disabled; archive the trace.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fec00000 l ffffffff 00000000
+
+write mem fec00000 l 00000034 rev
+read mem fec00010 l
+write mem fec00000 l 00000035 rev
+read mem fec00010 l
+write mem fec00000 l 00000036 rev
+read mem fec00010 l
+write mem fec00000 l 00000037 rev
+read mem fec00010 l
+write mem fec00000 l 00000038 rev
+read mem fec00010 l
+write mem fec00000 l 00000039 rev
+read mem fec00010 l
+write mem fec00000 l 0000003a rev
+read mem fec00010 l
+write mem fec00000 l 0000003b rev
+read mem fec00010 l
+write mem fec00000 l 0000003c rev
+read mem fec00010 l
+write mem fec00000 l 0000003d rev
+read mem fec00010 l
+write mem fec00000 l 0000003e rev
+read mem fec00010 l
+write mem fec00000 l 0000003f rev
+read mem fec00010 l
+
+write mem fec00000 l 00000000 rev
+assert mem fec00000 l ffffffff 00000000
+assert mem fed1f1ff b ff 03
+assert pci 001f00f0 l ffffffff fed1c001

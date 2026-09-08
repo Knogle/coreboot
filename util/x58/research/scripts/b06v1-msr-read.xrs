@@ -1,0 +1,4 @@
+# B06V1 read-only 64-bit MSR-path test.  IA32_BIOS_SIGN_ID (0x8b) is already
+# read by the boot path and is safe to sample here; no MSR write is attempted.
+
+read msr 0000008b q

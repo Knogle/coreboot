@@ -1,0 +1,8 @@
+# ICH10R D31:F0 GEN_PMCON_3 byte at 0xa4.
+# Clear only SLEEP_AFTER_POWER_FAIL bit 0: 0 selects S0 after G3.
+# The register-script mutation is reversible, but the intended run mode is
+# `keep`; inspect and discard the transaction only after exact read-back.
+
+read pci 001f00a4 b
+mask pci 001f00a4 b 01 00 rev
+assert pci 001f00a4 b 01 00

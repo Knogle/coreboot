@@ -1,0 +1,40 @@
+# Invasive CAR-only confirmation that the newly powered D26:F0 UHCI4 port 1
+# can complete the same root-port reset/enable control sequence used by
+# SeaBIOS.  The connected device itself is not enumerated and no UHCI DMA
+# schedule is started.
+#
+# PORTSC writes have W1C and physical bus-reset side effects and are therefore
+# explicitly non-reversible.  A one-second AC cycle is mandatory immediately
+# after this isolated experiment.
+
+assert pci 001a0000 l ffffffff 3a378086
+assert pci 001a0004 w ffff 0000
+assert pci 001a0020 l ffffffff 00000001
+assert io 000005b0 l ffffffff 030300ff
+assert io 000005b7 b ff 0f
+assert io 000005bb b ff 15
+write pci 001a0020 l 0000dfe1 rev
+write pci 001a0004 w 00000001 rev
+# CSC is sticky across the preceding physical power transition.  Gate only
+# the live precondition: OCA active while the unpowered device is disconnected.
+assert io 0000dff0 w 0401 0400
+mask io 000005b7 b 02 00 rev
+assert io 000005b7 b 02 00
+delay 00010000
+mask io 000005bb b 00 02 rev
+assert io 000005bb b 02 02
+delay 00010000
+assert io 0000dff0 w 0401 0001
+read io 0000dff0 w
+write io 0000dff0 w 0200 nr
+delay 01000000
+read io 0000dff0 w
+write io 0000dff0 w 0000 nr
+delay 00010000
+read io 0000dff0 w
+assert io 0000dff0 w 0401 0001
+write io 0000dff0 w 0004 nr
+delay 00010000
+read io 0000dff0 w
+assert io 0000dff0 w 0405 0005
+read io 0000dff2 w

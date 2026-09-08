@@ -1,0 +1,13 @@
+# B06VF live preflight C: fixed SeaBIOS 1.17.0 SELF load base and the
+# aligned dword containing entry 0x000fecd6, with reversible PAM setup.
+write pci ff000140 b 30 rev
+write pci ff000141 b 33 rev
+write pci ff000142 b 33 rev
+write pci ff000143 b 33 rev
+write pci ff000144 b 33 rev
+write pci ff000145 b 33 rev
+write pci ff000146 b 33 rev
+write mem 000f8800 l 5aa5f801 rev
+write mem 000fecd4 l 5aa5fe02 rev
+assert mem 000f8800 l ffffffff 5aa5f801
+assert mem 000fecd4 l ffffffff 5aa5fe02

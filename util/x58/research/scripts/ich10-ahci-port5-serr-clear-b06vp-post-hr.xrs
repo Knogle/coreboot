@@ -1,0 +1,35 @@
+# Isolate the SeaBIOS-style PxSERR W1C clear after the proven bounded HBA
+# reset.  DIAG.X is set in the exact starting value.  PCI bus mastering and
+# PxCMD.ST/FRE/SUD remain clear, so this cannot issue a storage command or DMA.
+
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0002
+assert pci 001f0224 l ffffffff cfcff800
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w c0ff 003f
+assert pci 001f0294 l ffffffff 00000193
+assert pci 001f0500 l ffffffff ffffffff
+assert mem cfcff804 l ffffffff 00000000
+assert mem cfcff80c l ffffffff 0000003f
+assert mem cfcffb98 l ffffffff 00002004
+assert mem cfcffba0 l ffffffff 00000080
+assert mem cfcffba4 l ffffffff 00000101
+assert mem cfcffba8 l ffffffff 00000123
+assert mem cfcffbac l ffffffff 00000000
+assert mem cfcffbb0 l ffffffff 04050000
+
+write mem cfcffbb0 l 04050000 nr
+
+read mem cfcffbb0 l
+read mem cfcffba0 l
+read mem cfcffba4 l
+read mem cfcffba8 l
+delay 000186a0
+read mem cfcffbb0 l
+read mem cfcffba0 l
+read mem cfcffba4 l
+read mem cfcffba8 l
+assert mem cfcffb98 l ffffffff 00002004
+assert pci 001f0204 w ffff 0002
+assert mem cfcff804 l ffffffff 00000000
+assert pci 001f0500 l ffffffff ffffffff

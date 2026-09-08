@@ -1,0 +1,38 @@
+# Invasive CAR-only D26 UHCI companion-port test.  Temporarily decode all
+# three reset-state D26 UHCI functions, reproduce MSI GPIO57/H_PWRGD
+# output-low/delay/high, then read the six associated PORTSC registers.
+# No UHCI operational or port register is written.
+#
+# Native OC inputs in GP_LVL2 are dynamic/undefined in GPIO reads, so only
+# GPIO57 itself is asserted.  A one-second AC cycle is mandatory afterward.
+
+assert pci 001a0000 l ffffffff 3a378086
+assert pci 001a0100 l ffffffff 3a388086
+assert pci 001a0200 l ffffffff 3a398086
+assert pci 001a0004 w ffff 0000
+assert pci 001a0104 w ffff 0000
+assert pci 001a0204 w ffff 0000
+assert pci 001a0020 l ffffffff 00000001
+assert pci 001a0120 l ffffffff 00000001
+assert pci 001a0220 l ffffffff 00000001
+assert io 000005b0 l ffffffff 030300ff
+assert io 000005b7 b ff 0f
+assert io 000005bb b ff 15
+write pci 001a0020 l 0000dfe1 rev
+write pci 001a0004 w 00000001 rev
+write pci 001a0120 l 0000dfc1 rev
+write pci 001a0104 w 00000001 rev
+write pci 001a0220 l 0000dfa1 rev
+write pci 001a0204 w 00000001 rev
+mask io 000005b7 b 02 00 rev
+assert io 000005b7 b 02 00
+delay 00010000
+mask io 000005bb b 00 02 rev
+assert io 000005bb b 02 02
+delay 00010000
+read io 0000dff0 w
+read io 0000dff2 w
+read io 0000dfd0 w
+read io 0000dfd2 w
+read io 0000dfb0 w
+read io 0000dfb2 w

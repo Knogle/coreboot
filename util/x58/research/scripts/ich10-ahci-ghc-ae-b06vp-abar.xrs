@@ -1,0 +1,38 @@
+# Isolated AHCI-mode-enable proof after ABAR placement and memory decode were
+# proven.  Only GHC.AE (bit 31 at ABAR+04) is selected.  GHC.HR and GHC.IE stay
+# clear; PCI bus mastering stays disabled, so no DMA can occur.
+#
+# The change is classified non-reversible because it changes HBA operating
+# mode.  It does not reset the HBA, write CAP/PI/VSP, touch per-port registers,
+# issue COMRESET/OOB, or send a storage command.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f418 l ffffffff 02000001
+assert mem fed1f420 b ff 00
+assert pci 001f0500 l ffffffff ffffffff
+
+assert pci 001f0200 l ffffffff 3a228086
+assert pci 001f0204 w ffff 0002
+assert pci 001f0208 l ffffffff 01060100
+assert pci 001f020e b 7f 00
+assert pci 001f0224 l ffffffff cfcff800
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w c0ff 003f
+read pci 001f0292 w
+assert pci 001f0294 l ffffffff 00000193
+assert mem cfcff804 l ffffffff 00000000
+
+mask mem cfcff804 l 80000000 80000000 nr
+
+assert mem cfcff804 l ffffffff 80000000
+assert pci 001f0204 w ffff 0002
+assert pci 001f0224 l ffffffff cfcff800
+assert pci 001f0290 w ffff 0060
+assert pci 001f0292 w c0ff 003f
+read pci 001f0292 w
+assert pci 001f0294 l ffffffff 00000193
+assert pci 001f0500 l ffffffff ffffffff
+assert mem fed1f418 l ffffffff 02000001
+assert mem fed1f420 b ff 00
+assert pci 001f0000 l ffffffff 3a168086

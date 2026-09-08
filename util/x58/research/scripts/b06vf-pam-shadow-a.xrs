@@ -1,0 +1,21 @@
+# B06VF live preflight A: open all PAM registers, test C0000-D7FFF
+# representative half-windows simultaneously, then manually roll back.
+write pci ff000140 b 30 rev
+write pci ff000141 b 33 rev
+write pci ff000142 b 33 rev
+write pci ff000143 b 33 rev
+write pci ff000144 b 33 rev
+write pci ff000145 b 33 rev
+write pci ff000146 b 33 rev
+write mem 000c0000 l a55a0001 rev
+write mem 000c4000 l a55a0002 rev
+write mem 000c8000 l a55a0003 rev
+write mem 000cc000 l a55a0004 rev
+write mem 000d0000 l a55a0005 rev
+write mem 000d4000 l a55a0006 rev
+assert mem 000c0000 l ffffffff a55a0001
+assert mem 000c4000 l ffffffff a55a0002
+assert mem 000c8000 l ffffffff a55a0003
+assert mem 000cc000 l ffffffff a55a0004
+assert mem 000d0000 l ffffffff a55a0005
+assert mem 000d4000 l ffffffff a55a0006

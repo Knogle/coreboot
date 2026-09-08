@@ -1,0 +1,8 @@
+raw_offset,length,filesystem_guid,container_file_guid,contents,evidence,notes
+0x00000214,0x003ce680,7A9354D9-0468-444A-81CE-0BF617D890DF,,outer capsule firmware volume,verified-static,"starts after the UEFI capsule and image headers"
+0x0005b430,0x00010000,7A9354D9-0468-444A-81CE-0BF617D890DF,AFCCAA0E-E825-441E-A353-157F1E9D8289,SEC and base PEI services,verified-static,"container FFS starts at 0x5b414; PEI core/status code/CpuIo/PCI config/variable/capsule/PlatformInit/SEC"
+0x0006b450,0x00060000,7A9354D9-0468-444A-81CE-0BF617D890DF,9A4245CD-2CDD-437A-AEE6-830FE6CD025E,platform PEIM volume A,verified-static,"container FFS starts at 0x6b434; includes 63C0690C candidate"
+0x000cb470,0x00060000,7A9354D9-0468-444A-81CE-0BF617D890DF,9FC23D82-3449-4BEB-B2B4-6C9449051823,platform PEIM volume B,verified-static,"container FFS starts at 0xcb454; differently rebased copy of the candidate"
+0x0022bd78,0x00010000,7A9354D9-0468-444A-81CE-0BF617D890DF,AFCCAA0E-E825-441E-A353-157F1E9D8289,duplicate SEC and base PEI services,verified-static,"container FFS starts at 0x22bd5c in the second update branch"
+0x0023bd98,0x00060000,7A9354D9-0468-444A-81CE-0BF617D890DF,9A4245CD-2CDD-437A-AEE6-830FE6CD025E,duplicate platform PEIM volume A,verified-static,"container FFS starts at 0x23bd7c"
+0x0029bdb8,0x00060000,7A9354D9-0468-444A-81CE-0BF617D890DF,9FC23D82-3449-4BEB-B2B4-6C9449051823,duplicate platform PEIM volume B,verified-static,"container FFS starts at 0x29bd9c"

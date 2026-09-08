@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
+#include "i82801jx.h"
+
+/*
+ * Intel ICH10 Family Datasheet 319973-003: CIR13 section 10.1.44, CIR7
+ * section 10.1.52, FD section 10.1.77, CIR8 section 10.1.80, CIR9 section
+ * 10.1.81 and CIR10 section 10.1.83.
+ * Keep this helper limited to the six BIOS-required fields. In particular it
+ * does not touch GCS, CIR5, FDSW, function hiding, RPFN, MAP or lock policy.
+ */
+void i82801jx_program_required_fields(void)
+{
+	RCBA32_AND_OR(RCBA_CIR8, ~I82801JX_CIR8_FIELD_1_0_MASK,
+		I82801JX_CIR8_FIELD_1_0_REQUIRED);
+	RCBA32_OR(RCBA_FD, I82801JX_FD_REQUIRED_BIT_0);
+	RCBA32_AND_OR(RCBA_CIR9, ~I82801JX_CIR9_FIELD_27_26_MASK,
+		I82801JX_CIR9_FIELD_27_26_REQUIRED);
+	RCBA32_AND_OR(RCBA_CIR7, ~I82801JX_CIR7_FIELD_19_16_MASK,
+		I82801JX_CIR7_FIELD_19_16_REQUIRED);
+	RCBA32_AND_OR(RCBA_CIR13, ~I82801JX_CIR13_FIELD_19_16_MASK,
+		I82801JX_CIR13_FIELD_19_16_REQUIRED);
+	RCBA32_OR(RCBA_CIR10, I82801JX_CIR10_REQUIRED_BITS_17_16);
+}

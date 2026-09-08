@@ -1,0 +1,49 @@
+# Fintek F71882FG/F71883FG identity and KBC-LDN read-only capture.
+#
+# The apparent writes below select Super-I/O configuration registers only;
+# they do not change the selected register values.  Every selector operation
+# is deliberately non-reversible because replaying an index-port read-back is
+# not meaningful.  Run with `keep`, archive the complete trace, and always
+# issue an additional `iow 4e aa b` after the run while the prompt is alive.
+
+# Exact ICH10R LPC identity and board decode state must precede config entry.
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0080 w ffff 0010
+assert pci 001f0082 w ffff 2001
+
+# Enter Fintek configuration mode at 0x4e/0x4f.
+write io 0000004e b 87 nr
+write io 0000004e b 87 nr
+
+# Global device/vendor identity and clock-disable register.
+write io 0000004e b 20 nr
+read io 0000004f b
+write io 0000004e b 21 nr
+read io 0000004f b
+write io 0000004e b 23 nr
+read io 0000004f b
+write io 0000004e b 24 nr
+read io 0000004f b
+write io 0000004e b 25 nr
+read io 0000004f b
+
+# Select LDN 0x05 (keyboard controller) and read its documented fields.
+write io 0000004e b 07 nr
+write io 0000004f b 05 nr
+write io 0000004e b 30 nr
+read io 0000004f b
+write io 0000004e b 60 nr
+read io 0000004f b
+write io 0000004e b 61 nr
+read io 0000004f b
+write io 0000004e b 70 nr
+read io 0000004f b
+write io 0000004e b 72 nr
+read io 0000004f b
+write io 0000004e b f0 nr
+read io 0000004f b
+
+# Restore the known UART LDN selection and leave configuration mode.
+write io 0000004e b 07 nr
+write io 0000004f b 01 nr
+write io 0000004e b aa nr

@@ -1,0 +1,26 @@
+# Read-only ICH10 GPIO census for MSI USB power/overcurrent research.
+# GPIOBASE is 0x0580 and GPIO decode must be enabled before any I/O access.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0048 l ffffffff 00000581
+assert pci 001f004c b ff 10
+
+read io 00000580 l
+read io 00000584 l
+read io 0000058c l
+read io 00000598 l
+read io 000005ac l
+read io 000005b0 l
+read io 000005b4 l
+read io 000005b8 l
+
+# Repeat direction/level after a bounded delay to expose any dynamic input.
+delay 00010000
+read io 00000584 l
+read io 0000058c l
+read io 000005b4 l
+read io 000005b8 l
+
+assert pci 001f0048 l ffffffff 00000581
+assert pci 001f004c b ff 10
+assert pci 001f0000 l ffffffff 3a168086

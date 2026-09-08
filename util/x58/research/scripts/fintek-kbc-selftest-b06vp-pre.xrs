@@ -1,0 +1,30 @@
+# Fintek 8042 controller self-test behind the isolated ICH10R KBC decode.
+#
+# This is deliberately separate from the decode-only experiment.  The only
+# reversible register mutation is LPC_EN bit 10 (0x2001 -> 0x2401).  Command
+# 0xaa at port 0x64 is the standard 8042 controller self-test and is marked
+# non-reversible because it resets internal KBC state.  It does not reset the
+# host CPU and it does not address the keyboard itself.  A successful KBC
+# returns 0x55 in its output buffer.  Every wait is bounded.  After archiving,
+# restore LPC_EN with a separately gated one-shot write of the exact complete
+# pre-word 0x2001.  Because the table contains the non-reversible KBC command,
+# ROMMON deliberately offers no transaction rollback.  If serial disappears,
+# use the defined one-second AC recovery.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f0080 w ffff 0010
+assert pci 001f0082 w ffff 2001
+assert io 00000064 b ff ff
+
+mask pci 001f0082 w 0400 0400 rev
+assert pci 001f0082 w ffff 2401
+assert io 00000064 b ff 00
+
+write io 00000064 b aa nr
+poll io 00000064 b 02 00 000f4240
+poll io 00000064 b 01 01 000f4240
+assert io 00000060 b ff 55
+assert io 00000064 b 03 00
+
+assert pci 001f0082 w ffff 2401
+assert pci 001f0000 l ffffffff 3a168086

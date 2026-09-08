@@ -1,7 +1,76 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
+config SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE
+	def_bool n
+	help
+	  Make the reusable pre-DRAM RCBA, PMBASE, GPIOBASE, LPC, and
+	  serial-IRQ helpers available to an explicit caller.  This adds no
+	  automatic initialization hook and deliberately excludes the complete
+	  ICH10 device model and its SMM, SPI, SATA, USB, and watchdog policy.
+
+config SOUTHBRIDGE_INTEL_I82801JX_EHCI_INIT
+	def_bool n
+	help
+	  Make the reusable ramstage helper for the two ICH10 EHCI BIOS-required
+	  configuration fields available to an explicit caller. This option adds
+	  no automatic device-model hook and no USB host-controller driver.
+
+config SOUTHBRIDGE_INTEL_I82801JX_REQUIRED_FIELDS
+	def_bool n
+	help
+	  Make the reusable ramstage helper for exactly six ICH10
+	  BIOS-required RCBA fields available to an explicit caller. The helper
+	  preserves every unselected bit and does not touch GCS, CIR5, FDSW,
+	  function hiding, RPFN, MAP, locks, watchdog or interrupt policy. It adds
+	  no automatic device-model hook.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SATA_AHCI_MAP
+	def_bool n
+	help
+	  Make the reusable ramstage helper which selects ICH10 SATA AHCI mode,
+	  maps all six ports to D31:F2, and clears BAR5 after the component type
+	  changes available to an explicit caller. The BAR clear is required by
+	  ICH10 section 14.1.16; no address is assigned. This option adds no
+	  automatic device-model hook and does not enable ports, program SATA
+	  clocks, or access AHCI MMIO registers.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SATA2_DISABLE
+	def_bool n
+	help
+	  Make the reusable ramstage helper which sets only RCBA Function Disable
+	  SAD2 (bit 25) available to an explicit caller. This is intentionally
+	  separate from SATA MAP selection: MAP routes all six ports to D31:F2,
+	  while SAD2 suppresses the now-unused D31:F5 function. The helper neither
+	  writes FDSW nor locks the Function Disable register, and it adds no
+	  automatic device-model hook.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SATA_PORT_ENABLE
+	def_bool n
+	help
+	  Make the reusable ramstage helper which changes only the six port-
+	  enable fields in the low byte of ICH10 SATA PCS available to an
+	  explicit caller. The helper uses an 8-bit masked read-modify-write,
+	  preserving the reserved low-byte fields and never writing the
+	  read-only presence fields in the high byte. ICH10 section 14.1.31
+	  requires supported ports to be enabled before handing the controller
+	  to AHCI-aware software. This option adds no automatic device-model
+	  hook and does not program SATA clocks or access AHCI MMIO registers.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SATA_CLOCK_FIELD
+	def_bool n
+	help
+	  Make the reusable ramstage helper which changes only Field 1, bits 8:0,
+	  of the ICH10 SATA Clock Gating register to the documented required value
+	  0x193. The helper uses a 32-bit masked read-modify-write and preserves
+	  every port-clock-disable and reserved field. This option adds no
+	  automatic device-model hook and does not enable clock request, gate port
+	  clocks, access AHCI MMIO registers, reset the controller, or issue OOB.
+
 config SOUTHBRIDGE_INTEL_I82801JX
 	bool
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE
+	select SOUTHBRIDGE_INTEL_I82801JX_EHCI_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_REQUIRED_FIELDS
 	select ACPI_COMMON_MADT_IOAPIC
 	select ACPI_COMMON_MADT_LAPIC
 	select ACPI_INTEL_HARDWARE_SLEEP_VALUES

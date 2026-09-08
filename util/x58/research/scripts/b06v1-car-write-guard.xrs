@@ -1,0 +1,7 @@
+# B06V1 platform-backend CAR write-guard test.
+# 0xfff80000 is the first byte of the documented CAR window.  The backend must
+# reject this reversible write before issuing a store, leaving the value and
+# transaction mutation count unchanged.
+
+read mem fff80000 l
+write mem fff80000 l 01234567 rev

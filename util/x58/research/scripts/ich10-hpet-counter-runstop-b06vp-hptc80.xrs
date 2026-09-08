@@ -1,0 +1,41 @@
+# Prove main-counter progress with the already decoded HPET.  Timer interrupt
+# enables, comparators and legacy replacement routing remain zero.  The main
+# counter is started briefly, sampled, then halted again; its final nonzero
+# value is intentionally retained as the observable side effect.
+
+assert pci 001f0000 l ffffffff 3a168086
+assert pci 001f00f0 l ffffffff fed1c001
+assert mem fed1f1ff b ff 03
+assert mem fed1f404 l ffffffff 00000080
+assert mem fed00000 l ffffffff 8086a301
+assert mem fed00004 l ffffffff 0429b17f
+assert mem fed00010 l ffffffff 00000000
+assert mem fed00014 l ffffffff 00000000
+assert mem fed00020 l ffffffff 00000000
+assert mem fed00024 l ffffffff 00000000
+assert mem fed000f0 l ffffffff 00000000
+assert mem fed000f4 l ffffffff 00000000
+
+mask mem fed00010 l 00000001 00000001 nr
+
+assert mem fed00010 l ffffffff 00000001
+read mem fed000f0 l
+delay 00001000
+read mem fed000f0 l
+delay 00001000
+read mem fed000f0 l
+read mem fed000f4 l
+assert mem fed00020 l ffffffff 00000000
+assert mem fed00024 l ffffffff 00000000
+
+mask mem fed00010 l 00000001 00000000 nr
+
+assert mem fed00010 l ffffffff 00000000
+read mem fed000f0 l
+delay 00001000
+read mem fed000f0 l
+read mem fed000f4 l
+assert mem fed00020 l ffffffff 00000000
+assert mem fed1f404 l ffffffff 00000080
+assert mem fed1f1ff b ff 03
+assert pci 001f0000 l ffffffff 3a168086

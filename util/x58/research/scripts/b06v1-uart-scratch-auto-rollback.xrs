@@ -1,0 +1,7 @@
+# B06V1 failure-only automatic rollback test on the 16550 COM1 SCR.
+# The final assertion is deliberately false: after writing 0xa5 it expects
+# 0x5a. Running in auto mode must restore the pre-run SCR value.
+
+read io 03ff b
+write io 03ff b a5 rev
+assert io 03ff b ff 5a
