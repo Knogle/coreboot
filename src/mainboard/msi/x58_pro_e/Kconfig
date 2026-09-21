@@ -1,0 +1,118 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+if BOARD_MSI_X58_PRO_E
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select BOARD_ROMSIZE_KB_4096
+	select CPU_INTEL_SOCKET_LGA1366
+	select MISSING_BOARD_RESET
+	select NO_SMM
+	select HAVE_ACPI_TABLES
+	select ACPI_CUSTOM_MADT
+	select ACPI_CUSTOM_MADT_REPLACES_ARCH_ENTRIES
+	select ACPI_CUSTOM_MCFG
+	select SUPERIO_FINTEK_COMMON_PRE_RAM
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE
+	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS
+	select DRAM_SUPPORT_DDR3
+	select NO_CBFS_MCACHE
+	select ECAM_MMCONF_SUPPORT
+	select ECAM_MMCONF_RAMSTAGE_ONLY
+	select SOUTHBRIDGE_INTEL_I82801JX
+	select SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_NO_SMM
+	select SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_PORT_ENABLE
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_CLOCK_FIELD
+	select TSC_MONOTONIC_TIMER
+	select CPU_INTEL_MODEL_206CX_INIT
+	select X86_EARLY_NULL_GS_RECOVERY
+	select CPU_INTEL_MODEL_206CX_SMP
+	select HAVE_CONFIGURABLE_RAMSTAGE
+	select CONFIGURABLE_RAMSTAGE
+	select MINIMAL_PCI_SCANNING
+	select CPU_INTEL_COMMON
+	select CPU_INTEL_COMMON_TIMEBASE
+	select UDELAY_TSC
+	select DRIVERS_PS2_KEYBOARD
+
+config MAINBOARD_DIR
+	default "msi/x58_pro_e"
+
+config MAINBOARD_PART_NUMBER
+	default "X58 Pro-E"
+
+config DEVICETREE
+	default "devicetree.cb"
+
+config ECAM_MMCONF_BASE_ADDRESS
+	default 0xe0000000
+
+config ECAM_MMCONF_BUS_NUMBER
+	default 256
+
+config DEFAULT_EBDA_LOWMEM
+	default 0x9fc00
+
+config DEFAULT_EBDA_SEGMENT
+	default 0x9fc0
+
+config DEFAULT_EBDA_SIZE
+	default 0x400
+
+config HPET_MIN_TICKS
+	default 0x80
+
+# ICH10 otherwise defaults hotplug on, while the proven static topology has no
+# board hotplug wiring.  Endpoint-wide BME likewise remains disabled.
+config PCIEXP_HOTPLUG
+	default n
+
+config PCIEXP_COMMON_CLOCK
+	default n
+
+config PCIEXP_ASPM
+	default n
+
+config PCI_ALLOW_BUS_MASTER
+	default y
+
+config PCI_SET_BUS_MASTER_PCI_BRIDGES
+	default y
+
+config PCI_ALLOW_BUS_MASTER_ANY_DEVICE
+	default n
+
+config PAYLOAD_CONFIGFILE
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios" if PAYLOAD_SEABIOS
+
+comment "Vendor-assisted boot requires binary-only repository support"
+	depends on !USE_BLOBS
+
+menu "MSI X58 Pro-E private firmware inputs"
+	depends on USE_BLOBS
+
+config MSI_X58_PRO_E_VENDOR_INIT_BLOBS
+	bool "Add privately prepared vendor-assisted initialization ranges"
+	depends on USE_BLOBS
+	default y
+	help
+	  Add the four private, board-specific XIP ranges required by the proven
+	  memory/QPI handoff. They are a coupled ABI, not a generic Intel MRC or
+	  FSP binary. Prepare them from a hash-pinned MSI image that you lawfully
+	  possess; coreboot neither downloads nor redistributes them. A normal
+	  make build verifies their sizes and SHA-256 identities before assembling
+	  the ROM.
+
+config MSI_X58_PRO_E_VENDOR_INIT_DIR
+	string "Prepared vendor-init directory"
+	depends on MSI_X58_PRO_E_VENDOR_INIT_BLOBS
+	default "site-local/msi/x58_pro_e/vendor-init"
+	help
+	  Directory containing csi-wrapper.bin, csi-helper.bin, minit.bin and
+	  csi.bin. Relative paths are resolved from the coreboot source root. The
+	  build adds them uncompressed at their audited XIP addresses.
+
+endmenu
+
+endif

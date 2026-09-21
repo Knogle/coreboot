@@ -36,6 +36,9 @@ struct azalia_codec {
 
 enum cb_err azalia_enter_reset(u8 *base);
 enum cb_err azalia_exit_reset(u8 *base);
+/* Optional diagnostics only. The hook must not access the controller, change
+ * reset policy or retry operations. The default implementation does nothing. */
+void azalia_reset_trace(const u8 *base, bool reset, const char *step, u32 value);
 u32 azalia_find_verb(const u32 *verb_table, u32 verb_table_bytes, u32 viddid, const u32 **verb);
 int azalia_program_verb_table(u8 *base, const u32 *verbs, u32 verb_size);
 #if CONFIG(AZALIA_USE_LEGACY_VERB_TABLE)

@@ -158,7 +158,7 @@ static void acpi_create_madt(acpi_header_t *header, void *unused)
 	header->length = current - (unsigned long)madt;
 }
 
-static unsigned long acpi_fill_mcfg(unsigned long current)
+static unsigned long acpi_fill_mcfg_from_config(unsigned long current)
 {
 	for (int i = 0; i < PCI_SEGMENT_GROUP_COUNT; i++) {
 		current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
@@ -181,8 +181,15 @@ static void acpi_create_mcfg(acpi_header_t *header, void *unused)
 	if (acpi_fill_header(header, "MCFG", MCFG, sizeof(acpi_mcfg_t)) != CB_SUCCESS)
 		return;
 
-	if (CONFIG(ECAM_MMCONF_SUPPORT))
+	/*
+	 * Table publication and coreboot's own PCI configuration access are
+	 * separate contracts.  A platform can expose a proven ECAM aperture to
+	 * the OS while deliberately retaining another access mechanism itself.
+	 */
+	if (CONFIG(ACPI_CUSTOM_MCFG))
 		current = acpi_fill_mcfg(current);
+	else if (CONFIG(ECAM_MMCONF_SUPPORT))
+		current = acpi_fill_mcfg_from_config(current);
 
 	/* (Re)calculate length */
 	header->length = current - (unsigned long)mcfg;
@@ -1354,16 +1361,32 @@ static uint8_t acpi_spcr_type(void)
 	return 0xff;
 }
 
+const char *__weak acpi_spcr_namespace(void)
+{
+	return ".";
+}
+
 static void acpi_create_spcr(acpi_header_t *header, void *unused)
 {
 	acpi_spcr_t *spcr = (acpi_spcr_t *)header;
 	struct lb_serial serial;
+	const char *namespace;
+	size_t namespace_length;
 
 	if (!CONFIG(CONSOLE_SERIAL))
 		return;
 
 	if (fill_lb_serial(&serial) != CB_SUCCESS)
 		return;
+
+	/* SPCR v4 requires a NUL-terminated path, or "." without an ACPI device. */
+	namespace = acpi_spcr_namespace() ?: ".";
+	namespace_length = strnlen(namespace, DEVICE_PATH_MAX);
+	if (!namespace_length || namespace_length == DEVICE_PATH_MAX) {
+		printk(BIOS_ERR, "%s: invalid namespace string length\n", __func__);
+		return;
+	}
+	namespace_length++; /* Include the NUL in the 16-bit length field. */
 
 	if (acpi_fill_header(header, "SPCR", SPCR, sizeof(acpi_spcr_t)) != CB_SUCCESS)
 		return;
@@ -1402,7 +1425,17 @@ static void acpi_create_spcr(acpi_header_t *header, void *unused)
 	spcr->pci_did = 0xffff;
 	spcr->pci_vid = 0xffff;
 
+	spcr->namespace_string_offset = offsetof(acpi_spcr_t, namespacestring);
+	spcr->namespace_string_length = namespace_length;
+	memcpy(spcr->namespacestring, namespace, namespace_length);
+	header->length += namespace_length;
+
 	header->checksum = acpi_checksum((void *)spcr, header->length);
+}
+
+const char *__weak acpi_mainboard_dsdt_filename(void)
+{
+	return CONFIG_CBFS_PREFIX "/dsdt.aml";
 }
 
 unsigned long __weak fw_cfg_acpi_tables(unsigned long start)
@@ -1610,7 +1643,7 @@ unsigned long write_acpi_tables(const unsigned long start)
 		return current;
 	}
 
-	dsdt_file = cbfs_map(CONFIG_CBFS_PREFIX "/dsdt.aml", &dsdt_size);
+	dsdt_file = cbfs_map(acpi_mainboard_dsdt_filename(), &dsdt_size);
 	if (!dsdt_file) {
 		printk(BIOS_ERR, "No DSDT file, skipping ACPI tables\n");
 		return start;

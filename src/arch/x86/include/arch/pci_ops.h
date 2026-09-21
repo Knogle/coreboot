@@ -4,7 +4,7 @@
 #define ARCH_I386_PCI_OPS_H
 
 #include <arch/pci_io_cfg.h>
-#if CONFIG(ECAM_MMCONF_SUPPORT)
+#if PCI_CFG_USE_ECAM
 #include <device/pci_mmio_cfg.h>
 #endif
 

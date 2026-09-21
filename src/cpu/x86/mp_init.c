@@ -278,6 +278,8 @@ static int save_bsp_msrs(char *start, int size)
 
 	/* 2 * num_var_mtrrs for base and mask. +1 for IA32_MTRR_DEF_TYPE. */
 	msr_count = 2 * num_var_mtrrs + NUM_FIXED_MTRRS + 1;
+	if (CONFIG(X86_MP_INIT_INHERIT_PAT))
+		msr_count++;
 
 	if ((msr_count * sizeof(struct saved_msr)) > size) {
 		printk(BIOS_CRIT, "Cannot mirror all %d msrs.\n", msr_count);
@@ -296,6 +298,9 @@ static int save_bsp_msrs(char *start, int size)
 	}
 
 	msr_entry = save_msr(MTRR_DEF_TYPE_MSR, msr_entry);
+	/* The SIPI vector restores these MSRs before enabling AP caching. */
+	if (CONFIG(X86_MP_INIT_INHERIT_PAT))
+		msr_entry = save_msr(IA32_PAT, msr_entry);
 
 	fixed_mtrrs_hide_amd_rwdram();
 
@@ -549,6 +554,8 @@ static enum cb_err bsp_do_flight_plan(struct mp_params *mp_params)
 			if (wait_for_aps(&rec->cpus_entered, num_aps,
 					 timeout_us, step_us) != CB_SUCCESS) {
 				printk(BIOS_ERR, "MP record %d timeout.\n", i);
+				if (CONFIG(X86_MP_INIT_REQUIRE_ALL_CPUS))
+					die("MP barrier timeout; AP state unknown, cold recovery required\n");
 				ret = CB_ERR;
 			}
 		}
@@ -634,7 +641,7 @@ static enum cb_err mp_init(struct bus *cpu_bus, struct mp_params *p)
 	}
 
 	/* We just need to run things on the BSP */
-	if (!CONFIG(SMP))
+	if (!CONFIG(SMP) || (CONFIG(X86_MP_INIT_INHERIT_PAT) && p->num_cpus == 1))
 		return bsp_do_flight_plan(p);
 
 	/* Default to currently running CPU. */

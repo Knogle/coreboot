@@ -1,0 +1,30 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config CPU_INTEL_SOCKET_LGA1366
+	bool
+	select CPU_INTEL_MODEL_206CX
+
+if CPU_INTEL_SOCKET_LGA1366
+
+# These values reproduce the CAR region recovered from the MSI bootblock.
+config DCACHE_RAM_BASE
+	hex
+	default 0xfff80000
+
+config DCACHE_RAM_SIZE
+	hex
+	default 0x10000
+
+config DCACHE_BSP_STACK_SIZE
+	hex
+	default 0x4000
+
+config PRERAM_CBFS_CACHE_SIZE
+	default 0x0
+
+config MAX_CPUS
+	int
+	default 12 if CPU_INTEL_MODEL_206CX_SMP
+	default 1
+
+endif

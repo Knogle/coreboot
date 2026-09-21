@@ -12,6 +12,7 @@
 
 #include "chip.h"
 #include "i82801jx.h"
+#include "sata_init.h"
 
 typedef struct southbridge_intel_i82801jx_config config_t;
 
@@ -32,7 +33,7 @@ static void sata_enable_ahci_mmap(struct device *const dev, const u8 port_map)
 	/* Set AHCI access mode.
 	   No other ABAR registers should be accessed before this. */
 	reg32 = read32(abar + 0x04);
-	reg32 |= 1 << 31;
+	reg32 |= 1u << 31;
 	write32(abar + 0x04, reg32);
 
 	/* CAP (HBA Capabilities) : enable power management */
@@ -123,12 +124,10 @@ static void sata_program_indexed(struct device *const dev)
 	pci_write_config32(dev, D31F2_SDAT, reg32);
 }
 
-static void sata_init(struct device *const dev)
+void i82801jx_sata_init_sequence(struct device *const dev,
+	const config_t *const config, const u8 sata_mode)
 {
 	u16 reg16;
-
-	/* Get the chip configuration */
-	const config_t *const config = dev->chip_info;
 
 	printk(BIOS_DEBUG, "i82801jx_sata: initializing...\n");
 
@@ -137,9 +136,6 @@ static void sata_init(struct device *const dev)
 				 "device not in devicetree.cb!\n");
 		return;
 	}
-
-	/* Default to AHCI */
-	u8 sata_mode = get_uint_option("sata_mode", 0);
 
 	/*
 	 * TODO: In contrast to ICH7 and PCH code we don't set
@@ -194,18 +190,13 @@ static void sata_init(struct device *const dev)
 	sata_program_indexed(dev);
 }
 
-static void sata_enable(struct device *dev)
+void i82801jx_sata_enable_mode(struct device *dev,
+	const config_t *const config, const u8 sata_mode)
 {
-	/* Get the chip configuration */
-	const config_t *const config = dev->chip_info;
-
 	u16 map = 0;
 
 	if (!config)
 		return;
-
-	/* Default to AHCI */
-	u8 sata_mode = get_uint_option("sata_mode", 0);
 
 	/*
 	 * Set SATA controller mode early so the resource allocator can
@@ -217,6 +208,32 @@ static void sata_enable(struct device *dev)
 	map |= (config->sata_port_map ^ 0x3f) << 8;
 
 	pci_write_config16(dev, 0x90, map);
+}
+
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX) && !CONFIG(SOUTHBRIDGE_INTEL_I82801JX_DIRECT_DEVICE_MODEL)
+static void sata_init(struct device *const dev)
+{
+	const config_t *const config = dev->chip_info;
+
+	/* Preserve the full driver's AHCI default and missing-config behavior. */
+	i82801jx_sata_init_sequence(dev, config,
+		config ? get_uint_option("sata_mode", 0) : 0);
+}
+
+static void sata_enable(struct device *dev)
+{
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
+	/* The chip-init compatibility admission already selected AHCI and cleared
+	 * the old I/O BAR before discovery. Do not consume MAP's write-once fields
+	 * twice or change the function/resource identity after the checked hide.
+	 */
+	return;
+#else
+	const config_t *const config = dev->chip_info;
+
+	i82801jx_sata_enable_mode(dev, config,
+		config ? get_uint_option("sata_mode", 0) : 0);
+#endif
 }
 
 static struct device_operations sata_ops = {
@@ -245,3 +262,4 @@ static const struct pci_driver pch_sata __pci_driver = {
 	.vendor	 = PCI_VID_INTEL,
 	.devices = pci_device_ids,
 };
+#endif

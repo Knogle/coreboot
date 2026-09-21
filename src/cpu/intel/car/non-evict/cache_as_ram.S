@@ -202,7 +202,6 @@ end_microcode_update:
 	wrmsr
 
 	post_code(POSTCODE_SOC_ENABLE_CACHE)
-
 	/* Now that CAR is enabled clear it. */
 	movl	$_car_mtrr_start, %edi
 	movl	$_car_mtrr_size, %ecx

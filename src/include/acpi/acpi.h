@@ -1367,6 +1367,15 @@ typedef struct acpi_spcr {
 } __packed acpi_spcr_t;
 _Static_assert(sizeof(acpi_spcr_t) == 88, "acpi_spcr_t must have an 88 byte size\n");
 
+/*
+ * Optional console namespace hook. Return a NUL-terminated, fully qualified
+ * ASCII ACPI path for the SPCR UART in the selected DSDT, or "." (the default)
+ * or NULL if no namespace device exists. The string must remain valid while
+ * SPCR is generated; its length including NUL must not exceed DEVICE_PATH_MAX,
+ * the same bound used by acpi_device_path().
+ */
+const char *acpi_spcr_namespace(void);
+
 #define PC_AT_COMPATIBLE_INTERRUPT (1 << 0)
 #define IO_APIC_COMPATIBLE_INTERRUPT (1 << 1)
 #define IO_SAPIC_COMPATIBLE_INTERRUPT (1 << 2)
@@ -1540,7 +1549,11 @@ unsigned long fw_cfg_acpi_tables(unsigned long start);
 
 /* These are implemented by the target port or north/southbridge. */
 unsigned long write_acpi_tables(const unsigned long addr);
+/* Optional board selection before DSDT loading; default remains coreboot DSDT. */
+const char *acpi_mainboard_dsdt_filename(void);
 unsigned long acpi_fill_madt(unsigned long current);
+/* Append platform-specific MMCONFIG allocation structures to an MCFG. */
+unsigned long acpi_fill_mcfg(unsigned long current);
 unsigned long acpi_arch_fill_madt(acpi_madt_t *madt, unsigned long current);
 
 void acpi_fill_fadt(acpi_fadt_t *fadt);

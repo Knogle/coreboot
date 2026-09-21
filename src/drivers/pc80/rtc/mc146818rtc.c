@@ -68,7 +68,7 @@ int cmos_error(void)
 _Static_assert(!CONFIG(SOC_AMD_COMMON) || !(RTC_FREQ_SELECT_DEFAULT & RTC_AMD_BANK_SELECT),
 	       "Bank 1 should not be selected for AMD");
 
-static bool __cmos_init(bool invalid)
+static bool __cmos_init(bool invalid, bool preserve_nvram)
 {
 	bool cmos_invalid;
 	bool checksum_invalid = false;
@@ -85,11 +85,13 @@ static bool __cmos_init(bool invalid)
 		return false;
 
 	printk(BIOS_DEBUG, "RTC Init\n");
+	if (preserve_nvram)
+		printk(BIOS_DEBUG, "RTC: preserve configuration NVRAM and checksums\n");
 
 	/* See if there has been a CMOS power problem. */
 	cmos_invalid = cmos_error();
 
-	if (CONFIG(USE_OPTION_TABLE)) {
+	if (CONFIG(USE_OPTION_TABLE) && !preserve_nvram) {
 		/* See if there is a CMOS checksum error */
 		checksum_invalid = !cmos_checksum_valid(PC_CKS_RANGE_START,
 						PC_CKS_RANGE_END, PC_CKS_LOC);
@@ -103,9 +105,11 @@ static bool __cmos_init(bool invalid)
 			cmos_write(0, RTC_CLK_SECOND_ALARM);
 			cmos_write(0, RTC_CLK_MINUTE_ALARM);
 			cmos_write(0, RTC_CLK_HOUR_ALARM);
-			for (i = 10; i < 128; i++)
-				cmos_write(0, i);
-			cleared_cmos = true;
+			if (!preserve_nvram) {
+				for (i = 10; i < 128; i++)
+					cmos_write(0, i);
+				cleared_cmos = true;
+			}
 		}
 
 		if (cmos_invalid || invalid)
@@ -125,7 +129,7 @@ static bool __cmos_init(bool invalid)
 	/* Ensure all reserved bits are 0 in register D */
 	cmos_write(RTC_VRT, RTC_VALID);
 
-	if (CONFIG(USE_OPTION_TABLE)) {
+	if (CONFIG(USE_OPTION_TABLE) && !preserve_nvram) {
 		/* See if there is a LB CMOS checksum error */
 		checksum_invalid = !cmos_lb_cks_valid();
 		if (checksum_invalid)
@@ -152,7 +156,7 @@ static void cmos_init_vbnv(bool invalid)
 	   indicates CMOS was cleared. */
 	read_vbnv_cmos(vbnv);
 
-	if (__cmos_init(invalid))
+	if (__cmos_init(invalid, false))
 		save_vbnv_cmos(vbnv);
 }
 
@@ -164,7 +168,20 @@ void cmos_init(bool invalid)
 	if (CONFIG(VBOOT_VBNV_CMOS))
 		cmos_init_vbnv(invalid);
 	else
-		__cmos_init(invalid);
+		__cmos_init(invalid, false);
+}
+
+void cmos_init_preserve_nvram(bool invalid)
+{
+	if (ENV_SMM)
+		return;
+
+	/* No NVRAM clear/checksum repair, so no vboot backup/restore is needed.
+	 * RTC controls, alarms and an invalid calendar retain normal init
+	 * semantics. In particular, resetting the date can write the configured
+	 * century byte; this API does not promise to preserve RTC date storage.
+	 */
+	__cmos_init(invalid, true);
 }
 
 /*

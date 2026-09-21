@@ -5,8 +5,12 @@
 #include <device/pci_ops.h>
 #include <device/pci_ids.h>
 #include "i82801jx.h"
+#include "pci_bridge_init.h"
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX)
+#include "board_policy.h"
+#endif
 
-static void pci_init(struct device *dev)
+void i82801jx_pci_bridge_init(struct device *dev)
 {
 	u16 reg16;
 
@@ -26,12 +30,29 @@ static void pci_init(struct device *dev)
 	pci_write_config16(dev, PCI_SEC_STATUS, reg16);
 }
 
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX) && !CONFIG(SOUTHBRIDGE_INTEL_I82801JX_DIRECT_DEVICE_MODEL)
+static void pci_init(struct device *dev)
+{
+	/* A board-owned policy may retain bounded root-port admission. Keep that
+	 * decision in the generic-driver adapter, not in the reusable bridge
+	 * initialization sequence above. */
+	if (CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY) &&
+	    mainboard_ich10_pci_bridge_isolated(dev))
+		return;
+
+	i82801jx_pci_bridge_init(dev);
+}
+
 static struct device_operations device_ops = {
 	.read_resources		= pci_bus_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_bus_enable_resources,
 	.init			= pci_init,
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
+	.scan_bus		= mainboard_ich10_pci_scan_bridge,
+#else
 	.scan_bus		= pci_scan_bridge,
+#endif
 	.reset_bus		= pci_bus_reset,
 	.ops_pci		= &pci_dev_ops_pci,
 };
@@ -46,3 +67,4 @@ static const struct pci_driver ich10_pci __pci_driver = {
 	.vendor		= PCI_VID_INTEL,
 	.devices	= pci_device_ids,
 };
+#endif

@@ -488,6 +488,30 @@ void x86_exception(struct eregs *info)
 	}
 #else /* !CONFIG_GDB_STUB */
 
+#if ENV_RAMSTAGE && !ENV_X86_64 && CONFIG(X86_EARLY_NULL_GS_RECOVERY)
+	uint16_t gs;
+
+	__asm__ __volatile__("mov %%gs, %0" : "=r" (gs));
+	/* c_start leaves GS null until set_cpu_info(). Do not fault again in
+	 * cpu_index(), or dereference the saved code/stack addresses, before
+	 * reporting an exception from this early interval. A selector alone
+	 * does not establish the segment base in long mode, hence this is 32-bit.
+	 */
+	if ((gs & ~3u) == 0) {
+		printk(BIOS_EMERG,
+			"Early Unexpected Exception (CPU identity unavailable, GS=%04x):\n"
+			"%d @ %02x:%08x - Halting\n"
+			"Code: %d eflags: %08x\n"
+			"eax: %08x ebx: %08x ecx: %08x edx: %08x\n"
+			"edi: %08x esi: %08x ebp: %08x esp: %08x\n",
+			gs, info->vector, info->cs, info->eip,
+			info->error_code, info->eflags,
+			info->eax, info->ebx, info->ecx, info->edx,
+			info->edi, info->esi, info->ebp, info->esp);
+		die("Code and stack memory not inspected.\n");
+	}
+#endif
+
 	int logical_processor = 0;
 
 	if (info->vector == DEBUG_VECTOR) {

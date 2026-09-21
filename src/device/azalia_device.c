@@ -9,24 +9,41 @@
 #include <timer.h>
 #include <types.h>
 
+__weak void azalia_reset_trace(const u8 *base, bool reset, const char *step, u32 value)
+{
+}
+
 static enum cb_err azalia_assert_reset(u8 *base, bool reset)
 {
 	const u32 val = reset ? 0 : HDA_GCTL_CRST; /* active-low CRST# */
 	struct stopwatch sw;
 
-	clrsetbits32(base + HDA_GCTL_REG, HDA_GCTL_CRST, val);
+	/* Split the ordinary read/modify/write solely to identify a synchronous
+	 * MMIO stall. A stopwatch cannot recover an access that never returns. */
+	azalia_reset_trace(base, reset, "GCTL_READ_ENTER", 0);
+	u32 initial = read32(base + HDA_GCTL_REG);
+	azalia_reset_trace(base, reset, "GCTL_READ_RETURN", initial);
+	u32 target = (initial & ~HDA_GCTL_CRST) | val;
+	azalia_reset_trace(base, reset, "GCTL_WRITE_ENTER", target);
+	write32(base + HDA_GCTL_REG, target);
+	azalia_reset_trace(base, reset, "GCTL_WRITE_RETURN", target);
 
 	/* Wait for the controller to complete the link-reset sequence */
 	stopwatch_init_msecs_expire(&sw, 50);
 
 	do {
 		/* Wait 1ms based on BKDG wait time */
+		azalia_reset_trace(base, reset, "DELAY_ENTER", 1000);
 		mdelay(1);
+		azalia_reset_trace(base, reset, "DELAY_RETURN", 1000);
+		azalia_reset_trace(base, reset, "GCTL_POLL_ENTER", 0);
 		u32 reg32 = read32(base + HDA_GCTL_REG);
+		azalia_reset_trace(base, reset, "GCTL_POLL_RETURN", reg32);
 		if ((reg32 & HDA_GCTL_CRST) == val)
 			return CB_SUCCESS;
 	} while (!stopwatch_expired(&sw));
 
+	azalia_reset_trace(base, reset, "TIMEOUT", val);
 	return CB_ERR;
 }
 
@@ -42,7 +59,9 @@ enum cb_err azalia_exit_reset(u8 *base)
 
 	/* Codecs have up to 25 frames (at 48kHz) to signal an
 	   initialization request (HDA Spec 1.0a "4.3 Codec Discovery"). */
+	azalia_reset_trace(base, false, "CODEC_DELAY_ENTER", 521);
 	udelay(521);
+	azalia_reset_trace(base, false, "CODEC_DELAY_RETURN", 521);
 	return CB_SUCCESS;
 }
 

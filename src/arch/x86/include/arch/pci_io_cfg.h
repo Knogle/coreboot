@@ -74,7 +74,11 @@ void pci_io_write_config32(pci_devfn_t dev, uint16_t reg, uint32_t value)
 	outl(value, PCI_IO_CONFIG_DATA);
 }
 
-#if !CONFIG(ECAM_MMCONF_SUPPORT)
+/* Keep pre-DRAM access on CF8 for platforms which establish ECAM late. */
+#define PCI_CFG_USE_ECAM (CONFIG(ECAM_MMCONF_SUPPORT) && \
+	(!CONFIG(ECAM_MMCONF_RAMSTAGE_ONLY) || ENV_RAMSTAGE))
+
+#if !PCI_CFG_USE_ECAM
 
 /* Avoid name collisions as different stages have different signature
  * for these functions. The _s_ stands for simple, fundamental IO or

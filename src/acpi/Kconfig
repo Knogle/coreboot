@@ -59,6 +59,26 @@ config ACPI_CUSTOM_MADT
 	help
 	  Selected by platforms that need to expose custom MADT entries.
 
+config ACPI_CUSTOM_MADT_REPLACES_ARCH_ENTRIES
+	bool
+	depends on ACPI_CUSTOM_MADT && ARCH_X86
+	default n
+	help
+	  The platform callback emits the complete x86 MADT entry list, rather
+	  than appending entries to the shared LAPIC/IOAPIC list. The shared
+	  generator still supplies the MADT header fields (Local APIC address and
+	  PC-AT compatibility flag). Select this only when the platform callback
+	  owns every processor, IOAPIC and interrupt-source-override record.
+
+config ACPI_CUSTOM_MCFG
+	bool
+	default n
+	help
+	  Selected by platforms that need to publish a custom PCI MMCONFIG
+	  allocation.  This controls ACPI table contents only; unlike
+	  ECAM_MMCONF_SUPPORT, it does not select the MMIO PCI configuration
+	  access mechanism used by coreboot itself.
+
 config ACPI_NO_CUSTOM_MADT
 	bool
 	default y if ACPI_COMMON_MADT_LAPIC && ACPI_COMMON_MADT_IOAPIC

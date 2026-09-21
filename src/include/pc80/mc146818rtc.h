@@ -177,6 +177,13 @@ static inline void cmos_write32(u32 value, u8 offset)
 }
 
 void cmos_init(bool invalid);
+/* Normal RTC init without clearing configuration NVRAM or repairing its
+ * checksums. Preserves bytes 0x0e..0xff except RTC_CLK_ALTCENTURY when the
+ * configured century byte is updated by an invalid-date reset. Like
+ * cmos_init(), this may reset the calendar and reads Status C to acknowledge
+ * pending interrupts; it is not a read-only diagnostic API. S3/SMM are no-ops.
+ */
+void cmos_init_preserve_nvram(bool invalid);
 void cmos_check_update_date(void);
 int cmos_error(void);
 int cmos_lb_cks_valid(void);

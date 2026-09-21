@@ -18,6 +18,26 @@ config PARALLEL_MP_AP_WORK
 	 Allow APs to do other work after initialization instead of going
 	 to sleep.
 
+config X86_MP_INIT_INHERIT_PAT
+	bool
+	default n
+	depends on PARALLEL_MP
+	help
+	  Copy the BSP IA32_PAT along with MTRRs into each AP in the SIPI
+	  vector, before enabling caching. The selecting CPU driver must
+	  verify PAT support before invoking MP initialization. INIT does
+	  not restore PAT's power-on values.
+
+config X86_MP_INIT_REQUIRE_ALL_CPUS
+	bool
+	default n
+	depends on PARALLEL_MP
+	help
+	  Halt immediately on a BSP flight-plan barrier timeout. Do not
+	  release later AP barriers or reclaim startup storage after losing
+	  synchronization with an AP. The platform requires cold recovery
+	  instead of continuing with an incomplete CPU initialization.
+
 config X86_SMM_SKIP_RELOCATION_HANDLER
 	bool
 	default n

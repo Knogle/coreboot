@@ -18,11 +18,15 @@
 #include <arch/smp/mpspec.h>
 #include "chip.h"
 #include "i82801jx.h"
+#include "lpc_init.h"
+#include "board_policy.h"
 #include <southbridge/intel/common/pciehp.h>
 #include <southbridge/intel/common/pmutil.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
 #include <southbridge/intel/common/rcba_pirq.h>
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX)
 #include <static.h>
+#endif
 
 #define NMI_OFF	0
 
@@ -141,6 +145,7 @@ static void i82801jx_gpi_routing(struct device *dev)
 	pci_write_config32(dev, D31F0_GPIO_ROUT, reg32);
 }
 
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX)
 bool southbridge_support_c5(void)
 {
 	struct device *lpc_dev = __pci_0_1f_0;
@@ -154,6 +159,7 @@ bool southbridge_support_c6(void)
 	struct southbridge_intel_i82801jx_config *config = lpc_dev->chip_info;
 	return config->c6_enable;
 }
+#endif
 
 static void i82801jx_power_options(struct device *dev)
 {
@@ -234,15 +240,15 @@ static void i82801jx_power_options(struct device *dev)
 	reg16 |= (1 << 10);	// BIOS_PCI_EXP_EN - Desktop/Mobile only
 	if (CONFIG(DEBUG_PERIODIC_SMI))
 		reg16 |= (3 << 0); // Periodic SMI every 8s
-	if (southbridge_support_c5())
+	if (config->c5_enable)
 		reg16 |= (1 << 11); /* Enable C5, C6 and PMSYNC# */
 	pci_write_config16(dev, D31F0_GEN_PMCON_1, reg16);
 
 	/* Set exit timings for C5/C6. */
-	if (southbridge_support_c5()) {
+	if (config->c5_enable) {
 		reg8 = pci_read_config8(dev, D31F0_C5_EXIT_TIMING);
 		reg8 &= ~((7 << 3) | (7 << 0));
-		if (southbridge_support_c6())
+		if (config->c6_enable)
 			reg8 |= (5 << 3) | (3 << 0); /* 38-44us PMSYNC# to STPCLK#,
 							95-102us DPRSTP# to STP_CPU# */
 		else
@@ -277,7 +283,7 @@ static void i82801jx_power_options(struct device *dev)
 	outl(reg32, pmbase + 0x10);
 }
 
-static void i82801jx_rtc_init(struct device *dev)
+static void i82801jx_rtc_init(struct device *dev, bool preserve_cmos)
 {
 	u8 reg8;
 	int rtc_failed;
@@ -290,7 +296,10 @@ static void i82801jx_rtc_init(struct device *dev)
 	}
 	printk(BIOS_DEBUG, "rtc_failed = 0x%x\n", rtc_failed);
 
-	cmos_init(rtc_failed);
+	if (preserve_cmos)
+		cmos_init_preserve_nvram(rtc_failed);
+	else
+		cmos_init(rtc_failed);
 }
 
 static void enable_hpet(void)
@@ -313,7 +322,7 @@ static void enable_clock_gating(void)
 
 	/* Enable Clock Gating for most devices. */
 	reg32 = RCBA32(RCBA_CG);
-	reg32 |= (1 << 31);	/* LPC dynamic clock gating */
+	reg32 |= (1u << 31);	/* LPC dynamic clock gating */
 	/* USB UHCI dynamic clock gating: */
 	reg32 |= (1 << 29) | (1 << 28);
 	/* SATA dynamic clock gating [0-3]: */
@@ -335,6 +344,8 @@ static void enable_clock_gating(void)
 	RCBA32(0x38c0) |= 7;
 }
 
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX) && \
+	!CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
 static void i82801jx_set_acpi_mode(struct device *dev)
 {
 	if (!acpi_is_wakeup_s3()) {
@@ -343,8 +354,10 @@ static void i82801jx_set_acpi_mode(struct device *dev)
 		apm_control(APM_CNT_ACPI_ENABLE);
 	}
 }
+#endif
 
-static void lpc_init(struct device *dev)
+void i82801jx_lpc_init_sequence(struct device *dev, bool preserve_cmos,
+	void (*set_acpi_mode)(struct device *dev))
 {
 	printk(BIOS_DEBUG, "i82801jx: %s\n", __func__);
 
@@ -360,7 +373,7 @@ static void lpc_init(struct device *dev)
 	i82801jx_power_options(dev);
 
 	/* Initialize the real time clock. */
-	i82801jx_rtc_init(dev);
+	i82801jx_rtc_init(dev, preserve_cmos);
 
 	/* Initialize ISA DMA. */
 	isa_dma_init();
@@ -377,10 +390,10 @@ static void lpc_init(struct device *dev)
 	/* Interrupt 9 should be level triggered (SCI) */
 	i8259_configure_irq_trigger(9, 1);
 
-	i82801jx_set_acpi_mode(dev);
+	set_acpi_mode(dev);
 }
 
-static void i82801jx_lpc_read_resources(struct device *dev)
+void i82801jx_lpc_read_resources(struct device *dev)
 {
 	int i, io_index = 0;
 	/*
@@ -436,10 +449,9 @@ static void i82801jx_lpc_read_resources(struct device *dev)
 	res->size = 0x00001000;
 	res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 
-	/* Set IO decode ranges if required.*/
+	/* Set IO decode ranges if required. */
 	for (i = 0; i < 4; i++) {
-		u32 gen_dec;
-		gen_dec = pci_read_config32(dev, 0x84 + 4 * i);
+		u32 gen_dec = pci_read_config32(dev, 0x84 + 4 * i);
 
 		if ((gen_dec & 0xFFFC) > 0x1000) {
 			res = new_resource(dev, IOINDEX_SUBTRACTIVE(io_index++, 0));
@@ -451,11 +463,29 @@ static void i82801jx_lpc_read_resources(struct device *dev)
 	}
 }
 
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX) && !CONFIG(SOUTHBRIDGE_INTEL_I82801JX_DIRECT_DEVICE_MODEL)
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
+static void lpc_init_board_owned(struct device *dev)
+{
+	/* The vendor-assisted CPU path has no SMM handler. Preserve its CMOS
+	 * recovery cookie and establish SCI directly through board admission.
+	 */
+	i82801jx_lpc_init_sequence(dev, true, mainboard_ich10_lpc_acpi_mode);
+}
+#else
+static void lpc_init(struct device *dev)
+{
+	i82801jx_lpc_init_sequence(dev, false, i82801jx_set_acpi_mode);
+}
+#endif
+
 static const char *lpc_acpi_name(const struct device *dev)
 {
-	return "LPCB";
+	return CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY) ?
+		"SBRG" : "LPCB";
 }
 
+#if !CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
 static void southbridge_fill_ssdt(const struct device *device)
 {
 	struct device *dev = pcidev_on_root(0x1f, 0);
@@ -464,15 +494,22 @@ static void southbridge_fill_ssdt(const struct device *device)
 	intel_acpi_pcie_hotplug_generator(chip->pcie_hotplug_map, 8);
 	intel_acpi_gen_def_acpi_pirq(device);
 }
+#endif
 
 static struct device_operations device_ops = {
 	.read_resources		= i82801jx_lpc_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
+#if !CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
 	.write_acpi_tables      = acpi_write_hpet,
 	.acpi_fill_ssdt		= southbridge_fill_ssdt,
+#endif
 	.acpi_name		= lpc_acpi_name,
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
+	.init			= lpc_init_board_owned,
+#else
 	.init			= lpc_init,
+#endif
 	.scan_bus		= scan_static_bus,
 	.ops_pci		= &pci_dev_ops_pci,
 };
@@ -492,3 +529,4 @@ static const struct pci_driver ich10_lpc __pci_driver = {
 	.vendor		= PCI_VID_INTEL,
 	.devices	= pci_device_ids,
 };
+#endif

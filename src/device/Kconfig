@@ -583,6 +583,18 @@ config ECAM_MMCONF_SUPPORT
 	  Access mechanism (ECAM) method for accessing PCI config
 	  address space.
 
+config ECAM_MMCONF_RAMSTAGE_ONLY
+	bool
+	depends on ECAM_MMCONF_SUPPORT && ARCH_X86
+	default n
+	help
+	  Use ECAM for generic PCI configuration accesses only in ramstage.
+	  Earlier stages and SMM keep the explicit PCI I/O access mechanism.
+	  This is for staged migrations whose romstage establishes the ECAM
+	  decode before handing off. The platform must validate that decode
+	  before ramstage device initialization; this option does not enable it.
+	  Explicit pci_io_* accesses remain I/O accesses in every stage.
+
 config PCIX_PLUGIN_SUPPORT
 	bool
 	default y

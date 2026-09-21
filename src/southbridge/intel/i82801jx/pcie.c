@@ -8,15 +8,25 @@
 #include <device/pci_ids.h>
 #include <southbridge/intel/common/pciehp.h>
 #include "chip.h"
+#include "pcie_init.h"
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
+#include "board_policy.h"
+#endif
 
-static void pci_init(struct device *dev)
+static void pcie_init_sequence(struct device *dev,
+	const struct southbridge_intel_i82801jx_config *config, bool enable_bus_master)
 {
-	struct southbridge_intel_i82801jx_config *config = dev->chip_info;
+	/* Reject invalid callers before any write, including a hotplug-map index. */
+	if (!dev || !config || dev->path.type != DEVICE_PATH_PCI ||
+	    dev->path.pci.devfn < PCI_DEVFN(0x1c, 0) ||
+	    dev->path.pci.devfn >= PCI_DEVFN(0x1c, I82801JX_PCIE_PORT_COUNT))
+		die("ICH10 PCIe init requires a root port and board configuration.\n");
 
 	printk(BIOS_DEBUG, "Initializing ICH10 PCIe root port.\n");
 
-	/* Enable Bus Master */
-	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
+	/* The normal driver owns BME. Explicit callers may already own commands. */
+	if (enable_bus_master)
+		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
 	/* Set Cache Line Size to 0x10 */
 	// This has no effect but the OS might expect it
@@ -27,8 +37,10 @@ static void pci_init(struct device *dev)
 	/* Enable IO xAPIC on this PCIe port */
 	pci_or_config32(dev, 0xd8, 1 << 7);
 
-	/* Enable Backbone Clock Gating */
-	pci_or_config32(dev, 0xe1, (1 << 3) | (1 << 2) | (1 << 1) | (1 << 0));
+	/* ICH10 Datasheet 20.1.51: RPDCGEN is an 8-bit register at E1h.
+	 * Do not use a DWORD accessor: that can address E0h instead.
+	 */
+	pci_or_config8(dev, I82801JX_PCIE_RPDCGEN, I82801JX_PCIE_DYNAMIC_CLOCKS);
 
 	/* Set VC0 transaction class */
 	pci_update_config32(dev, 0x114, ~0x000000ff, 1);
@@ -57,8 +69,33 @@ static void pci_init(struct device *dev)
 	}
 }
 
+void i82801jx_pcie_init_sequence(struct device *dev,
+	const struct southbridge_intel_i82801jx_config *config)
+{
+	pcie_init_sequence(dev, config, true);
+}
+
+void i82801jx_pcie_init_sequence_preserve_command(struct device *dev,
+	const struct southbridge_intel_i82801jx_config *config)
+{
+	pcie_init_sequence(dev, config, false);
+}
+
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX) && !CONFIG(SOUTHBRIDGE_INTEL_I82801JX_DIRECT_DEVICE_MODEL)
+static void pci_init(struct device *dev)
+{
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
+	if (mainboard_ich10_pci_bridge_isolated(dev))
+		return;
+#endif
+	i82801jx_pcie_init_sequence(dev, dev->chip_info);
+}
+
 static void pch_pciexp_scan_bridge(struct device *dev)
 {
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY)
+	mainboard_ich10_pci_scan_bridge(dev);
+#else
 	struct southbridge_intel_i82801jx_config *config = dev->chip_info;
 
 	if (CONFIG(PCIEXP_HOTPLUG) && config->pcie_hotplug_map[PCI_FUNC(dev->path.pci.devfn)]) {
@@ -67,6 +104,7 @@ static void pch_pciexp_scan_bridge(struct device *dev)
 		/* Normal PCIe Scan */
 		pciexp_scan_bridge(dev);
 	}
+#endif
 }
 
 static struct device_operations device_ops = {
@@ -101,3 +139,4 @@ static const struct pci_driver ich10_pcie __pci_driver = {
 	.vendor		= PCI_VID_INTEL,
 	.devices	= pci_device_ids,
 };
+#endif

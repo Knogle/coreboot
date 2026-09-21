@@ -8,19 +8,21 @@
 #include <device/smbus_host.h>
 #include <southbridge/intel/common/smbus_ops.h>
 #include "i82801jx.h"
+#include "smbus_init.h"
 
-static void pch_smbus_init(struct device *dev)
+void i82801jx_smbus_init(struct device *dev)
 {
 	/* Enable clock gating */
 	pci_and_config16(dev, 0x80, ~((1 << 8) | (1 << 10) | (1 << 12) | (1 << 14)));
 }
 
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX) && !CONFIG(SOUTHBRIDGE_INTEL_I82801JX_DIRECT_DEVICE_MODEL)
 static struct device_operations smbus_ops = {
 	.read_resources		= smbus_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.scan_bus		= scan_smbus,
-	.init			= pch_smbus_init,
+	.init			= i82801jx_smbus_init,
 	.ops_smbus_bus		= &lops_smbus_bus,
 	.ops_pci		= &pci_dev_ops_pci,
 };
@@ -37,3 +39,4 @@ static const struct pci_driver pch_smbus __pci_driver = {
 	.vendor	 = PCI_VID_INTEL,
 	.devices = pci_device_ids,
 };
+#endif

@@ -33,7 +33,13 @@
 #define D31F0_C5_EXIT_TIMING	0xa8
 #define D31F0_CxSTATE_CNF	0xa9
 #define D31F0_C4TIMING_CNT	0xaa
+#define D31F0_PMIR		0xac
 #define D31F0_GPIO_ROUT		0xb8
+
+#define PMIR_CF9LOCK		(1u << 31)
+#define PMIR_FIELD_2		(1u << 30)
+#define PMIR_CF9GR		(1u << 20)
+#define PMIR_FIELD_0		(3u << 8)
 
 /* D31:F2 SATA */
 #define D31F2_IDE_TIM_PRI	0x40
@@ -90,13 +96,25 @@
 #define RCBA_CIR10		0x352c
 #define RCBA_MAP		0x35f0 /* UHCI controller #6 remapping */
 
+/* BIOS-required fields; unknown field names remain deliberately neutral. */
+#define I82801JX_CIR8_FIELD_1_0_MASK		0x00000003u
+#define I82801JX_CIR8_FIELD_1_0_REQUIRED	0x00000002u
+#define I82801JX_FD_REQUIRED_BIT_0		0x00000001u
+#define I82801JX_CIR9_FIELD_27_26_MASK		0x0c000000u
+#define I82801JX_CIR9_FIELD_27_26_REQUIRED	0x08000000u
+#define I82801JX_CIR7_FIELD_19_16_MASK		0x000f0000u
+#define I82801JX_CIR7_FIELD_19_16_REQUIRED	0x00050000u
+#define I82801JX_CIR13_FIELD_19_16_MASK		0x000f0000u
+#define I82801JX_CIR13_FIELD_19_16_REQUIRED	0x00050000u
+#define I82801JX_CIR10_REQUIRED_BITS_17_16	0x00030000u
+
 #define D31IP		0x3100	/* 32bit */
 #define D30IP		0x3104	/* 32bit R0: does not generate interrupt */
 #define D29IP		0x3108	/* 32bit */
 #define D28IP		0x310c	/* 32bit */
 #define D27IP		0x3110	/* 32bit */
 #define D26IP		0x3114  /* 32bit */
-#define D25IP		0x3114  /* 32bit */
+#define D25IP		0x3118  /* 32bit */
 
 #define D31IR		0x3140	/* 16bit */
 #define D30IR		0x3142	/* 16bit R0: does not generate interrupt */
@@ -133,9 +151,50 @@
 
 #include <device/pci_ops.h>
 
+#define I82801JX_EHCI_FCREG			0xfc
+#define I82801JX_EHCI_FCREG_FIELD_3_2_MASK	(3u << 2)
+#define I82801JX_EHCI_FCREG_FIELD_3_2_VALUE	(2u << 2)
+#define I82801JX_EHCI_FCREG_BIT_17		(1u << 17)
+#define I82801JX_EHCI_FCREG_BIT_29		(1u << 29)
+#define I82801JX_EHCI_FCREG_REQUIRED_MASK \
+	(I82801JX_EHCI_FCREG_FIELD_3_2_MASK | \
+	 I82801JX_EHCI_FCREG_BIT_17 | I82801JX_EHCI_FCREG_BIT_29)
+#define I82801JX_EHCI_FCREG_REQUIRED_VALUE \
+	(I82801JX_EHCI_FCREG_FIELD_3_2_VALUE | \
+	 I82801JX_EHCI_FCREG_BIT_17 | I82801JX_EHCI_FCREG_BIT_29)
+
+#define I82801JX_SATA_MAP			0x90
+#define I82801JX_SATA_MAP_SMS_MASK		(3u << 6)
+#define I82801JX_SATA_MAP_SMS_AHCI		(1u << 6)
+#define I82801JX_SATA_MAP_ALL_PORTS_D31F2	(1u << 5)
+#define I82801JX_SATA_MAP_AHCI_D31F2_MASK \
+	(I82801JX_SATA_MAP_SMS_MASK | I82801JX_SATA_MAP_ALL_PORTS_D31F2)
+#define I82801JX_SATA_MAP_AHCI_D31F2_VALUE \
+	(I82801JX_SATA_MAP_SMS_AHCI | I82801JX_SATA_MAP_ALL_PORTS_D31F2)
+#define I82801JX_SATA_PCS			0x92
+#define I82801JX_SATA_PCS_PORT_ENABLE_MASK	0x3f
+#define I82801JX_SATA_PCS_ALL_PORTS_ENABLED	0x3f
+#define I82801JX_SATA_PCS_LOW_NON_PORT_MASK	0xc0
+#define I82801JX_SATA_PCS_PRESENCE_MASK		0x3f00
+#define I82801JX_SATA_PCS_RESERVED_14		(1u << 14)
+#define I82801JX_SATA_PCS_OOB_RETRY_MODE		(1u << 15)
+#define I82801JX_SATA_ABAR			0x24
+#define I82801JX_SATA_SCLKCG			0x94
+#define I82801JX_SATA_SCLKCG_FIELD1_MASK	0x000001ffu
+#define I82801JX_SATA_SCLKCG_FIELD1_REQUIRED	0x00000193u
+#define I82801JX_SATA_SCLKCG_RESERVED_23_9	0x00fffe00u
+#define I82801JX_SATA_SCLKCG_PORT_DISABLE_MASK	0x3f000000u
+#define I82801JX_SATA_SCLKCG_RESERVED_31_30	0xc0000000u
+
 void i82801jx_lpc_setup(void);
 void i82801jx_setup_bars(void);
 void i82801jx_early_init(void);
+void i82801jx_program_required_fields(void);
+void i82801jx_ehci_init(void);
+void i82801jx_sata_select_ahci(pci_devfn_t sata);
+void i82801jx_disable_sata2(void);
+void i82801jx_sata_enable_all_ports(pci_devfn_t sata);
+void i82801jx_sata_program_clock_field(pci_devfn_t sata);
 
 #endif
 

@@ -1,30 +1,210 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
+config SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE
+	def_bool n
+	help
+	  Make the reusable pre-DRAM RCBA, PMBASE, GPIOBASE, LPC, and
+	  serial-IRQ helpers available to an explicit caller.  This adds no
+	  automatic initialization hook and deliberately excludes the complete
+	  ICH10 device model and its SMM, SPI, SATA, USB, and watchdog policy.
+
+config SOUTHBRIDGE_INTEL_I82801JX_EHCI_INIT
+	def_bool n
+	help
+	  Make the reusable ramstage helper for the two ICH10 EHCI BIOS-required
+	  configuration fields available to an explicit caller. This option adds
+	  no automatic device-model hook and no USB host-controller driver.
+
+config SOUTHBRIDGE_INTEL_I82801JX_REQUIRED_FIELDS
+	def_bool n
+	help
+	  Make the reusable ramstage helper for exactly six ICH10
+	  BIOS-required RCBA fields available to an explicit caller. The helper
+	  preserves every unselected bit and does not touch GCS, CIR5, FDSW,
+	  function hiding, RPFN, MAP, locks, watchdog or interrupt policy. It adds
+	  no automatic device-model hook.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SATA_AHCI_MAP
+	def_bool n
+	help
+	  Make the reusable ramstage helper which selects ICH10 SATA AHCI mode,
+	  maps all six ports to D31:F2, and clears BAR5 after the component type
+	  changes available to an explicit caller. The BAR clear is required by
+	  ICH10 section 14.1.16; no address is assigned. This option adds no
+	  automatic device-model hook and does not enable ports, program SATA
+	  clocks, or access AHCI MMIO registers.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SATA2_DISABLE
+	def_bool n
+	help
+	  Make the reusable ramstage helper which sets only RCBA Function Disable
+	  SAD2 (bit 25) available to an explicit caller. This is intentionally
+	  separate from SATA MAP selection: MAP routes all six ports to D31:F2,
+	  while SAD2 suppresses the now-unused D31:F5 function. The helper neither
+	  writes FDSW nor locks the Function Disable register, and it adds no
+	  automatic device-model hook.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SATA_PORT_ENABLE
+	def_bool n
+	help
+	  Make the reusable ramstage helper which changes only the six port-
+	  enable fields in the low byte of ICH10 SATA PCS available to an
+	  explicit caller. The helper uses an 8-bit masked read-modify-write,
+	  preserving the reserved low-byte fields and never writing the
+	  read-only presence fields in the high byte. ICH10 section 14.1.31
+	  requires supported ports to be enabled before handing the controller
+	  to AHCI-aware software. This option adds no automatic device-model
+	  hook and does not program SATA clocks or access AHCI MMIO registers.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SATA_CLOCK_FIELD
+	def_bool n
+	help
+	  Make the reusable ramstage helper which changes only Field 1, bits 8:0,
+	  of the ICH10 SATA Clock Gating register to the documented required value
+	  0x193. The helper uses a 32-bit masked read-modify-write and preserves
+	  every port-clock-disable and reserved field. This option adds no
+	  automatic device-model hook and does not enable clock request, gate port
+	  clocks, access AHCI MMIO registers, reset the controller, or issue OOB.
+
+config SOUTHBRIDGE_INTEL_I82801JX_LPC_INIT
+	def_bool n
+	help
+	  Make the complete standard ramstage LPC initialization sequence callable
+	  by an explicit device owner. Does not install PCI drivers, SMM, ACPI
+	  tables, early hooks or chipset-wide initialization. The caller supplies
+	  a real enumerated LPC device, chip configuration and ACPI-mode adapter.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SATA_INIT
+	def_bool n
+	help
+	  Make the standard SATA mode-selection and post-allocation initialization
+	  routines callable by an explicit device owner, without chipset-wide
+	  registration or SMM. The caller owns mode, resources and safe DMA state.
+
+config SOUTHBRIDGE_INTEL_I82801JX_USB_INIT
+	def_bool n
+	help
+	  Make EHCI/UHCI device initialization and the EHCI protected subsystem-ID
+	  helper callable by explicit owners. No full-chipset/SMM hooks are added.
+	  Controller reset, legacy ownership and enumeration remain payload policy.
+
+config SOUTHBRIDGE_INTEL_I82801JX_PCIE_INIT
+	def_bool n
+	help
+	  Make the standard PCIe required-fields, pre-enumeration setup and
+	  post-allocation device-init helpers callable by explicit owners. No
+	  automatic PCI drivers, full-chipset initialization, function hiding,
+	  RCBA locks or SMM are selected. Only the required-fields helper omits
+	  PCIe write-once policy; the full setup/device-init routines retain it.
+	  The caller must establish extended configuration access first.
+
+config SOUTHBRIDGE_INTEL_I82801JX_PCI_BRIDGE_INIT
+	def_bool n
+	help
+	  Make the standard conventional-PCI bridge device initialization callable
+	  by an explicit board owner. The caller owns bridge scan policy, including
+	  any bounded add-in admission, and resource allocation. This option adds no
+	  automatic PCI driver or chipset-wide initialization.
+
+config SOUTHBRIDGE_INTEL_I82801JX_SMBUS_INIT
+	def_bool n
+	help
+	  Make the ICH10 SMBus clock-gating device initialization callable by an
+	  explicit board owner. SMBus resource discovery, bus operations and child
+	  scanning remain the owner's responsibility. This option adds no automatic
+	  PCI driver or chipset-wide initialization.
+
+config SOUTHBRIDGE_INTEL_I82801JX_THERMAL_INIT
+	def_bool n
+	help
+	  Make the ICH10 thermal-controller initialization using an allocator-owned
+	  BAR callable by an explicit board owner. The caller must establish normal
+	  PCI resources and memory decoding first. This option adds no automatic PCI
+	  driver or temporary fixed BAR mapping.
+
+config SOUTHBRIDGE_INTEL_I82801JX_HDA_INIT
+	def_bool n
+	help
+	  Make the standard ICH10 Azalia/HDA controller initialization callable by
+	  an explicit board owner. Codec verbs, resources and all existing board
+	  policy remain unchanged; this option only separates the reusable device
+	  initialization from automatic PCI-driver registration.
+
+config SOUTHBRIDGE_INTEL_I82801JX_DIRECT_DEVICE_MODEL
+	bool
+	depends on SOUTHBRIDGE_INTEL_I82801JX
+	default n
+	help
+	  Do not register the generic ICH10 chip or PCI-device adapters. A board
+	  using this capability supplies an explicit devicetree operation table for
+	  every admitted ICH10 function and calls the reusable ICH10 helpers at the
+	  appropriate lifecycle points. This is a device-model ownership boundary;
+	  it does not select SMM, reset, GPIO, ACPI, PCI policy or extra hardware
+	  initialization.
+
+config SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_NO_SMM
+	bool
+	depends on SOUTHBRIDGE_INTEL_I82801JX
+	default n
+	help
+	  The board already owns the pre-DRAM ICH10 state and deliberately supplies
+	  its own no-SMM ACPI, reset-recovery and watchdog policy. Suppress only the
+	  generic features that require the normal ICH10 SMM/early-init contract.
+	  This generic capability deliberately names no particular board.
+
+config SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY
+	bool
+	depends on SOUTHBRIDGE_INTEL_I82801JX
+	default n
+	help
+	  The board owns exceptional pre-enumeration admission, PCI topology,
+	  ACPI mode, and resource-policy decisions for inherited ICH10 state.
+	  Keep normal ICH10 helpers available, but route generic chip and
+	  PCI-device adapters through documented board hooks instead of assuming
+	  the conventional ICH10 cold-init/SMM contract. This does not select a
+	  board, alter a register, or make a missing board hook optional.
+
 config SOUTHBRIDGE_INTEL_I82801JX
 	bool
+	select SOUTHBRIDGE_INTEL_I82801JX_PCIE_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_USB_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_LPC_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_PCI_BRIDGE_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_SMBUS_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_THERMAL_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_HDA_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_EARLY_CORE
+	select SOUTHBRIDGE_INTEL_I82801JX_EHCI_INIT
+	select SOUTHBRIDGE_INTEL_I82801JX_REQUIRED_FIELDS
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA_AHCI_MAP if SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY
+	select SOUTHBRIDGE_INTEL_I82801JX_SATA2_DISABLE if SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY
 	select ACPI_COMMON_MADT_IOAPIC
 	select ACPI_COMMON_MADT_LAPIC
 	select ACPI_INTEL_HARDWARE_SLEEP_VALUES
 	select AZALIA_HDA_CODEC_SUPPORT
 	select HAVE_POWER_STATE_AFTER_FAILURE
 	select HAVE_POWER_STATE_PREVIOUS_AFTER_FAILURE
-	select HAVE_SMI_HANDLER
+	# This board always uses NO_SMM and its reviewed cold-recovery policy.
+	# Board-constant guards also avoid a recursive feature dependency through
+	# generic boot-device/SMM Kconfig selections.
+	select HAVE_SMI_HANDLER if !SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_NO_SMM
 	select HAVE_USBDEBUG_OPTIONS
 	select INTEL_DESCRIPTOR_MODE_CAPABLE
 	select SOUTHBRIDGE_INTEL_COMMON_GPIO
 	select SOUTHBRIDGE_INTEL_COMMON_PMBASE
 	select SOUTHBRIDGE_INTEL_COMMON_PMCLIB
 	select SOUTHBRIDGE_INTEL_COMMON_RCBA_PIRQ
-	select SOUTHBRIDGE_INTEL_COMMON_RESET
+	select SOUTHBRIDGE_INTEL_COMMON_RESET if !SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_NO_SMM
 	select SOUTHBRIDGE_INTEL_COMMON_RTC
 	select SOUTHBRIDGE_INTEL_COMMON_SMBUS
 	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS
-	select SOUTHBRIDGE_INTEL_COMMON_SMM
+	select SOUTHBRIDGE_INTEL_COMMON_SMM if !SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_NO_SMM
 	select SOUTHBRIDGE_INTEL_COMMON_SPI_ICH9
 	select SOUTHBRIDGE_INTEL_COMMON_USB_DEBUG
-	select SOUTHBRIDGE_INTEL_COMMON_WATCHDOG
+	select SOUTHBRIDGE_INTEL_COMMON_WATCHDOG if !SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_NO_SMM
 	select TCO_SPACE_NOT_YET_SPLIT
-	select USE_WATCHDOG_ON_BOOT
+	select USE_WATCHDOG_ON_BOOT if !SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_NO_SMM
 
 if SOUTHBRIDGE_INTEL_I82801JX
 

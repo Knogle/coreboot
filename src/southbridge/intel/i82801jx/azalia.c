@@ -11,6 +11,7 @@
 
 #include "chip.h"
 #include "i82801jx.h"
+#include "azalia_init.h"
 
 static int codec_detect(u8 *base)
 {
@@ -22,7 +23,7 @@ static int codec_detect(u8 *base)
 	if (azalia_exit_reset(base) != CB_SUCCESS)
 		goto no_codec;
 
-	/* Read in Codec location (BAR + 0xe)[2..0] */
+	/* Read codec locations from BAR + 0xe, bits 2:0. */
 	reg32 = read32(base + HDA_STATESTS_REG);
 	reg32 &= 0x0f;
 	if (!reg32)
@@ -37,7 +38,7 @@ no_codec:
 	return 0;
 }
 
-static void azalia_init(struct device *dev)
+void i82801jx_azalia_init(struct device *dev)
 {
 	u8 *base;
 	struct resource *res;
@@ -83,11 +84,12 @@ static void azalia_init(struct device *dev)
 	}
 }
 
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX) && !CONFIG(SOUTHBRIDGE_INTEL_I82801JX_DIRECT_DEVICE_MODEL)
 static struct device_operations azalia_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.init			= azalia_init,
+	.init			= i82801jx_azalia_init,
 	.ops_pci		= &pci_dev_ops_pci,
 };
 
@@ -102,3 +104,4 @@ static const struct pci_driver i82801jx_azalia __pci_driver = {
 	.vendor	= PCI_VID_INTEL,
 	.devices	= pci_device_ids,
 };
+#endif

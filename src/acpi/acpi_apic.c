@@ -236,6 +236,14 @@ unsigned long acpi_arch_fill_madt(acpi_madt_t *madt, unsigned long current)
 	if (CONFIG(ACPI_HAVE_PCAT_8259))
 		madt->flags |= ACPI_MADT_PCAT_COMPAT;
 
+	/*
+	 * Some legacy platforms must publish a complete MADT because their AML
+	 * Processor IDs are not the generic CPU-device indices.  Keep the common
+	 * header above, but do not append a second LAPIC/IOAPIC/ISO record set.
+	 */
+	if (CONFIG(ACPI_CUSTOM_MADT_REPLACES_ARCH_ENTRIES))
+		return current;
+
 	if (CONFIG(ACPI_COMMON_MADT_LAPIC))
 		current = acpi_create_madt_lapics_with_nmis(current);
 

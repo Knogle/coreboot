@@ -5,10 +5,10 @@
 #include <device/pci.h>
 #include <device/pci_ops.h>
 #include <device/pci_ids.h>
-#include "i82801jx.h"
+#include "usb_init.h"
 #include <device/pci_ehci.h>
 
-static void usb_ehci_init(struct device *dev)
+void i82801jx_usb_ehci_init(struct device *dev)
 {
 	printk(BIOS_DEBUG, "EHCI: Setting up controller.. ");
 	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
@@ -16,7 +16,7 @@ static void usb_ehci_init(struct device *dev)
 	printk(BIOS_DEBUG, "done.\n");
 }
 
-static void usb_ehci_set_subsystem(struct device *dev, unsigned int vendor,
+void i82801jx_usb_ehci_set_subsystem(struct device *dev, unsigned int vendor,
 				   unsigned int device)
 {
 	u8 access_cntl;
@@ -32,6 +32,7 @@ static void usb_ehci_set_subsystem(struct device *dev, unsigned int vendor,
 	pci_write_config8(dev, 0x80, access_cntl);
 }
 
+#if CONFIG(SOUTHBRIDGE_INTEL_I82801JX) && !CONFIG(SOUTHBRIDGE_INTEL_I82801JX_DIRECT_DEVICE_MODEL)
 static const unsigned short pci_device_ids[] = {
 	0x3a3a,
 	0x3a6a,
@@ -41,7 +42,7 @@ static const unsigned short pci_device_ids[] = {
 };
 
 static struct pci_operations lops_pci = {
-	.set_subsystem	= &usb_ehci_set_subsystem,
+	.set_subsystem	= &i82801jx_usb_ehci_set_subsystem,
 };
 
 static struct device_operations usb_ehci_ops = {
@@ -49,7 +50,7 @@ static struct device_operations usb_ehci_ops = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.scan_bus		= scan_static_bus,
-	.init			= usb_ehci_init,
+	.init			= i82801jx_usb_ehci_init,
 	.ops_pci		= &lops_pci,
 };
 
@@ -58,3 +59,4 @@ static const struct pci_driver pch_usb_ehci1 __pci_driver = {
 	.vendor	= PCI_VID_INTEL,
 	.devices = pci_device_ids,
 };
+#endif

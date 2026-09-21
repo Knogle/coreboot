@@ -4,9 +4,12 @@
 #include <device/pci_ops.h>
 #include <device/device.h>
 #include <device/pci.h>
+#include <device/pci_ids.h>
 #include <console/console.h>
 #include "chip.h"
 #include "i82801jx.h"
+#include "pcie_init.h"
+#include "board_policy.h"
 
 typedef struct southbridge_intel_i82801jx_config config_t;
 
@@ -20,88 +23,32 @@ static void i82801jx_early_settings(const config_t *const info)
 {
 	/* Program FERR# as processor break event indicator. */
 	RCBA32(GCS) |= (1 << 6);
-	/* BIOS must program... */
-	RCBA32(RCBA_CIR8) = (RCBA32(RCBA_CIR8) & ~(0x3 <<  0)) | (0x2 <<  0);
-	RCBA32(RCBA_FD) |= (1 << 0);
-	RCBA32(RCBA_CIR9) = (RCBA32(RCBA_CIR9) & ~(0x3 << 26)) | (0x2 << 26);
-	RCBA32(RCBA_CIR7) = (RCBA32(RCBA_CIR7) & ~(0xf << 16)) | (0x5 << 16);
-	RCBA32(RCBA_CIR13) = (RCBA32(RCBA_CIR13) & ~(0xf << 16)) | (0x5 << 16);
+	i82801jx_program_required_fields();
 	/* RCBA32(RCBA_CIR5) |= (1 << 0); cf. Specification Update */
-	RCBA32(RCBA_CIR10) |= (3 << 16);
 }
 
 static void i82801jx_pcie_init(const config_t *const info)
 {
-	struct device *pciePort[6];
-	int i, slot_number = 1; /* Reserve slot number 0 for nb's PEG. */
+	struct device *ports[I82801JX_PCIE_PORT_COUNT];
 
-	/* PCIe - BIOS must program... */
-	for (i = 0; i < 6; ++i) {
-		pciePort[i] = pcidev_on_root(0x1c, i);
-		if (!pciePort[i]) {
-			printk(BIOS_EMERG, "PCIe port 00:1c.%x", i);
-			die(" is not listed in devicetree.\n");
-		}
-		pci_or_config32(pciePort[i], 0x300, 1 << 21);
-		pci_write_config8(pciePort[i], 0x324, 0x40);
-	}
-
-	for (i = 5; (i >= 0) && !pciePort[i]->enabled; --i) {
-		/* Only for the top disabled ports. */
-		pci_or_config32(pciePort[i], 0x300, 0x3 << 16);
-	}
-
-	/* Set slot implemented, slot number and slot power limits. */
-	for (i = 0; i < 6; ++i) {
-		struct device *const dev = pciePort[i];
-		u32 xcap = pci_read_config32(dev, D28Fx_XCAP);
-		if (info->pcie_slot_implemented & (1 << i))
-			xcap |=  PCI_EXP_FLAGS_SLOT;
-		else
-			xcap &= ~PCI_EXP_FLAGS_SLOT;
-		pci_write_config32(dev, D28Fx_XCAP, xcap);
-
-		if (info->pcie_slot_implemented & (1 << i)) {
-			u32 slcap = pci_read_config32(dev, D28Fx_SLCAP);
-			slcap &= ~(0x1fff << 19);
-			slcap |=  (slot_number++ << 19);
-			slcap &= ~(0x0003 << 16);
-			slcap |=  (info->pcie_power_limits[i].scale << 16);
-			slcap &= ~(0x00ff <<  7);
-			slcap |=  (info->pcie_power_limits[i].value <<  7);
-			pci_write_config32(dev, D28Fx_SLCAP, slcap);
-		}
-	}
-
-	/* Lock R/WO ASPM support bits. */
-	for (i = 0; i < 6; ++i)
-		pci_update_config32(pciePort[i], 0x4c, ~0, 0);
-}
-
-static void i82801jx_ehci_init(void)
-{
-	struct device *const pciEHCI1 = pcidev_on_root(0x1d, 7);
-	if (!pciEHCI1)
-		die("EHCI controller (00:1d.7) not listed in devicetree.\n");
-	struct device *const pciEHCI2 = pcidev_on_root(0x1a, 7);
-	if (!pciEHCI2)
-		die("EHCI controller (00:1a.7) not listed in devicetree.\n");
-
-	u32 reg32;
-
-	/* TODO: Maybe we have to save and
-		 restore these settings across S3. */
-	reg32 = pci_read_config32(pciEHCI1, 0xfc);
-	pci_write_config32(pciEHCI1, 0xfc, (reg32 & ~(3 << 2)) |
-					   (1 << 29) | (1 << 17) | (2 << 2));
-	reg32 = pci_read_config32(pciEHCI2, 0xfc);
-	pci_write_config32(pciEHCI2, 0xfc, (reg32 & ~(3 << 2)) |
-					   (1 << 29) | (1 << 17) | (2 << 2));
+	for (unsigned int i = 0; i < I82801JX_PCIE_PORT_COUNT; i++)
+		ports[i] = pcidev_on_root(0x1c, i);
+	if (CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY))
+		i82801jx_pcie_setup_retained(ports);
+	else
+		i82801jx_pcie_setup(ports, info);
 }
 
 static int i82801jx_function_disabled(const unsigned int devfn)
 {
 	struct device *const dev = pcidev_path_on_root(devfn);
+	/* An absent node/function is not a board request to disable hardware.
+	 * FD is monotonic; already hidden functions retain their existing bits.
+	 */
+	if (CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY))
+		return dev && !dev->enabled &&
+			pci_read_config16(dev, PCI_VENDOR_ID) == PCI_VID_INTEL;
+
 	if (!dev) {
 		printk(BIOS_EMERG,
 		       "PCI device 00:%x.%x",
@@ -124,6 +71,7 @@ static void i82801jx_hide_functions(void)
 		RCBA32(RCBA_BUC) |= BUC_LAND;
 
 	reg32 = RCBA32(RCBA_FD);
+	const u32 original_fd = reg32;
 	struct {
 		int devfn;
 		u32 mask;
@@ -153,7 +101,16 @@ static void i82801jx_hide_functions(void)
 		if (i82801jx_function_disabled(functions[i].devfn))
 			reg32 |= functions[i].mask;
 	}
-	RCBA32(RCBA_FD) = reg32;
+	if (!CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY) ||
+	    reg32 != original_fd)
+		RCBA32(RCBA_FD) = reg32;
+	/* The inherited numbering/capabilities are retained. There is no
+	 * evidence for changing FDSW, remapping UHCI, or rewriting RPFN here.
+	 * Only explicitly configured, present disabled functions above own FD.
+	 */
+	if (CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY))
+		return;
+
 	RCBA32(RCBA_FD) |= (1 << 0); /* BIOS must write this... */
 	RCBA32(RCBA_FDSW) |= (1 << 7); /* Lock function-disable? */
 
@@ -175,7 +132,13 @@ static void i82801jx_init(void *chip_info)
 
 	printk(BIOS_DEBUG, "Initializing i82801jx southbridge...\n");
 
+	if (CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY))
+		mainboard_ich10_pre_init();
+
 	i82801jx_early_settings(info);
+
+	if (CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY))
+		mainboard_ich10_prepare_sata(info);
 
 	/* PCI Express setup. */
 	i82801jx_pcie_init(info);
@@ -185,6 +148,12 @@ static void i82801jx_init(void *chip_info)
 
 	/* Now hide internal functions. We can't access them after this. */
 	i82801jx_hide_functions();
+
+	/* No boot watchdog is installed on a board-owned no-SMM path. Its
+	 * admission owns the bounded TCO halt and preserves status/recovery.
+	 */
+	if (CONFIG(SOUTHBRIDGE_INTEL_I82801JX_BOARD_OWNED_DEVICE_POLICY))
+		return;
 
 	/* Reset watchdog timer. */
 #if !CONFIG(HAVE_SMI_HANDLER)

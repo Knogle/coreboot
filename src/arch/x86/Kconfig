@@ -319,6 +319,18 @@ config IDT_IN_EVERY_STAGE
 	default n
 	depends on ARCH_X86
 
+config X86_EARLY_NULL_GS_RECOVERY
+	bool
+	default n
+	help
+	  In 32-bit ramstage without GDB, report the saved exception frame and
+	  halt when GS is still null, before consulting per-CPU state or dumping
+	  code and stack memory. This also makes early debug exceptions fatal
+	  instead of dispatching potentially resumable breakpoint handlers.
+	  Platforms must opt in explicitly and provide an initialized console
+	  that does not require per-CPU state. Other stages and long mode are
+	  unchanged.
+
 config HAVE_CF9_RESET
 	bool
 
