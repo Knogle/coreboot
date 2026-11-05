@@ -1,0 +1,79 @@
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/BootPolicy.c b/UefiPayloadPkg/Library/PlatformBootManagerLib/BootPolicy.c
+--- a/UefiPayloadPkg/Library/PlatformBootManagerLib/BootPolicy.c
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/BootPolicy.c
+@@ -6,6 +6,7 @@
+ 
+ #include "PlatformBootManager.h"
+ #include <Guid/GlobalVariable.h>
++#include <Guid/CmosOptionTableHob.h>
+ #include <Library/CorebootCmosOptionLib.h>
+ 
+ STATIC EFI_GUID  mPolicyGuid = {
+@@ -203,3 +204,35 @@
+   FreePool (NewOrder);
+   FreePool (Order);
+ }
++
++// Optional legacy applications copy this metadata before ExitBootServices.
++// CMOS remains the only settings store; this publishes no writable interface.
++VOID
++PlatformPublishCmosOptions (
++  VOID
++  )
++{
++  EFI_HOB_GUID_TYPE  *Hob;
++  CB_CMOS_LAYOUT    *Layout;
++  UINT32            Value;
++  EFI_STATUS        Status;
++
++  Hob = GetFirstGuidHob (&gEfiCmosOptionTableHobGuid);
++  if ((Hob == NULL) ||
++      (Hob->Header.HobLength < sizeof (*Hob) + sizeof (*Layout) + sizeof (CB_CMOS_CHECKSUM_ENTRY)))
++  {
++    return;
++  }
++
++  Layout = GET_GUID_HOB_DATA (Hob);
++  if ((Layout->Tag != CB_CMOS_OPTION_TABLE) || (Layout->Size < sizeof (*Layout)) ||
++      (Layout->Size > 2048) ||
++      (Layout->Size > GET_GUID_HOB_DATA_SIZE (Hob) - sizeof (CB_CMOS_CHECKSUM_ENTRY)) ||
++      EFI_ERROR (CorebootCmosReadOption (L"serial_console", &Value)))
++  {
++    return;
++  }
++
++  Status = gBS->InstallConfigurationTable (&gEfiCmosOptionTableHobGuid, Layout);
++  DEBUG ((DEBUG_INFO, "Published checked coreboot CMOS layout: %r\n", Status));
++}
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.h b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.h
+--- a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.h
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.h
+@@ -163,3 +163,6 @@
+ 
+ VOID
+ PlatformApplyLegacyBootPriority (IN UINT16 LegacyOption);
++
++VOID
++PlatformPublishCmosOptions (VOID);
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c
+--- a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c
+@@ -399,6 +399,7 @@
+   // Register ENTER as CONTINUE key
+   //
+   PlatformSyncBootTimeout ();
++  PlatformPublishCmosOptions ();
+ 
+   Enter.ScanCode    = SCAN_NULL;
+   Enter.UnicodeChar = CHAR_CARRIAGE_RETURN;
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
+--- a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
+@@ -59,6 +59,7 @@
+   Tcg2PhysicalPresenceLib
+ 
+ [Guids]
++  gEfiCmosOptionTableHobGuid
+   gEfiGlobalVariableGuid
+   gEfiEndOfDxeEventGroupGuid
+   gUefiShellFileGuid

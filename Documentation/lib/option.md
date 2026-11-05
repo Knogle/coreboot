@@ -17,6 +17,15 @@ configurable options. If supported by a mainboard, the `USE_OPTION_TABLE`
 and `USE_MAINBOARD_SPECIFIC_OPTION_BACKEND` choices are visible, and can
 be selected to enable runtime configurability.
 
+## CMOS layout readiness
+
+The CMOS backend locates its layout in read-only CBFS. A platform that loads
+this medium later in a stage may override `cmos_option_table_ready()` and
+return `false` until it is available. Early queries then return their caller's
+fallback, and writes return `CB_CMOS_LAYOUT_NOT_FOUND`, without looking up CBFS.
+The default implementation returns `true` and preserves the normal behavior.
+This hook does not initialize the medium or bypass its admission checks.
+
 # Mainboard-specific option backend
 
 Mainboards with a mainboard-specific (vendor-defined) method to access

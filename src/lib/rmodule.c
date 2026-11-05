@@ -8,6 +8,9 @@
 #include <program_loading.h>
 #include <rmodule.h>
 #include <types.h>
+#if CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY)
+#include "native84_profile.h"
+#endif
 
 /* Change this define to get more verbose debugging for module loading. */
 #define PK_ADJ_LEVEL BIOS_NEVER
@@ -248,6 +251,10 @@ static void *rmodule_cbfs_allocator(void *rsl_arg, size_t unused,
 
 int rmodule_stage_load(struct rmod_stage_load *rsl)
 {
+#if CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY)
+	/* One fresh bounded transaction around the genuine parse/load APIs. */
+	return native84_rmodule_stage_load(rsl);
+#endif
 	struct rmodule rmod_stage;
 
 	if (rsl->prog == NULL || prog_name(rsl->prog) == NULL)

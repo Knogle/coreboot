@@ -32,6 +32,14 @@ config MEMLAYOUT_LD_FILE
 	string
 	default "src/soc/amd/common/block/cpu/noncar/memlayout.ld"
 
+config PSP_APOB_DRAM_RESERVED_SIZE
+	hex
+	default PSP_APOB_DRAM_SIZE
+	help
+	  Full PSP-owned APOB extent to exclude from early-stage scratch and
+	  later RAM resources. This reservation may exceed the separately
+	  configured APOB data/cache capacity. It does not resize flash caches.
+
 config CBFS_CACHE_SIZE
 	hex
 	help

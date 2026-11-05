@@ -68,6 +68,58 @@ uintptr_t cbmem_top(void);
  */
 uintptr_t cbmem_top_chipset(void);
 
+/*
+ * Required only with CBMEM_BOUNDED_ARENA. No default implementation exists.
+ * Return the exclusive-downward arena's inclusive lower endpoint. The same
+ * qualified [bottom, cbmem_top()) arena must be stable across initialization,
+ * recovery and later allocation in every stage. Both endpoints must be 4KiB
+ * aligned, below 4GiB, in the same 32-bit signed-address half, and enclose at
+ * least cbmem_overhead_size() bytes. Invalid bounds or bounded create/recover
+ * failure halt; recovery never falls back to a different empty arena.
+ *
+ * Numeric checks do not grant access. The platform must separately establish
+ * readable/writable mapping, appropriate cache attributes (UC for the x86
+ * quick RAM check), parent containment, lifetime and all-agent exclusion.
+ * The writable IMD handle must be disjoint from the arena. Reserve the whole
+ * parent separately; cbmem_get_region() still reports only the used suffix.
+ * No descriptor, RAMstage parameter, arena provider or profile is supplied.
+ */
+uintptr_t cbmem_bottom_chipset(void);
+
+/*
+ * Required only with CBMEM_BOUNDED_EXTERNAL_HANDLE. No default implementation
+ * or static-handle fallback exists. The callback returns one coherent by-value
+ * snapshot; it must not call CBMEM. The whole nonzero control bank, not just
+ * the handle slot, must be outside the entire [cbmem_bottom_chipset(),
+ * cbmem_top()) allocator arena. Its nonwrapping endpoints must be below 4GiB
+ * and in one 32-bit signed-address half. The handle must meet struct imd's
+ * natural alignment and fit completely in the bank (16 bytes on IA32).
+ *
+ * The arena endpoints and returned bank/slot must remain identical throughout
+ * a public operation, its nested CBMEM calls and all initialization hooks.
+ * Recovery in a different stage may select a different qualified slot, after
+ * which that stage must keep the snapshot stable and initialize/recover that
+ * handle before ordinary CBMEM access. No shared static pointer caches it.
+ *
+ * Before the callback and any C prologue, the caller/platform must separately
+ * qualify the descriptor source, callback code, stack and handle bank's valid
+ * readable/writable mapping, access/cache attributes, lifetime and all-agent
+ * exclusion. The bank must also avoid code, RO data, live stacks, descriptor
+ * storage and every other protected object. A descriptor copy may be in an
+ * allocated module, but the handle bank cannot be in any allocator entry or
+ * unused part of the whole arena. Numeric validation supplies no ownership,
+ * initialization, root authenticity, concurrency or native-transfer grant.
+ * Entry arguments retain the existing API's valid stable-entry requirement.
+ * No checksum or descriptor field makes an unqualified bank safe to access.
+ */
+struct imd;
+struct cbmem_imd_handle_storage {
+	struct imd *handle;
+	uintptr_t bank_base;
+	uintptr_t bank_bytes;
+};
+struct cbmem_imd_handle_storage cbmem_imd_handle_storage_chipset(void);
+
 /* Add a cbmem entry of a given size and id. These return NULL on failure. The
  * add function performs a find first and do not check against the original
  * size. */

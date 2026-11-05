@@ -46,3 +46,8 @@ tarballs/
 *~
 *.kate-swp
 *.kdev4
+
+# B565D4 local inputs and build metadata
+/.config.b565d4-*
+/b565d4-private-inputs*.tar*
+/b565d4-sdk*.tar*

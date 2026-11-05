@@ -1,0 +1,18 @@
+--- a/scripts/buildversion.py
++++ b/scripts/buildversion.py
+@@ -125,8 +125,13 @@
+         if not ver:
+             ver = "?"
+     if not cleanbuild:
+-        btime = time.strftime("%Y%m%d_%H%M%S")
+-        hostname = socket.gethostname()
++        epoch = os.environ.get("SOURCE_DATE_EPOCH")
++        if epoch is None:
++            btime = time.strftime("%Y%m%d_%H%M%S")
++            hostname = socket.gethostname()
++        else:
++            btime = time.strftime("%Y%m%d_%H%M%S", time.gmtime(int(epoch)))
++            hostname = "reproducible"
+         ver = "%s-%s-%s" % (ver, btime, hostname)
+     write_version(outfile, ver + options.extra, toolstr)
+ 

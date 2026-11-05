@@ -39,7 +39,7 @@ payloads/coreinfo/build/coreinfo.elf coreinfo: force-payload
 
 payloads/nvramcui/build/nvramcui.elf nvramcui: export CCACHE := $(CCACHE)
 payloads/nvramcui/build/nvramcui.elf nvramcui: force-payload
-	$(MAKE) -C payloads/nvramcui
+	$(MAKE) -C payloads/nvramcui obj=build
 
 clean-payloads:
 	$(foreach payload, $(PAYLOADS_LIST), $(MAKE) -C $(payload) clean; )

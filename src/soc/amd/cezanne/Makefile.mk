@@ -12,23 +12,31 @@ all-y		+= i2c.c
 all_x86-y	+= gpio.c
 all_x86-y	+= uart.c
 
+ifneq ($(CONFIG_B565D4_DESKTOP_NATIVE),y)
 bootblock-y	+= early_fch.c
+endif
 bootblock-y	+= espi_util.c
 
+ifeq ($(CONFIG_PLATFORM_USES_FSP2_0),y)
 romstage-y	+= fsp_m_params.c
 romstage-$(CONFIG_SOC_AMD_CEZANNE) += fsp_m_params_cezanne.c
 romstage-$(CONFIG_SOC_AMD_RENOIR)  += fsp_m_params_renoir.c
 romstage-$(CONFIG_SOC_AMD_V2000A)  += fsp_m_params_renoir.c
+endif
 
 ramstage-y	+= acpi.c
+ifneq ($(CONFIG_SOC_AMD_CEZANNE_NATIVE),y)
 ramstage-y	+= chip.c
+endif
 ramstage-y	+= cpu.c
 ramstage-y	+= fch.c
-ramstage-y	+= fsp_s_params.c
+ramstage-$(CONFIG_PLATFORM_USES_FSP2_0) += fsp_s_params.c
 ramstage-y	+= graphics.c
 ramstage-y	+= mca.c
 ramstage-y	+= memmap.c
+ifneq ($(CONFIG_B565D4_DESKTOP_NATIVE),y)
 ramstage-y	+= root_complex.c
+endif
 ramstage-y	+= xhci.c
 
 smm-y		+= gpio.c

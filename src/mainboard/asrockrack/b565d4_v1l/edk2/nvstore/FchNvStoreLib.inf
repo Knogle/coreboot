@@ -1,0 +1,44 @@
+## @file
+# Runtime FVB storage for the B565D4-V1L AMD FCH. No SMI or SMM.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x0001001B
+  BASE_NAME      = FchNvStoreLib
+  FILE_GUID      = 3f92bced-c935-4ad5-b490-bc268ec854b4
+  MODULE_TYPE    = BASE
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = SmmStoreLib|DXE_RUNTIME_DRIVER
+
+[Sources]
+  FchNvStoreLib.c
+  FchNvCore.c
+  FchNvCore.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  CryptoPkg/CryptoPkg.dec
+  UefiPayloadPkg/UefiPayloadPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  BaseCryptLib
+  DebugLib
+  DxeServicesTableLib
+  IoLib
+  MemoryAllocationLib
+  PciLib
+  PrintLib
+  SerialPortLib
+  SynchronizationLib
+  TimerLib
+  UefiBootServicesTableLib
+
+[Guids]
+  gEfiSystemNvDataFvGuid
+
+[BuildOptions]
+  GCC:*_*_*_CC_FLAGS = -DFCH_NV_EDK2

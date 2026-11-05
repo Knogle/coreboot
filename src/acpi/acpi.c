@@ -172,6 +172,25 @@ static unsigned long acpi_fill_mcfg(unsigned long current)
 	return current;
 }
 
+unsigned long __weak acpi_fill_pcct(unsigned long current)
+{
+	return current;
+}
+
+static void acpi_create_pcct(acpi_header_t *header, void *unused)
+{
+	const unsigned long begin = (unsigned long)header;
+	const unsigned long payload = begin + sizeof(acpi_pcct_t);
+	const unsigned long end = acpi_fill_pcct(payload);
+
+	/* The table generator zeroes the header, flags and reserved bytes. Keep
+	 * its length zero when no subspace is available, so no table is added.
+	 */
+	if (end <= payload || end - begin > UINT32_MAX)
+		return;
+	acpi_fill_header(header, "PCCT", PCCT, end - begin);
+}
+
 /* MCFG is defined in the PCI Firmware Specification 3.0. */
 static void acpi_create_mcfg(acpi_header_t *header, void *unused)
 {
@@ -1512,6 +1531,8 @@ static unsigned long write_acpi_tables(const unsigned long start)
 		{ acpi_create_dsdt, &dsdt_file, sizeof(acpi_header_t) },
 		{ acpi_create_fadt, &facs, sizeof(acpi_fadt_t) },
 		{ acpi_create_slic, &slic_file, sizeof(acpi_header_t) },
+		/* PCC subspaces must exist before any CPU _CPC package is emitted. */
+		{ acpi_create_pcct, NULL, sizeof(acpi_pcct_t) },
 		{ acpi_create_ssdt_generator, NULL, sizeof(acpi_header_t) },
 		{ acpi_create_mcfg, NULL, sizeof(acpi_mcfg_t) },
 		{ acpi_create_tcpa, NULL, sizeof(acpi_tcpa_t) },
@@ -1852,6 +1873,8 @@ int get_acpi_table_revision(enum acpi_tables table)
 		return 3;
 	case MCFG:
 		return 1;
+	case PCCT: /* ACPI 6.2 */
+		return 2;
 	case TCPA:
 		return 2;
 	case TPM2:

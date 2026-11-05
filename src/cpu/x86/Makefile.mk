@@ -32,8 +32,10 @@ smm-y += smi_trigger.c
 
 subdirs-$(CONFIG_CPU_INTEL_COMMON_SMM) += ../intel/smm
 
+ifneq ($(CONFIG_B565D4_RETAINED_PEI_LATE_ENTRY),y)
 bootblock-y += entry32.S
 bootblock-y += entry16.S
+endif
 
 additional-dirs += $(obj)/cpu/x86
 

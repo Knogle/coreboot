@@ -6,6 +6,7 @@
 
 #if ENV_X86
 #include <amdblocks/acpimmio_map.h>
+#include <arch/hpet.h>
 #endif
 
 #if ENV_X86 && CONSTANT_ACPIMMIO_BASE_ADDRESS
@@ -64,10 +65,20 @@ void fch_enable_ioapic_decode(void)
 
 void fch_configure_hpet(void)
 {
+#if ENV_X86
+	void *const hpet_config = (void *)(uintptr_t)(HPET_BASE_ADDRESS + HPET_CONFIG);
+#else
+	void *const hpet_config = acpimmio_hpet + HPET_CONFIG;
+#endif
 	uint32_t reg = pm_read32(PM_DECODE_EN);
 	reg |=  HPET_EN | HPET_MSI_EN;
 	reg &= ~HPET_WIDTH_SEL; /* 32 bit HPET */
 	pm_write32(PM_DECODE_EN, reg);
+
+	/* Use the decoded HPET aperture: not every FCH implements its ACPIMMIO alias. */
+	reg = read32(hpet_config);
+	reg &= ~HPET_LEGACY_EN; /* Leave the RTC and PIT interrupt lines available. */
+	write32(hpet_config, reg);
 }
 
 void fch_disable_kb_rst(void)

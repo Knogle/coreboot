@@ -1,0 +1,239 @@
+Subject: [PATCH] SeaBIOS: same-CPU real-mode thunk, CSM FSEG budget and serial console
+
+Open implementation for the AM4 test port. Temporary firmware AP ownership
+ends when a multiprocessor OS sends INIT/SIPI; no CPU is hidden or disabled.
+V86 BIOS I/O requires the helper to remain firmware-owned, and must not race
+OS AP startup. Ordinary real-mode call32 uses the upstream SeaBIOS thunk.
+No proprietary AMI code or SMM mode-state transplant is included.
+
+diff --git a/src/stacks.c b/src/stacks.c
+--- a/src/stacks.c
++++ b/src/stacks.c
+@@ -32,7 +32,7 @@
+  ****************************************************************/
+ 
+ /* Unique signature for CSMWrap to locate this structure */
+-#define BIOS_PROXY_SIGNATURE 0x79787250504D5343ULL  /* "CSMPPrxy" */
++#define BIOS_PROXY_SIGNATURE 0x32787250504D5343ULL  /* "CSMPPrx2": reclaimable helper ABI */
+ 
+ struct bios_proxy_mailbox {
+     u64 signature;              /* offset 0: BIOS_PROXY_SIGNATURE - must be first */
+@@ -47,6 +47,8 @@
+     u32 reset_cr3;              /* offset 36: CR3 for 64-bit identity mapping */
+     u32 reset_fn_lo;            /* offset 40: ResetSystem() address (low) */
+     u32 reset_fn_hi;            /* offset 44: ResetSystem() address (high) */
++    u32 helper_ack;             /* offset 48: completed liveness requests */
++    u32 helper_lost;            /* offset 52: reject future proxy requests */
+ };
+ 
+ /*
+@@ -380,16 +382,38 @@
+ }
+ 
+ static u32
+-call32_proxy(void *func, u32 eax, u32 edx, u32 ecx)
++call32_proxy(void *func, u32 eax, u32 edx, u32 ecx, u32 errret)
+ {
+     /*
+      * Send request to helper core and wait for response.
+      * Helper is guaranteed to be ready - CSMWrap waits for it before booting SeaBIOS.
+      */
+     u32 mb = find_bios_proxy();
+-    if (!mb)
+-        return 0;
+-
++    if (!mb || GET_PROXY_AT(mb, helper_lost)
++        || GET_PROXY_AT(mb, request_pending))
++        return errret;
++
++    /* A multiprocessor OS may have reclaimed the helper through INIT/SIPI.
++     * Do not dispatch stale function pointers or wait forever for a dead AP.
++     * This finite polling budget is deliberately independent of PIT/RTC and
++     * RDTSC permissions in V86. It is not a calibrated wall-clock timeout.
++     * No function/buffer has been submitted when this check fails.
++     */
++    u32 ack = GET_PROXY_AT(mb, helper_ack);
++    SET_PROXY_AT(mb, request_pending, 2);
++    u32 budget = 10000000;
++    while (GET_PROXY_AT(mb, request_pending) && --budget)
++        asm volatile("pause" ::: "memory");
++    if (!budget || GET_PROXY_AT(mb, helper_ack) != ack + 1) {
++        SET_PROXY_AT(mb, helper_lost, 1);
++        SET_PROXY_AT(mb, request_pending, 0);
++        return errret;
++    }
++
++    /* The BSP serializes BIOS calls. OS AP startup must not race an active
++     * BIOS service; SMP kernels stop using BIOS I/O before reclaiming APs.
++     * Retain normal driver completion semantics once a call is dispatched.
++     */
+     /* Set up the request */
+     SET_PROXY_AT(mb, func_ptr, (u32)func);
+     SET_PROXY_AT(mb, arg_eax, eax);
+@@ -410,6 +434,43 @@
+     return GET_PROXY_AT(mb, result);
+ }
+ 
++static u32
++call32_real(void *func, u32 eax, u32 errret)
++{
++    // Jump direclty to 32bit mode - this clobbers the 16bit segment
++    // selector registers.
++    int ret = call32_prep(C16_BIG);
++    if (ret)
++        return errret;
++    u32 bkup_ss, bkup_esp;
++    asm volatile(
++        // Backup ss/esp / set esp to flat stack location
++        "  movl %%ss, %0\n"
++        "  movl %%esp, %1\n"
++        "  shll $4, %0\n"
++        "  addl %0, %%esp\n"
++        "  shrl $4, %0\n"
++
++        // Transition to 32bit mode, call func, return to 16bit
++        "  movl $(" __stringify(BUILD_BIOS_ADDR) " + 1f), %%edx\n"
++        "  jmp transition32_nmi_off\n"
++        ASM16_SWITCH32
++        "1:calll *%3\n"
++        "  movl $2f, %%edx\n"
++        "  jmp transition16big\n"
++
++        // Restore ds/ss/esp
++        ASM16_BACK16
++        "2:movl %0, %%ds\n"
++        "  movl %0, %%ss\n"
++        "  movl %1, %%esp\n"
++        : "=&r" (bkup_ss), "=&r" (bkup_esp), "+a" (eax)
++        : "r" (func)
++        : "ecx", "edx", "cc", "memory");
++    call32_post();
++    return eax;
++}
++
+ // Call a 32bit SeaBIOS function from a 16bit SeaBIOS function.
+ u32 VISIBLE16
+ __call32(void *func, u32 eax, u32 errret)
+@@ -418,7 +479,9 @@
+     if (CONFIG_CALL32_SMM && GET_GLOBAL(HaveSmmCall32))
+         return call32_smm(func, eax);
+ 
+-    return call32_proxy(func, eax, 0, 0);
++    if (!(cr0_vm86_read() & CR0_PE))
++        return call32_real(func, eax, errret);
++    return call32_proxy(func, eax, 0, 0, errret);
+ }
+ 
+ // Call a 16bit SeaBIOS function, restoring the mode from last call32().
+@@ -937,6 +1000,11 @@
+                           (u32)MAKE_FLATPTR(GET_SEG(SS), &params));
+     }
+ 
+-    /* Proxy path: pass args directly via mailbox */
+-    return call32_proxy(func, eax, edx, ecx);
+-}
++    if (!(cr0_vm86_read() & CR0_PE)) {
++        struct call32_params_s params = {func, eax, edx, ecx};
++        return call32(call32_params_helper,
++                      MAKE_FLATPTR(GET_SEG(SS), &params), errret);
++    }
++    /* V86 path: pass args directly via the temporary helper mailbox. */
++    return call32_proxy(func, eax, edx, ecx, errret);
++}
+diff --git a/src/romlayout.S b/src/romlayout.S
+--- a/src/romlayout.S
++++ b/src/romlayout.S
+@@ -557,6 +557,12 @@
+         //  28: result (4 bytes)
+         //  32: helper_core_id (4 bytes) - DO NOT OVERWRITE
+ 
++        // ABI2 request2 is a liveness check, never a function call.
++        cmpl $2, 8(%ebp)
++        je .Lhelper_ping
++        cmpl $1, 8(%ebp)
++        jne .Lhelper_bad_request
++
+         // Load function pointer and args (regparm=3: EAX, EDX, ECX)
+         movl 12(%ebp), %edi
+         movl 24(%ebp), %ecx
+@@ -570,6 +576,12 @@
+         movl %eax, 28(%ebp)
+         movl $0, 8(%ebp)
+ 
++        jmp .Lhelper_poll_loop
++
++.Lhelper_ping:
++        incl 48(%ebp)
++.Lhelper_bad_request:
++        movl $0, 8(%ebp)
+         jmp .Lhelper_poll_loop
+ 
+         /*
+diff --git a/src/Kconfig b/src/Kconfig
+--- a/src/Kconfig
++++ b/src/Kconfig
+@@ -26,6 +26,17 @@
+            module (CSM) to provide legacy BIOS services.
+ 
+ endchoice
++
++    config CSM_FSEG_SIZE
++        depends on CSM
++        int "Minimum CSM BIOS table and drive-data space in bytes"
++        default 8192
++        range 2048 16384
++        help
++            Reserve F-segment memory for copied legacy tables and persistent
++            BIOS drive descriptors. The default 2 KiB ROM layout budget can
++            run out after table relocation and silently lose later disks.
++            This memory is part of the existing CSM ROM/shadow allocation.
+ 
+     config QEMU_HARDWARE
+         bool "Support hardware found on emulators (QEMU/Xen/KVM/Bochs)" if !QEMU
+diff --git a/scripts/layoutrom.py b/scripts/layoutrom.py
+--- a/scripts/layoutrom.py
++++ b/scripts/layoutrom.py
+@@ -635,6 +635,7 @@
+     return opts
+ 
+ def main():
++    global BUILD_MIN_BIOSTABLE
+     # Get output name
+     in16, in32seg, in32flat, cfgfile, out16, out32seg, out32flat = sys.argv[1:]
+ 
+@@ -650,6 +651,9 @@
+ 
+     # Read kconfig config file
+     config = scanconfig(cfgfile)
++
++    if config.get('CONFIG_CSM'):
++        BUILD_MIN_BIOSTABLE = config.get('CONFIG_CSM_FSEG_SIZE', 8192)
+ 
+     # larger roms have more room in the f-segment due to moving out 32bit code
+     if config.get('CONFIG_ROM_SIZE') >= 256:
+diff --git a/src/fw/csm.c b/src/fw/csm.c
+--- a/src/fw/csm.c
++++ b/src/fw/csm.c
+@@ -208,6 +208,9 @@
+     if (csm_boot_table->MpTable)
+         copy_mptable((void *)csm_boot_table->MpTable);
+ 
++    // Match normal POST: initialize serial redirection after VGA dispatch.
++    // Publishing etc/sercon-port alone does not install the console hooks.
++    sercon_setup();
+     // EFI may have reinitialised the video using its *own* driver.
+     enable_vga_console();
+ 
+diff --git a/src/sercon.c b/src/sercon.c
+--- a/src/sercon.c
++++ b/src/sercon.c
+@@ -530,6 +530,9 @@
+             ScreenAndDebug = 0;
+ 
+     vgabios = GET_IVT(0x10);
++    struct segoff_s serial = FUNC16(entry_sercon);
++    if (vgabios.seg == serial.seg && vgabios.offset == serial.offset)
++        return; // A repeated CSM PrepareToBoot must not hook itself.
+     seabios = FUNC16(entry_10);
+     if (vgabios.seg != seabios.seg ||
+         vgabios.offset != seabios.offset) {

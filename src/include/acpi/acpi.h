@@ -95,6 +95,7 @@ enum acpi_tables {
 	LPIT,   /* Low Power Idle Table */
 	MADT,   /* Multiple APIC Description Table */
 	MCFG,   /* PCI Express Memory Mapped Configuration */
+	PCCT,	/* Platform Communications Channel Table */
 	PPTT,	/* Processor Properties Topology Table */
 	RSDP,   /* Root System Description Pointer */
 	RSDT,   /* Root System Description Table */
@@ -206,6 +207,13 @@ typedef struct acpi_table_header {
 	char asl_compiler_id[4];     /* ASL compiler vendor ID */
 	u32  asl_compiler_revision;  /* ASL compiler revision number */
 } __packed acpi_header_t;
+
+/* Platform Communications Channel Table (ACPI 6.2, revision2). Subspaces follow. */
+typedef struct acpi_pcct {
+	acpi_header_t header;
+	u32 flags;
+	u64 reserved;
+} __packed acpi_pcct_t;
 
 /* A maximum number of 32 ACPI tables ought to be enough for now. */
 #define MAX_ACPI_TABLES 32
@@ -1638,6 +1646,9 @@ void acpi_create_ipmi(const struct device *device,
 		      const s8 gpe_interrupt,
 		      const u32 apic_interrupt,
 		      const u32 uid);
+
+/* Return current unchanged when no qualified PCC subspaces are available. */
+unsigned long acpi_fill_pcct(unsigned long current);
 
 void acpi_create_ivrs(acpi_ivrs_t *ivrs,
 		      unsigned long (*acpi_fill_ivrs_func)(acpi_ivrs_t *ivrs_struct,

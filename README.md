@@ -194,3 +194,10 @@ Conservancy](https://sfconservancy.org/), a nonprofit organization
 devoted to ethical technology and driving initiatives to make technology
 more inclusive. The conservancy acts as coreboot's fiscal sponsor and
 legal advisor.
+
+## ASRock Rack B565D4-V1L AM4 branch
+
+This branch contains the source111 Alpha125-CSM/Alpha126 board port.
+See [the board documentation](Documentation/mainboard/asrockrack/b565d4_v1l.md)
+and [the pinned build workflow](util/b565d4/README.md). Private firmware inputs
+and the compiler/helper SDK are supplied separately and verified by hash.

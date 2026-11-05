@@ -98,7 +98,8 @@
  * traditional stages in the coreboot infrastructure. Therefore it's easier
  * to specialize this case.
  */
-#if ENV_RMODULE || ENV_POSTCAR
+#if ENV_RMODULE || ENV_POSTCAR || \
+	(ENV_RAMSTAGE && (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE)))
 	_rmodule_params = .;
 	KEEP(*(.module_parameters));
 	_ermodule_params = .;
@@ -130,6 +131,11 @@
 	_edata = .;
 	RECORD_SIZE(data)
 } : to_load
+#endif
+
+#if ENV_RAMSTAGE && (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+_native84_parameters_exact = ASSERT(_ermodule_params - _rmodule_params == 56,
+	"Native84 initialized RAMstage parameters must occupy exactly 56 bytes");
 #endif
 
 #if !ENV_SEPARATE_DATA_AND_BSS

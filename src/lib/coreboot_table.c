@@ -615,7 +615,8 @@ static uintptr_t write_coreboot_table(uintptr_t rom_table_end)
 	lb_mmc_info(head);
 
 	/* Add SPI flash description if available */
-	if (CONFIG(BOOT_DEVICE_SPI_FLASH))
+	if (CONFIG(BOOT_DEVICE_SPI_FLASH) && !CONFIG(B565D4_NORMAL_NATIVE_LBIO_CHECKPOINT) &&
+	    !CONFIG(B565D4_NORMAL_NATIVE_MEMORYINFO_RAM_CHECKPOINT))
 		lb_spi_flash(head);
 
 	add_cbmem_pointers(head);
@@ -655,7 +656,8 @@ static uintptr_t write_coreboot_table(uintptr_t rom_table_end)
 	/* Add all cbmem entries into the coreboot tables. */
 	cbmem_add_records_to_cbtable(head);
 
-	if (CONFIG(HAVE_ACPI_TABLES))
+	if (CONFIG(HAVE_ACPI_TABLES) && !CONFIG(B565D4_NORMAL_NATIVE_LBIO_CHECKPOINT) &&
+	    !CONFIG(B565D4_NORMAL_NATIVE_MEMORYINFO_RAM_CHECKPOINT))
 		lb_add_acpi_rsdp(head);
 
 	lb_add_boot_mode(head);

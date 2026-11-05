@@ -1,0 +1,17 @@
+From: coreboot board integration
+Subject: [PATCH] UefiPayloadPkg: use runtime SHA256 for FCH store recognition
+
+The FCH provider recognizes the owned original NVAR volume before formatting.
+It is linked into a runtime driver, so use the matching crypto library class.
+
+--- a/UefiPayloadPkg/UefiPayloadPkg.dsc
++++ b/UefiPayloadPkg/UefiPayloadPkg.dsc
+@@ -675,7 +675,7 @@
+ !endif
+ 
+ [LibraryClasses.common.DXE_RUNTIME_DRIVER]
+-!if $(SECURE_BOOT_ENABLE) == TRUE
++!if $(SECURE_BOOT_ENABLE) == TRUE || $(VARIABLE_SUPPORT) == "FCH_SPI"
+   BaseCryptLib|CryptoPkg/Library/BaseCryptLib/RuntimeCryptLib.inf
+ !endif
+   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf

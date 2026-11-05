@@ -9,9 +9,15 @@
 #include <cbmem.h>
 #include <program_loading.h>
 #include <romstage_common.h>
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+#include "native84_profile.h"
+#endif
 
 void __noreturn romstage_main(void)
 {
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	native84_romstage_main();
+#endif
 	post_code(POSTCODE_ROMSTAGE_MAIN);
 
 	if (CONFIG(WRITE_STB_BUFFER_TO_CONSOLE))

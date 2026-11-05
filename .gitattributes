@@ -1,0 +1,2 @@
+# Preserve patch-file context lines verbatim; they are build inputs.
+*.patch -whitespace

@@ -1,0 +1,140 @@
+diff --git a/MdeModulePkg/Universal/DisplayEngineDxe/FormDisplay.c b/MdeModulePkg/Universal/DisplayEngineDxe/FormDisplay.c
+--- a/MdeModulePkg/Universal/DisplayEngineDxe/FormDisplay.c
++++ b/MdeModulePkg/Universal/DisplayEngineDxe/FormDisplay.c
+@@ -8,6 +8,7 @@
+ **/
+ 
+ #include "FormDisplay.h"
++#include <Library/CorebootCmosOptionLib.h>
+ 
+ //
+ // Search table for UiDisplayMenu()
+@@ -4279,6 +4280,15 @@
+   EFI_INPUT_KEY                           HotKey;
+   EFI_STRING                              NewString;
+   EDKII_FORM_BROWSER_EXTENSION2_PROTOCOL  *FormBrowserEx2;
++  UINT32                                  Serial;
++
++  // Exactly one engine publishes both form-display and popup protocols.
++  // With no graphical engine in this build, retain the ordinary text UI.
++  if (FixedPcdGetBool (PcdLvglSetupAvailable) &&
++      (EFI_ERROR (CorebootCmosReadOption (L"serial_console", &Serial)) || (Serial != 1)))
++  {
++    return EFI_UNSUPPORTED;
++  }
+ 
+   //
+   // Publish our HII data
+diff --git a/MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf b/MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
+--- a/MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
++++ b/MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
+@@ -34,8 +34,10 @@
+ [Packages]
+   MdePkg/MdePkg.dec
+   MdeModulePkg/MdeModulePkg.dec
++  UefiPayloadPkg/UefiPayloadPkg.dec
+ 
+ [LibraryClasses]
++  CorebootCmosOptionLib
+   UefiDriverEntryPoint
+   UefiBootServicesTableLib
+   DebugLib
+@@ -54,6 +56,9 @@
+ [Depex]
+   gEfiHiiDatabaseProtocolGuid AND gEfiHiiConfigRoutingProtocolGuid AND gEdkiiFormBrowserEx2ProtocolGuid
+ 
++[Pcd]
++  gUefiPayloadPkgTokenSpaceGuid.PcdLvglSetupAvailable
++
+ [FeaturePcd]
+   gEfiMdeModulePkgTokenSpaceGuid.PcdBrowserGrayOutTextStatement     ## CONSUMES
+   gEfiMdeModulePkgTokenSpaceGuid.PcdBrowerGrayOutReadOnlyMenu       ## CONSUMES
+diff --git a/LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.c b/LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.c
+--- a/LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.c
++++ b/LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.c
+@@ -19,6 +19,7 @@
+ #include <Protocol/DisplayProtocol.h>
+ #include <Protocol/FormBrowserEx.h>
+ #include "LvglFormRenderer.h"
++#include <Library/CorebootCmosOptionLib.h>
+ 
+ //
+ // Private data
+@@ -128,6 +129,12 @@
+   )
+ {
+   EFI_STATUS  Status;
++
++  UINT32  Serial;
++
++  if (!EFI_ERROR (CorebootCmosReadOption (L"serial_console", &Serial)) && (Serial == 1)) {
++    return EFI_UNSUPPORTED;
++  }
+ 
+   DEBUG ((DEBUG_INFO, "LvglDisplayEngine: initializing\n"));
+ 
+diff --git a/LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.inf b/LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.inf
+--- a/LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.inf
++++ b/LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.inf
+@@ -30,8 +30,10 @@
+   MdePkg/MdePkg.dec
+   MdeModulePkg/MdeModulePkg.dec
+   LvglPkg/LvglPkg.dec
++  UefiPayloadPkg/UefiPayloadPkg.dec
+ 
+ [LibraryClasses]
++  CorebootCmosOptionLib
+   UefiDriverEntryPoint
+   UefiBootServicesTableLib
+   UefiRuntimeServicesTableLib
+diff --git a/UefiPayloadPkg/UefiPayloadPkg.dsc b/UefiPayloadPkg/UefiPayloadPkg.dsc
+--- a/UefiPayloadPkg/UefiPayloadPkg.dsc
++++ b/UefiPayloadPkg/UefiPayloadPkg.dsc
+@@ -775,6 +775,7 @@
+   gUefiCpuPkgTokenSpaceGuid.PcdCpuSmmEnableBspElection|FALSE
+ 
+ [PcdsFixedAtBuild]
++  gUefiPayloadPkgTokenSpaceGuid.PcdLvglSetupAvailable|$(LVGL_ENABLE)
+   gEfiMdePkgTokenSpaceGuid.PcdHardwareErrorRecordLevel|1
+   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize|0x8000
+   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxHardwareErrorVariableSize|0x8000
+@@ -1296,11 +1297,10 @@
+ !endif
+   MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
+   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
++  MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
+ !if $(LVGL_ENABLE) == TRUE
+   LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.inf
+   LvglPkg/LvglSetupDxe/LvglSetupDxe.inf
+-!else
+-  MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
+ !endif
+ !if $(VARIABLE_SUPPORT) == "EMU" || ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI") || $(VARIABLE_SUPPORT) == "SPI"
+   UefiPayloadPkg/UserAuthPkg/UserAuthenticationDxe/UserAuthenticationDxe.inf
+diff --git a/UefiPayloadPkg/UefiPayloadPkg.fdf b/UefiPayloadPkg/UefiPayloadPkg.fdf
+--- a/UefiPayloadPkg/UefiPayloadPkg.fdf
++++ b/UefiPayloadPkg/UefiPayloadPkg.fdf
+@@ -313,11 +313,10 @@
+ INF UefiPayloadPkg/BootSplashConfigDxe/BootSplashConfigDxe.inf
+ !endif
+ !endif
++INF MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
+ !if $(LVGL_ENABLE) == TRUE
+ INF LvglPkg/LvglDisplayEngineDxe/LvglDisplayEngineDxe.inf
+ INF LvglPkg/LvglSetupDxe/LvglSetupDxe.inf
+-!else
+-INF MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
+ !endif
+ INF MdeModulePkg/Universal/TimeDateSettingsDxe/TimeDateSettingsDxe.inf
+ INF MdeModulePkg/Universal/EbcDxe/EbcDxe.inf
+diff --git a/UefiPayloadPkg/UefiPayloadPkg.dec b/UefiPayloadPkg/UefiPayloadPkg.dec
+--- a/UefiPayloadPkg/UefiPayloadPkg.dec
++++ b/UefiPayloadPkg/UefiPayloadPkg.dec
+@@ -108,6 +108,7 @@
+ #
+ ################################################################################
+ [PcdsFixedAtBuild, PcdsPatchableInModule]
++  gUefiPayloadPkgTokenSpaceGuid.PcdLvglSetupAvailable|FALSE|BOOLEAN|0x00001001
+ ## Indicates the base address of the payload binary in memory
+ gUefiPayloadPkgTokenSpaceGuid.PcdPayloadFdMemBase|0|UINT32|0x10000001
+ ## Provides the size of the payload binary in memory

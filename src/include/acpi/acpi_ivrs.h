@@ -231,4 +231,9 @@ typedef struct ivrs_ivhd_f0_entry {
 	uint8_t uuid_length;
 } __packed ivrs_ivhd_f0_entry_t;
 
+struct device;
+
+/* Append board-specific device entries to each IVHD format. */
+unsigned long mainboard_fill_ivrs(unsigned long current, const struct device *domain);
+
 #endif /* __ACPI_ACPI_IVRS_H__ */

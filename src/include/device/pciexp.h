@@ -29,6 +29,12 @@ void pciexp_scan_bus(struct bus *bus, unsigned int min_devfn,
 
 void pciexp_scan_bridge(struct device *dev);
 
+int pciexp_retrain_link(struct device *dev, unsigned int cap);
+
+/* Common capability and exit-latency qualification; does not program the link. */
+enum aspm_type pciexp_get_aspm_allowed(struct device *root, unsigned int root_cap,
+		struct device *endp, unsigned int endp_cap);
+
 extern struct device_operations default_pciexp_ops_bus;
 
 void pciexp_hotplug_scan_bridge(struct device *dev);

@@ -4,13 +4,25 @@
 #include <cbfs.h>
 #include <commonlib/helpers.h>
 #include <console/console.h>
+#include <console/streams.h>
 #include <cpu/amd/microcode.h>
 #include <cpu/amd/msr.h>
 #include <cpu/cpu.h>
 #include <cpu/x86/msr.h>
+#include <rules.h>
 #include <stdio.h>
 #include <timestamp.h>
 #include <types.h>
+
+/* Diagnostic output only, after the RAMstage GS CPU context is established. */
+#define NATIVE174_BSP_TRACE(fmt, ...) do { \
+	if (ENV_RAMSTAGE && \
+	    (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE)) && \
+	    cpu_index() == 0) { \
+		printk(BIOS_INFO, "NATIVE174 CPU_TRACE " fmt "\n", ##__VA_ARGS__); \
+		console_tx_flush(); \
+	} \
+} while (0)
 
 #define CPU_MICROCODE_BLOB_NAME "cpu_microcode_XXXX.bin"
 #define CPU_MICROCODE_BLOB_FORMAT "cpu_microcode_%04x.bin"
@@ -47,13 +59,27 @@ void amd_apply_microcode_patch(void)
 		return;
 	}
 
+	msr = rdmsr(IA32_BIOS_SIGN_ID);
+	printk(BIOS_INFO, "microcode: current patch id = 0x%08x, requested = 0x%08x\n",
+	       msr.lo, ucode->patch_id);
+	/* The same revision can still carry thread-specific SMT initialization. */
+	if (msr.lo > ucode->patch_id) {
+		printk(BIOS_INFO, "microcode: keeping newer patch id = 0x%08x\n", msr.lo);
+		return;
+	}
+
 	msr.raw = (uintptr_t)ucode;
 
+	NATIVE174_BSP_TRACE("PATCH_LOADER BEFORE msr=%08x value=%08x:%08x",
+		MSR_PATCH_LOADER, msr.hi, msr.lo);
 	wrmsr(MSR_PATCH_LOADER, msr);
+	NATIVE174_BSP_TRACE("PATCH_LOADER AFTER");
 
 	printk(BIOS_DEBUG, "microcode: patch id to apply = 0x%08x\n", ucode->patch_id);
 
+	NATIVE174_BSP_TRACE("PATCH_SIGN_ID BEFORE");
 	msr = rdmsr(IA32_BIOS_SIGN_ID);
+	NATIVE174_BSP_TRACE("PATCH_SIGN_ID AFTER value=%08x:%08x", msr.hi, msr.lo);
 	new_patch_id = msr.lo;
 
 	if (new_patch_id == ucode->patch_id)
@@ -125,4 +151,9 @@ void *amd_microcode_find(void)
 	amd_load_microcode_from_cbfs();
 
 	return (void *)ucode;
+}
+
+uint32_t amd_microcode_patch_id(void)
+{
+	return ucode ? ucode->patch_id : 0;
 }

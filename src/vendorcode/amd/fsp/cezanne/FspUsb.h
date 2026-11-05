@@ -1,7 +1,14 @@
 #ifndef __FSPUSB_H__
 #define __FSPUSB_H__
 
+/* Both private terminal-test and retained-entry no-FSP paths need these exact
+ * USB byte-layout definitions through soc chip.h, not UPD/API types.
+ * Keep the normal include unchanged. */
+#if CONFIG(B565D4_NORMAL_NATIVE_CBMEM_TEST) || (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+#include <stdint.h>
+#else
 #include <FspUpd.h>
+#endif
 
 #define FSP_USB_STRUCT_MAJOR_VERSION	0xd
 #define FSP_USB_STRUCT_MINOR_VERSION	0x6

@@ -5,6 +5,12 @@
 #include <rmodule.h>
 #include <commonlib/helpers.h>
 #include <cpu/cpu.h>
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+#include <cpu/amd/mtrr.h>
+#include <amdblocks/smn.h>
+#include "native132_core_launch.h"
+#include <console/uart.h>
+#endif
 #include <cpu/intel/microcode.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/gdt.h>
@@ -111,7 +117,43 @@ struct sipi_params {
 	uint32_t c_handler;
 	uint32_t cr3;
 	atomic_t ap_count;
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	atomic_t native131_rm_count;
+	atomic_t native131_pm_count;
+#endif
 } __packed;
+
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+_Static_assert(sizeof(struct sipi_params) == 64, "Native132 SIPI parameter ABI");
+static struct sipi_params *native131_sipi_params;
+
+static void native131_sipi_report(const char *phase)
+{
+	const struct sipi_params *const sp = native131_sipi_params;
+	struct {
+		uint16_t limit;
+		uint32_t base;
+	} __packed idtr;
+	uint64_t code, data;
+
+	/* These are the actual loader-populated descriptors in owned RAM. */
+	memcpy(&code, (const void *)(uintptr_t)(sp->gdt + GDT_CODE_SEG), sizeof(code));
+	memcpy(&data, (const void *)(uintptr_t)(sp->gdt + GDT_DATA_SEG), sizeof(data));
+	memcpy(&idtr, (const void *)(uintptr_t)sp->idt_ptr, sizeof(idtr));
+	printk(BIOS_INFO, "NATIVE132 SIPI %s rm=%d pm=%d post_lidt=%d "
+	       "ESR=%08x ICR=%08x/%08x\n", phase,
+	       atomic_read(&sp->native131_rm_count), atomic_read(&sp->native131_pm_count),
+	       atomic_read(&sp->ap_count), lapic_read(LAPIC_ESR),
+	       lapic_read(LAPIC_ICR), lapic_read(LAPIC_ICR2));
+	printk(BIOS_INFO, "NATIVE132 SIPI params=%p gdt=%08x/%04x "
+	       "GDT8=%016llx GDT16=%016llx idt_ptr=%08x IDTR=%08x/%04x "
+	       "stack=%08x/%x msrs=%08x/%u\n", sp, sp->gdt, sp->gdtlimit,
+	       (unsigned long long)code, (unsigned long long)data,
+	       sp->idt_ptr, idtr.base, idtr.limit, sp->stack_top, sp->stack_size,
+	       sp->msr_table_ptr, sp->msr_count);
+	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
+}
+#endif
 
 /* This also needs to match the assembly code for saved MSR encoding. */
 struct saved_msr {
@@ -272,21 +314,50 @@ static int save_bsp_msrs(char *start, int size)
 	int num_var_mtrrs;
 	struct saved_msr *msr_entry;
 	int i;
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	msr_t incoming_syscfg, saved_syscfg, restored;
+#endif
 
 	/* Determine number of MTRRs need to be saved. */
 	num_var_mtrrs = get_var_mtrr_count();
 
 	/* 2 * num_var_mtrrs for base and mask. +1 for IA32_MTRR_DEF_TYPE. */
 	msr_count = 2 * num_var_mtrrs + NUM_FIXED_MTRRS + 1;
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	/* SYS(exposed), TOM/TOM2, four IORRs, SYS(exact restore). */
+	msr_count += 8;
+#endif
 
 	if ((msr_count * sizeof(struct saved_msr)) > size) {
 		printk(BIOS_CRIT, "Cannot mirror all %d msrs.\n", msr_count);
 		return -1;
 	}
 
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	incoming_syscfg = rdmsr(SYSCFG_MSR);
+	saved_syscfg = incoming_syscfg;
+	/* Native252: bit19 exposes the extended fixed-MTRR RdDram/WrDram
+	 * fields for initialization. Publish the normal operating value after
+	 * the fixed/variable snapshot: BSP and every AP must leave it clear.
+	 * It does not change the fixed attributes, TOM/TOM2 or routing bits.
+	 */
+	saved_syscfg.lo &= ~SYSCFG_MSR_MtrrFixDramModEn;
+#endif
 	fixed_mtrrs_expose_amd_rwdram();
 
 	msr_entry = (void *)start;
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	/* AP caching remains disabled: expose the selected SYS value FIRST,
+	 * before any fixed-MTRR RdDram/WrDram field writes.
+	 */
+	msr_entry = save_msr(SYSCFG_MSR, msr_entry);
+	msr_entry = save_msr(TOP_MEM_MSR, msr_entry);
+	msr_entry = save_msr(TOP_MEM2_MSR, msr_entry);
+	msr_entry = save_msr(MTRR_IORR0_BASE, msr_entry);
+	msr_entry = save_msr(MTRR_IORR0_MASK, msr_entry);
+	msr_entry = save_msr(MTRR_IORR1_BASE, msr_entry);
+	msr_entry = save_msr(MTRR_IORR1_MASK, msr_entry);
+#endif
 	for (i = 0; i < NUM_FIXED_MTRRS; i++)
 		msr_entry = save_msr(fixed_mtrrs[i], msr_entry);
 
@@ -297,7 +368,23 @@ static int save_bsp_msrs(char *start, int size)
 
 	msr_entry = save_msr(MTRR_DEF_TYPE_MSR, msr_entry);
 
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	/* Last AP table entry publishes the normal operating SYS, bit19 clear. */
+	*msr_entry++ = (struct saved_msr) {
+		.index = SYSCFG_MSR, .lo = saved_syscfg.lo, .hi = saved_syscfg.hi,
+	};
+	wrmsr(SYSCFG_MSR, saved_syscfg);
+	restored = rdmsr(SYSCFG_MSR);
+	printk(BIOS_INFO, "NATIVE252 BSP MTRR SYS incoming=%08x:%08x "
+	       "operating=%08x:%08x AP_final_same=1 fixed_attributes_changed=0\n",
+	       incoming_syscfg.hi, incoming_syscfg.lo, restored.hi, restored.lo);
+	if (restored.lo != saved_syscfg.lo || restored.hi != saved_syscfg.hi) {
+		printk(BIOS_CRIT, "NATIVE94 BSP SYSCFG snapshot restore failed\n");
+		return -1;
+	}
+#else
 	fixed_mtrrs_hide_amd_rwdram();
+#endif
 
 	/* Tell static analysis we know value is left unused. */
 	(void)msr_entry;
@@ -376,10 +463,20 @@ static atomic_t *load_sipi_vector(struct mp_params *mp_params)
 	sp->cr3 = read_cr3();
 	ap_count = &sp->ap_count;
 	atomic_set(ap_count, 0);
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	native131_sipi_params = sp;
+	atomic_set(&sp->native131_rm_count, 0);
+	atomic_set(&sp->native131_pm_count, 0);
+#endif
 
 	/* Make sure SIPI data hits RAM so the APs that come up will see the
 	   startup code even if the caches are disabled. */
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	/* The MSR table follows the module; AP startup reads both uncached. */
+	write_back_cached_data(mod_loc, module_size + num_msrs * sizeof(struct saved_msr));
+#else
 	write_back_cached_data(mod_loc, module_size);
+#endif
 
 	return ap_count;
 }
@@ -483,6 +580,23 @@ static enum cb_err start_aps(struct bus *cpu_bus, int ap_count, atomic_t *num_ap
 
 	if (icr_wait_timeout() != CB_SUCCESS)
 		return CB_ERR;
+
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	/* Original CCX launch state only: no launch-bit or SMU-message write. */
+#if CONFIG(B565D4_DESKTOP_NATIVE)
+	const uint32_t launch = smn_read32(0x30081018);
+	printk(BIOS_INFO, "NATIVE132 PREINIT CCX_LAUNCH_SMN30081018=%08x\n", launch);
+#else
+	const uint32_t launch = smn_read32(0x0005a818);
+	printk(BIOS_INFO, "NATIVE132 PREINIT CCX_LAUNCH_SMN5A818=%08x\n", launch);
+#endif
+	native131_sipi_report("PREINIT");
+	/* Current SIPI code and its genuine36-MSR table are prepared/flushed.
+	 * First hardware reset/release precedes unchanged genuine INIT/SIPI.
+	 */
+	native132_release_before_init((const void *)(uintptr_t)
+		native131_sipi_params->msr_table_ptr, native131_sipi_params->msr_count);
+#endif
 
 	/* Send INIT IPI to all but self. */
 	lapic_send_ipi_others(LAPIC_INT_ASSERT | LAPIC_MT_INIT);
@@ -688,8 +802,15 @@ static enum cb_err mp_init(struct bus *cpu_bus, struct mp_params *p)
 		mdelay(1000);
 		printk(BIOS_DEBUG, "%d/%d eventually checked in?\n",
 		       atomic_read(ap_count), global_num_aps);
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+		native131_sipi_report("TIMEOUT");
+#endif
 		return CB_ERR;
 	}
+
+#if (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	native131_sipi_report("CHECKED_IN");
+#endif
 
 	/* Walk the flight plan for the BSP. */
 	ret = bsp_do_flight_plan(p);

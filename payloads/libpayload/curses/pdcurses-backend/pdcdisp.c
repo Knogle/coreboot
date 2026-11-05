@@ -123,7 +123,7 @@ void PDC_gotoyx(int row, int col)
     PDC_LOG(("PDC_gotoyx() - called: row %d col %d\n", row, col));
 
 #if CONFIG(LP_SERIAL_CONSOLE)
-    serial_set_cursor(col, row);
+    serial_set_cursor(row, col);
 #endif
 #if CONFIG(LP_VIDEO_CONSOLE)
     video_console_set_cursor(col, row);

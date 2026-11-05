@@ -43,6 +43,11 @@ ifeq ($(CONFIG_RESET_VECTOR_IN_RAM),y)
 # but the name is mandatory for the 'add_bootblock' directive below.
 # On AMD the bootblock resides within the AMD FW as part of the
 # Bios Directory Tables (BDT), thus about 1% of this file is actually the bootblock.
+ifeq ($(CONFIG_SOC_AMD_CEZANNE_NATIVE),y)
+# The board packs these genuine ELF bytes into its retained PSP container.
+$(objcbfs)/bootblock.bin: $(objcbfs)/bootblock_fixed_data.elf
+	$(OBJCOPY_bootblock) -O binary $< $@
+else
 $(objcbfs)/bootblock.bin: $(obj)/amdfw.rom $(obj)/fmap_config.h
 	cp $< $@
 
@@ -67,6 +72,7 @@ add_bootblock = $(if $(amdfw_bootblock_needs_raw_write),\
 		-b $(amdfw_offset) -r $(call regions-for-file,apu/amdfw) \
 		$(CBFSTOOL_ADD_CMD_OPTIONS))
 endif # ifeq ($(CONFIG_PSP_AB_RECOVERY),y)
+endif # CONFIG_SOC_AMD_CEZANNE_NATIVE
 endif # ifeq ($(CONFIG_RESET_VECTOR_IN_RAM),y)
 
 ifeq ($(CONFIG_VBOOT_GSCVD),y)

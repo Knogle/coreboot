@@ -2,8 +2,8 @@
 
 # set up payload config and version files for later inclusion
 ifeq ($(CONFIG_PAYLOAD_BUILD_SEABIOS),y)
-PAYLOAD_CONFIG=payloads/external/SeaBIOS/seabios/.config
-PAYLOAD_VERSION=payloads/external/SeaBIOS/seabios/out/autoversion.h
+PAYLOAD_CONFIG=$(obj)/seabios/.config
+PAYLOAD_VERSION=$(obj)/seabios/autoversion.h
 endif
 ifeq ($(CONFIG_PAYLOAD_FILO),y)
 PAYLOAD_CONFIG=payloads/external/FILO/filo/.config
@@ -61,9 +61,25 @@ etc/grub.cfg-required := the GRUB runtime configuration file ($(CONFIG_GRUB2_RUN
 # SeaBIOS
 
 SEABIOS_CC_OFFSET=$(if $(filter %ccache,$(HOSTCC)),2,1)
-SEABIOS_TARGET_PATH=payloads/external/SeaBIOS/seabios/out/bios.bin.elf
-$(SEABIOS_TARGET_PATH): $(DOTCONFIG)
+SEABIOS_TARGET_PATH=$(obj)/seabios/bios.bin.elf
+.NOTINTERMEDIATE: $(SEABIOS_TARGET_PATH) $(obj)/seabios/.config \
+	$(obj)/seabios/autoversion.h $(obj)/seabios/vgabios.bin
+# Older make versions treat missing files below .SECONDARY parents as optional.
+# Recreate the output set once if an artifact is missing from this build cache.
+seabios-outputs := $(SEABIOS_TARGET_PATH) $(obj)/seabios/.config $(obj)/seabios/autoversion.h
+ifeq ($(CONFIG_SEABIOS_VGA_COREBOOT),y)
+seabios-outputs += $(obj)/seabios/vgabios.bin
+endif
+ifneq ($(words $(wildcard $(seabios-outputs))),$(words $(seabios-outputs)))
+PHONY += $(SEABIOS_TARGET_PATH)
+endif
+$(SEABIOS_TARGET_PATH): $(DOTCONFIG) payloads/external/SeaBIOS/Makefile \
+		$(call strip_quotes,$(CONFIG_PAYLOAD_CONFIGFILE)) \
+		$(if $(call strip_quotes,$(CONFIG_SEABIOS_PATCHES_DIR)),\
+		$(wildcard $(call strip_quotes,$(CONFIG_SEABIOS_PATCHES_DIR))/*.patch)) \
+		payloads/external/edk2/patches.py
 	$(MAKE) -C payloads/external/SeaBIOS \
+			top=$(top) \
 			HOSTCC="$(HOSTCC)" \
 			CC=$(word $(SEABIOS_CC_OFFSET),$(CC_x86_32)) \
 			CFLAGS="$(patsubst $(word $(SEABIOS_CC_OFFSET),$(CC_x86_32))%,,$(wordlist $(SEABIOS_CC_OFFSET),9999,$(CC_x86_32)))" \
@@ -75,6 +91,7 @@ $(SEABIOS_TARGET_PATH): $(DOTCONFIG)
 			CONFIG_SEABIOS_STABLE=$(CONFIG_SEABIOS_STABLE) \
 			CONFIG_SEABIOS_REVISION=$(CONFIG_SEABIOS_REVISION) \
 			CONFIG_SEABIOS_REVISION_ID=$(CONFIG_SEABIOS_REVISION_ID) \
+			CONFIG_SEABIOS_PATCHES_DIR=$(CONFIG_SEABIOS_PATCHES_DIR) \
 			CONFIG_PAYLOAD_CONFIGFILE=$(CONFIG_PAYLOAD_CONFIGFILE) \
 			CONFIG_SEABIOS_THREAD_OPTIONROMS=$(CONFIG_SEABIOS_THREAD_OPTIONROMS) \
 			CONFIG_SEABIOS_VGA_COREBOOT=$(CONFIG_SEABIOS_VGA_COREBOOT) \
@@ -88,10 +105,25 @@ $(SEABIOS_TARGET_PATH): $(DOTCONFIG)
 			CONFIG_ENABLE_HSUART=$(CONFIG_ENABLE_HSUART) \
 			CONFIG_CONSOLE_UART_BASE_ADDRESS=$(CONFIG_CONSOLE_UART_BASE_ADDRESS) \
 			CONFIG_SEABIOS_HARDWARE_IRQ=$(CONFIG_SEABIOS_HARDWARE_IRQ)
+	@mkdir -p $(dir $@)
+	cp payloads/external/SeaBIOS/seabios/out/bios.bin.elf $@
+	cp payloads/external/SeaBIOS/seabios/.config $(dir $@).config
+	cp payloads/external/SeaBIOS/seabios/out/autoversion.h $(dir $@)autoversion.h
+ifeq ($(CONFIG_SEABIOS_VGA_COREBOOT),y)
+	cp payloads/external/SeaBIOS/seabios/out/vgabios.bin $(dir $@)vgabios.bin
+endif
 
-payloads/external/SeaBIOS/seabios/out/vgabios.bin: $(SEABIOS_TARGET_PATH)
-payloads/external/SeaBIOS/seabios/.config: $(SEABIOS_TARGET_PATH)
-payloads/external/SeaBIOS/seabios/out/autoversion.h: $(SEABIOS_TARGET_PATH)
+$(obj)/seabios/vgabios.bin: $(SEABIOS_TARGET_PATH)
+$(obj)/seabios/.config: $(SEABIOS_TARGET_PATH)
+$(obj)/seabios/autoversion.h: $(SEABIOS_TARGET_PATH)
+
+# Keep old saved configurations usable while copying from this build's output.
+PHONY += payloads/external/SeaBIOS/seabios/out/bios.bin.elf
+payloads/external/SeaBIOS/seabios/out/bios.bin.elf: $(SEABIOS_TARGET_PATH)
+	cp $< $@
+PHONY += payloads/external/SeaBIOS/seabios/out/vgabios.bin
+payloads/external/SeaBIOS/seabios/out/vgabios.bin: $(obj)/seabios/vgabios.bin
+	cp $< $@
 
 cbfs-files-$(CONFIG_SEABIOS_SECONDARY_PAYLOAD) += img/seabios
 img/seabios-file := $(SEABIOS_TARGET_PATH)
@@ -158,7 +190,7 @@ payloads/external/depthcharge/depthcharge/build/depthcharge.elf depthcharge: $(D
 # edk2
 
 ifeq ($(CONFIG_EDK2_ENABLE_IPXE),y)
-IPXE_EFI := payloads/external/iPXE/ipxe/ipxe.rom
+IPXE_EFI := $(obj)/ipxe.rom
 endif
 
 ifeq ($(CONFIG_PAYLOAD_EDK2)$(CONFIG_SMMSTORE)$(CONFIG_DRIVERS_OPTION_CFR),yyy)
@@ -208,6 +240,12 @@ EDK2_PAYLOAD_ARGS = \
 	CONFIG_EDK2_REPO_CUSTOM=$(CONFIG_EDK2_REPO_CUSTOM) \
 	CONFIG_EDK2_CPU_TIMER_LIB=$(CONFIG_EDK2_CPU_TIMER_LIB) \
 	CONFIG_EDK2_CUSTOM_BUILD_PARAMS=$(CONFIG_EDK2_CUSTOM_BUILD_PARAMS) \
+	CONFIG_EDK2_PATCHES_DIR=$(CONFIG_EDK2_PATCHES_DIR) \
+	CONFIG_EDK2_CSMWRAP=$(CONFIG_EDK2_CSMWRAP) \
+	CONFIG_EDK2_INTEL_GIG_UNDI=$(CONFIG_EDK2_INTEL_GIG_UNDI) \
+	CONFIG_EDK2_INTEL_GIG_UNDI_FILE=$(CONFIG_EDK2_INTEL_GIG_UNDI_FILE) \
+	CONFIG_EDK2_INTEL_GIG_UNDI_SHA256=$(CONFIG_EDK2_INTEL_GIG_UNDI_SHA256) \
+	CONFIG_B565D4_EDK2_NVSTORE=$(CONFIG_B565D4_EDK2_NVSTORE) \
 	CONFIG_EDK2_USE_EDK2_PLATFORMS=$(CONFIG_EDK2_USE_EDK2_PLATFORMS) \
 	CONFIG_EDK2_PLATFORMS_REPOSITORY=$(CONFIG_EDK2_PLATFORMS_REPOSITORY) \
 	CONFIG_EDK2_PLATFORMS_TAG_OR_REV=$(CONFIG_EDK2_PLATFORMS_TAG_OR_REV) \
@@ -254,10 +292,25 @@ EDK2_PAYLOAD_ARGS = \
 	OBJCOPY_arm64=$(OBJCOPY_arm64) \
 	MFLAGS= MAKEFLAGS= \
 	CONFIG_EDK2_IPXE=$(CONFIG_EDK2_ENABLE_IPXE) \
+	IPXE_FILE="$(abspath $(IPXE_EFI))" \
 	CONFIG_EDK2_IPXE_OPTION_NAME=$(CONFIG_EDK2_IPXE_OPTION_NAME) \
 	CONFIG_EDK2_USE_LVGL_RENDERER=$(CONFIG_EDK2_USE_LVGL_RENDERER)
 
-$(obj)/UEFIPAYLOAD.fd: $(DOTCONFIG) $(IPXE_EFI)
+edk2-payload-inputs := payloads/external/edk2/Makefile payloads/external/edk2/patches.py \
+	$(wildcard $(call strip_quotes,$(CONFIG_EDK2_PATCHES_DIR))/*.patch)
+ifeq ($(CONFIG_EDK2_INTEL_GIG_UNDI),y)
+edk2-payload-inputs += payloads/external/edk2/prepare_network_driver.py \
+	$(call strip_quotes,$(CONFIG_EDK2_INTEL_GIG_UNDI_FILE))
+endif
+ifeq ($(CONFIG_B565D4_EDK2_NVSTORE),y)
+edk2-payload-inputs += $(wildcard src/mainboard/asrockrack/b565d4_v1l/edk2/nvstore/*)
+endif
+ifeq ($(CONFIG_EDK2_CSMWRAP),y)
+edk2-payload-inputs += payloads/external/CSMWrap/build.py \
+	$(wildcard payloads/external/CSMWrap/patches/*.patch) payloads/external/CSMWrap/tools/xxd
+endif
+
+$(obj)/UEFIPAYLOAD.fd: $(DOTCONFIG) $(IPXE_EFI) $(edk2-payload-inputs)
 	$(MAKE) -C payloads/external/edk2 UefiPayloadPkg \
 		EDK2_UEFIPAYLOAD_OUT="$(abspath $@)" \
 		$(EDK2_PAYLOAD_ARGS)
@@ -335,8 +388,14 @@ else
 memtest_dir:=memtest86plus_v5
 endif
 
+ifeq ($(CONFIG_MEMTEST86PLUS_ARCH_64),y)
+memtest_arch := x86_64
+else
+memtest_arch := x86_32
+endif
+
 cbfs-files-$(CONFIG_MEMTEST_SECONDARY_PAYLOAD) += img/memtest
-img/memtest-file := payloads/external/Memtest86Plus/$(memtest_dir)/memtest
+img/memtest-file := $(obj)/memtest
 img/memtest-type := payload
 img/memtest-compression := $(CBFS_SECONDARY_PAYLOAD_COMPRESS_FLAG)
 
@@ -344,22 +403,32 @@ ifeq ($(CONFIG_CONSOLE_SERIAL)$(CONFIG_DRIVERS_UART_8250IO),yy)
 	MEMTEST_SERIAL_OPTIONS=SERIAL_CONSOLE_DEFAULT=1 \
 		SERIAL_TTY=$(CONFIG_UART_FOR_CONSOLE) \
 		SERIAL_BAUD_RATE=$(CONFIG_TTYS0_BAUD)
+ifeq ($(CONFIG_MEMTEST86PLUS_V6),y)
+img/memtest-options := -C "console=ttyS$(CONFIG_UART_FOR_CONSOLE),$(CONFIG_TTYS0_BAUD)"
+endif
 endif
 
-payloads/external/Memtest86Plus/$(memtest_dir)/memtest: $(DOTCONFIG)
+.NOTINTERMEDIATE: $(obj)/memtest
+ifeq ($(wildcard $(obj)/memtest),)
+PHONY += $(obj)/memtest
+endif
+$(obj)/memtest memtest: $(DOTCONFIG) payloads/external/Memtest86Plus/Makefile
 	$(MAKE) -C payloads/external/Memtest86Plus all \
-		CC="$(CC_x86_32)" \
-		LD="$(LD_x86_32)" \
-		OBJCOPY="$(OBJCOPY_x86_32)" \
-		AS="$(AS_x86_32)" \
+		CC="$(CC_$(memtest_arch))" \
+		LD="$(LD_$(memtest_arch))" \
+		OBJCOPY="$(OBJCOPY_$(memtest_arch))" \
+		AS="$(AS_$(memtest_arch))" \
 		CONFIG_MEMTEST_REVISION=$(CONFIG_MEMTEST_REVISION) \
 		CONFIG_MEMTEST_REVISION_ID=$(CONFIG_MEMTEST_REVISION_ID) \
 		CONFIG_MEMTEST_MAIN=$(CONFIG_MEMTEST_MAIN) \
 		CONFIG_MEMTEST_STABLE=$(CONFIG_MEMTEST_STABLE) \
 		CONFIG_MEMTEST86PLUS_V5=$(CONFIG_MEMTEST86PLUS_V5) \
 		CONFIG_MEMTEST86PLUS_V6=$(CONFIG_MEMTEST86PLUS_V6) \
+		MEMTEST86PLUS_ARCH_64=$(CONFIG_MEMTEST86PLUS_ARCH_64) \
 		$(MEMTEST_SERIAL_OPTIONS) \
 		MFLAGS= MAKEFLAGS=
+	@mkdir -p $(obj)
+	cp payloads/external/Memtest86Plus/$(memtest_dir)/memtest $(obj)/memtest
 
 # iPXE
 
@@ -369,7 +438,7 @@ ifeq ($(CONFIG_PXE_ROM),y)
 PXE_ROM_FILE:=$(call strip_quotes,$(CONFIG_PXE_ROM_FILE))
 endif
 ifeq ($(CONFIG_BUILD_IPXE),y)
-PXE_ROM_FILE:=payloads/external/iPXE/ipxe/ipxe.rom
+PXE_ROM_FILE:=$(obj)/ipxe.rom
 endif
 ifeq ($(CONFIG_IPXE_ADD_SCRIPT),y)
 IPXE_CONFIG_SCRIPT:=$(abspath $(patsubst "%",%,$(CONFIG_IPXE_SCRIPT)))
@@ -393,7 +462,11 @@ else
 IPXE_CROSS_COMPILE:=$(CROSS_COMPILE_x86_64)
 endif
 
-payloads/external/iPXE/ipxe/ipxe.rom ipxe: $(DOTCONFIG) $(IPXE_CONFIG_SCRIPT)
+.NOTINTERMEDIATE: $(obj)/ipxe.rom
+ifeq ($(wildcard $(obj)/ipxe.rom),)
+PHONY += $(obj)/ipxe.rom
+endif
+$(obj)/ipxe.rom ipxe: $(DOTCONFIG) $(IPXE_CONFIG_SCRIPT) payloads/external/iPXE/Makefile
 	$(MAKE) -C payloads/external/iPXE all \
 	CROSS_COMPILE=$(IPXE_CROSS_COMPILE) \
 	PXE_ROM_PCI_ID=$(PXE_ROM_PCI_ID) \
@@ -408,7 +481,11 @@ payloads/external/iPXE/ipxe/ipxe.rom ipxe: $(DOTCONFIG) $(IPXE_CONFIG_SCRIPT)
 	CONFIG_IPXE_HAS_HTTPS=$(CONFIG_IPXE_HAS_HTTPS) \
 	CONFIG_IPXE_TRUST_CMD=$(CONFIG_IPXE_TRUST_CMD) \
 	CFLAGS_x86_64="$(CFLAGS_x86_64)" \
-	CONFIG_IPXE_BUILD_EFI=$(CONFIG_EDK2_ENABLE_IPXE) \
+	CONFIG_IPXE_EFI_DEVICE_SPECIFIC=$(CONFIG_IPXE_EFI_DEVICE_SPECIFIC) \
+	CONFIG_IPXE_BUILD_EFI=$(CONFIG_EDK2_ENABLE_IPXE)
+
+	@mkdir -p $(obj)
+	cp payloads/external/iPXE/ipxe/ipxe.rom $(obj)/ipxe.rom
 
 # LinuxBoot
 LINUXBOOT_CROSS_COMPILE_ARCH-$(CONFIG_LINUXBOOT_X86)        = x86_32

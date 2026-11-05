@@ -355,7 +355,7 @@ config MEMLAYOUT_LD_FILE
 
 config DEBUG_HW_BREAKPOINTS
 	bool
-	default y
+	default y if !B565D4_RETAINED_PEI_LATE_ENTRY && !SOC_AMD_CEZANNE_NATIVE
 	help
 	  Enable support for hardware data and instruction breakpoints through
 	  the x86 debug registers

@@ -1,0 +1,109 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+if BOARD_ASROCK_B565D4_V1L
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select SOC_AMD_CEZANNE
+	select BOARD_ROMSIZE_KB_32768
+	select SUPERIO_NUVOTON_NCT6796D
+	select SUPERIO_ASPEED_AST2400
+	select SUPERIO_ASPEED_HAS_UART_DELAY_WORKAROUND
+	select BOOTBLOCK_CONSOLE
+
+config MAINBOARD_DIR
+	default "asrock/b565d4_v1l"
+
+config MAINBOARD_PART_NUMBER
+	default "B565D4-V1L console experiment"
+
+config B565D4_UART2_CONSOLE_DEFAULTS
+	bool "Use AST UART2 console defaults"
+	depends on CONSOLE_SERIAL && DRIVERS_UART_8250IO
+	depends on !B565D4_EARLY_RAW_CONSOLE && !B565D4_VENDOR_STAGE_V1_PROFILE
+	default n
+	help
+	  Select the observed AST UART2 console at I/O port 0x2f8. This
+	  prepares the normal board configuration without changing the
+	  historical diagnostic profiles. The existing experimental
+	  initializer uses UART1 unless B565D4_NORMAL_UART2 is selected.
+	  Select that option to use the bounded UART2 initializer as well.
+
+config UART_FOR_CONSOLE
+	default 1 if B565D4_UART2_CONSOLE_DEFAULTS
+
+config B565D4_NORMAL_UART2
+	bool "Use the bounded normal AST UART2 initializer"
+	depends on CONSOLE_SERIAL && DRIVERS_UART_8250IO
+	depends on !B565D4_EARLY_RAW_CONSOLE && !B565D4_VENDOR_STAGE_V1_PROFILE
+	select B565D4_UART2_CONSOLE_DEFAULTS
+	default n
+	help
+	  Select the separate bounded initializer for AST UART2 at 0x2f8.
+	  Keep the historical console experiments separate. This option
+	  does not provide DRAM, PCIe or payload initialization for the board.
+
+config B565D4_EARLY_RAW_CONSOLE
+	bool "Run the experimental early raw-console probe"
+	default n
+	help
+	  Remain before the normal C entry, ECAM/cache/S3 resume setup and FCH
+	  AOAC initialization. Retain the strict CPU guard and common assembly
+	  runtime. Configure the board's LPC/ASPEED UART and repeat raw readbacks.
+	  This diagnostic does not enter romstage or produce a usable board port.
+
+config B565D4_PRE_MSR_RAW_CONSOLE
+	bool "Run raw console before common MSR/cache initialization"
+	depends on B565D4_EARLY_RAW_CONSOLE
+	default n
+	help
+	  Keep the strict BIST/AuthenticAMD/A50F0x guard, then enter a local
+	  bounded byte-oriented runtime initializer and raw UART diagnostic.
+	  Preserve the disabled-cache state and avoid the common pre-C MSRs.
+	  Apply the verified vendor LPC mux0 sequence for eMMC/SD disabled.
+	  This cold-start experiment remains before all normal C/FCH stages.
+
+config B565D4_VENDOR_STAGE_V1_PROFILE
+	bool "Build the VendorStageV1 diagnostic romstage profile"
+	default n
+	help
+	  Provide the offline vendor-coreboot-stage-v1 make target. Separately
+	  link a real coreboot diagnostic romstage and a vendor PEI transition
+	  hook with its own reserved DRAM stack. This does not embed, program
+	  or boot the artifacts and does not turn this board into a full port.
+
+config B565D4_C10_PROFILE
+	bool "Build the early C10 ResetEAX/UART2 diagnostic profile"
+	depends on B565D4_PRE_MSR_RAW_CONSOLE
+	default n
+	help
+	  Select isolated C10 sources, preserving initial EAX as ResetEAX.
+	  Retain strict AuthenticAMD/A50F0x qualification before platform writes.
+	  Use the owned byte runtime and qualified AST UART2 at 0x2f8.
+	  Existing raw-console and vendor-stage profiles remain separate.
+
+config B565D4_EMBEDDED_DIAGNOSTIC_ROMSTAGE
+	bool "Enter the embedded C10 diagnostic romstage after qualified UART2"
+	depends on B565D4_C10_PROFILE
+	default n
+	help
+	  Check the descriptor and CRC, drain the raw UART, and enter a real
+	  separately linked coreboot romstage in PSP-trained DRAM. No FSP,
+	  CBFS, vendor x86 PEI or complete board port is provided.
+
+# Match the vendor PSP reset-image end; only build bootblock.elf.
+config ROMSTAGE_ADDR
+	default 0x0a000000
+
+config EARLY_RESERVED_DRAM_BASE
+	default 0x09c00000
+
+# Vendor Cezanne BIOS directory entry 0x61, not the usual Chromebook address.
+config PSP_APOB_DRAM_ADDRESS
+	default 0x0a200000
+
+# Keep unused future-stage reservations beyond the vendor reset-image end.
+config FSP_M_ADDR
+	default 0x0a070000
+
+endif

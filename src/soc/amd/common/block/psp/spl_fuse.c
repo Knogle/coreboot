@@ -5,6 +5,10 @@
 #include <types.h>
 #include "psp_def.h"
 
+/* Retained first-payload trial preserves inherited PSP/SCI/GPE state.
+ * No cold callback replay; selected board ACPI code owns finite SCI setup.
+ */
+#if !(CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
 static void psp_set_spl_fuse(void *unused)
 {
 	int cmd_status = 0;
@@ -52,3 +56,4 @@ static void psp_set_spl_fuse(void *unused)
 }
 
 BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD, BS_ON_ENTRY, psp_set_spl_fuse, NULL);
+#endif

@@ -10,6 +10,10 @@
 #include <cpu/x86/msr.h>
 #include <types.h>
 
+/* Retained first-payload trial preserves inherited PSP/SCI/GPE state.
+ * No cold callback replay; selected board ACPI code owns finite SCI setup.
+ */
+#if !(CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
 static void late_smm_lock(void *unused)
 {
 	/* Finalize SMM settings */
@@ -50,3 +54,4 @@ static void soc_finalize(void *unused)
 
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, soc_finalize, NULL);
 BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD, BS_ON_EXIT, soc_finalize, NULL);
+#endif

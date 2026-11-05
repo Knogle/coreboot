@@ -341,6 +341,14 @@ config EDK2_CUSTOM_BUILD_PARAMS
 
 	  This option can support both macros `-D` and Pcds `--pcd`.
 
+config EDK2_PATCHES_DIR
+	string "edk2 source patch directory"
+	help
+	  Apply the *.patch files in this directory, in lexical order, after
+	  checking out edk2. The path is relative to the coreboot root. Leave
+	  empty to use the selected edk2 source without additional patches.
+	  Already applied patches are accepted only if their reverse check passes.
+
 config EDK2_ENABLE_IPXE
 	bool "Include iPXE in edk2 payload"
 	depends on !EDK2_REPO_OFFICIAL
@@ -349,6 +357,46 @@ config EDK2_ENABLE_IPXE
 	help
 	  Instructs coreboot build system to build iPXE EFI target and include
 	  it in the EDK2 payload.
+
+config EDK2_INTEL_GIG_UNDI
+	bool "Include Intel Gigabit UNDI network driver"
+	depends on BOARD_ASROCKRACK_B565D4_V1L && EDK2_REPO_MRCHROMEBOX && EDK2_UEFIPAYLOAD
+	default n
+	help
+	  Include a separately supplied x64 Intel Gigabit UNDI EFI driver in
+	  the payload. It provides NII for EDK2's SNP and network stack.
+	  The board's EDK2 patches add the driver to the firmware volume.
+	  Supply the driver separately and retain its applicable license.
+
+config EDK2_INTEL_GIG_UNDI_FILE
+	string "Intel Gigabit UNDI EFI driver file"
+	depends on EDK2_INTEL_GIG_UNDI
+	default "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/network/GigUndiDxe.efi"
+	help
+	  Path to the x64 boot services driver, relative to the coreboot root
+	  or absolute. The file is checked before it is copied into EDK2.
+
+config EDK2_INTEL_GIG_UNDI_SHA256
+	string "Expected Intel Gigabit UNDI SHA-256 (optional)"
+	depends on EDK2_INTEL_GIG_UNDI
+	default ""
+	help
+	  Pin the external driver's SHA-256 for reproducible builds. Leave
+	  empty to validate its EFI image structure without a fixed digest.
+
+config EDK2_CSMWRAP
+	bool "Include experimental SeaBIOS CSM legacy boot application"
+	depends on BOARD_ASROCKRACK_B565D4_V1L && EDK2_REPO_MRCHROMEBOX && EDK2_UEFIPAYLOAD
+	depends on B565D4_LARGE_PAYLOAD
+	default y
+	help
+	  Build pinned CSMWrap and SeaBIOS Csm16 sources and register a legacy
+	  BIOS boot application in the EDK2 boot menu. It requires Secure Boot
+	  disabled. The transition temporarily uses an AP and releases it for
+	  the operating system, retaining all logical CPUs. This is an experimental
+	  application, not a complete EFI_LEGACY_BIOS_PROTOCOL implementation.
+	  It defaults on for this board's qualified large-payload configuration;
+	  EFI boot remains available without entering the CSM application.
 
 config EDK2_IPXE_OPTION_NAME
 	string "iPXE option name"

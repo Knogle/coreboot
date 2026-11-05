@@ -1,0 +1,37 @@
+--- a/UefiPayloadPkg/UefiPayloadPkg.dsc
++++ b/UefiPayloadPkg/UefiPayloadPkg.dsc
+@@ -207,6 +207,7 @@
+   DEFINE NETWORK_ASIX_USB2              = FALSE
+   DEFINE NETWORK_SNP_ENABLE             = FALSE
+   DEFINE NETWORK_IPXE                   = FALSE
++  DEFINE NETWORK_INTEL_GIG_UNDI         = FALSE
+ 
+ !if $(NETWORK_PXE_BOOT) == TRUE
+   DEFINE NETWORK_ENABLE                 = TRUE
+@@ -222,6 +223,12 @@
+ !if $(NETWORK_IPXE) == TRUE
+   DEFINE NETWORK_ENABLE                 = TRUE
+   DEFINE NETWORK_DRIVER_ENABLE          = TRUE
++!endif
++
++!if $(NETWORK_INTEL_GIG_UNDI) == TRUE
++  DEFINE NETWORK_ENABLE                 = TRUE
++  DEFINE NETWORK_DRIVER_ENABLE          = TRUE
++  DEFINE NETWORK_SNP_ENABLE             = TRUE
+ !endif
+ 
+ !include NetworkPkg/NetworkDefines.dsc.inc
+--- a/UefiPayloadPkg/UefiPayloadPkg.fdf
++++ b/UefiPayloadPkg/UefiPayloadPkg.fdf
+@@ -507,6 +507,11 @@
+ !if $(ARCH) == IA32
+   # FIXME
+ !else
++!if $(NETWORK_INTEL_GIG_UNDI)
++  FILE DRIVER = BB801A52-C90F-4EDE-91B2-82520888CBC3 {
++    SECTION PE32 = UefiPayloadPkg/NetworkDrivers/GigUndiDxe.efi
++  }
++!endif
+ !if $(NETWORK_RTEK_PCI)
+   FILE DRIVER = D30D5496-6DF9-462D-9B97-0B93F659D1A0 {
+     SECTION PE32 = UefiPayloadPkg/NetworkDrivers/RtkUndiDxe.efi

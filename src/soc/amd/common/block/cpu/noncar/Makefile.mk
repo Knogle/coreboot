@@ -1,18 +1,26 @@
 ## SPDX-License-Identifier: GPL-2.0-only
 ifeq ($(CONFIG_SOC_AMD_COMMON_BLOCK_NONCAR),y)
 
+ifneq ($(CONFIG_B565D4_RETAINED_PEI_LATE_ENTRY),y)
 bootblock-y += bootblock.c
 bootblock-y += cpu.c
 bootblock-y += early_cache.c
 bootblock-y += pre_c.S
 bootblock-y += write_resume_eip.c
 bootblock-$(CONFIG_TPM_MEASURED_BOOT) += bootblock_measure.c
+endif # no cold pre_c/cache/resume/FCH replay in retained profile
 romstage-y += memmap.c
+ifneq ($(CONFIG_SOC_AMD_CEZANNE_NATIVE),y)
 romstage-y += romstage.c
+endif
 ramstage-y += cpu.c
 romstage-y += cpu.c
 ramstage-y += memmap.c
+ifneq ($(CONFIG_B565D4_RETAINED_PEI_LATE_ENTRY),y)
+ifneq ($(CONFIG_SOC_AMD_CEZANNE_NATIVE),y)
 ramstage-y += mpinit.c
+endif
+endif
 
 # See memlayout_x86.ld for details:
 # AMDCOMPRESS only supports one PT_LOAD segment.

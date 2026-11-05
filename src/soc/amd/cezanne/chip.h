@@ -12,7 +12,7 @@
 #include <drivers/i2c/designware/dw_i2c.h>
 #include <types.h>
 
-#if CONFIG(SOC_AMD_CEZANNE)
+#if CONFIG(SOC_AMD_CEZANNE) || CONFIG(B565D4_DESKTOP_NATIVE)
 #include <vendorcode/amd/fsp/cezanne/FspUsb.h>
 #elif CONFIG(SOC_AMD_RENOIR) || CONFIG(SOC_AMD_V2000A)
 #include <vendorcode/amd/fsp/renoir/FspUsb.h>

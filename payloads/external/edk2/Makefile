@@ -9,9 +9,28 @@ export WORKSPACE := $(CURDIR)/workspace
 strip_quotes = $(subst ",,$(1))
 
 EDK2_REPOSITORY := $(call strip_quotes,$(CONFIG_EDK2_REPOSITORY))
+EDK2_PATCHES_DIR := $(call strip_quotes,$(CONFIG_EDK2_PATCHES_DIR))
+ifneq ($(EDK2_PATCHES_DIR),)
+EDK2_PATCHES := $(sort $(wildcard $(abspath $(top)/$(EDK2_PATCHES_DIR))/*.patch))
+ifeq ($(EDK2_PATCHES),)
+$(error No edk2 patches found in $(EDK2_PATCHES_DIR))
+endif
+endif
 EDK2_PLATFORMS_REPOSITORY := $(call strip_quotes,$(CONFIG_EDK2_PLATFORMS_REPOSITORY))
 EDK2_PATH_REPO_ROOT := $(word 3,$(subst /, ,$(EDK2_REPOSITORY)))
 export EDK2_PATH := $(WORKSPACE)/$(EDK2_PATH_REPO_ROOT)
+EDK2_PATCH_STATE := $(WORKSPACE)/patches-$(EDK2_PATH_REPO_ROOT)
+EDK2_SPDM_PATH := SecurityPkg/DeviceSecurity/SpdmLib/libspdm
+
+# Initialize the libraries used by UefiPayloadPkg without fetching unrelated
+# unit tests, reference TPM implementations, or SPDM test environments.
+EDK2_SUBMODULE_PATHSPEC := . ':!UnitTestFrameworkPkg'
+ifeq ($(CONFIG_EDK2_UEFIPAYLOAD),y)
+EDK2_SUBMODULE_PATHSPEC := BaseTools CryptoPkg MdeModulePkg MdePkg
+ifeq ($(CONFIG_EDK2_USE_LVGL_RENDERER),y)
+EDK2_SUBMODULE_PATHSPEC += LvglPkg
+endif
+endif
 
 define edk2_abspath
 $(if $(filter /%,$(1)),$(1),$(EDK2_PATH)/$(1))
@@ -56,7 +75,7 @@ endif
 # OPTION			= DEFAULT_VALUE
 #
 # BOOTSPLASH_IMAGE		= FALSE
-ifneq ($(CONFIG_EDK2_BOOTSPLASH_FILE),)
+ifneq ($(call strip_quotes,$(CONFIG_EDK2_BOOTSPLASH_FILE)),)
 BUILD_STR += -D BOOTSPLASH_IMAGE=TRUE
 endif
 # BOOT_MANAGER_ESCAPE		= FALSE
@@ -82,6 +101,22 @@ BUILD_STR += -D DISABLE_SERIAL_TERMINAL=TRUE
 endif
 # VARIABLE_SUPPORT		= EMU
 # MAX_VARIABLE_SIZE		= 0x10000
+ifeq ($(CONFIG_B565D4_EDK2_NVSTORE),y)
+ifneq ($(findstring VARIABLE_SUPPORT=,$(CONFIG_EDK2_CUSTOM_BUILD_PARAMS)),)
+$(error Remove VARIABLE_SUPPORT from custom parameters when selecting the FCH NV provider)
+endif
+BUILD_STR += -D VARIABLE_SUPPORT=FCH_SPI
+BUILD_STR += --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize=0x8000
+
+fch_nvstore: patches
+	mkdir -p $(EDK2_PATH)/UefiPayloadPkg/Library/FchNvStoreLib
+	cp $(top)/src/mainboard/asrockrack/b565d4_v1l/edk2/nvstore/* \
+		$(EDK2_PATH)/UefiPayloadPkg/Library/FchNvStoreLib/
+
+prep: fch_nvstore
+.PHONY: fch_nvstore
+endif
+
 ifeq ($(CONFIG_SMMSTORE),y)
 BUILD_STR += -D VARIABLE_SUPPORT=SMMSTORE
 BUILD_STR += --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize=0x8000
@@ -278,8 +313,9 @@ $(EDK2_PLATFORMS_PATH): $(WORKSPACE)
 		git submodule update --init --checkout
 
 $(EDK2_PATH): $(WORKSPACE)
+	python3 patches.py undo --source "$(EDK2_PATH)" --state "$(EDK2_PATCH_STATE)"
 	if [ ! -d "$(EDK2_PATH)" ]; then \
-		git clone --recurse-submodules $(CONFIG_EDK2_REPOSITORY) $(EDK2_PATH) -j5; \
+		git clone $(CONFIG_EDK2_REPOSITORY) $(EDK2_PATH); \
 	fi
 	cd $(EDK2_PATH); \
 		git checkout MdeModulePkg/Logo/Logo.bmp > /dev/null 2>&1 || true; \
@@ -292,11 +328,15 @@ $(EDK2_PATH): $(WORKSPACE)
 		if git status --ignore-submodules=dirty | grep -q -e clean -e "nothing added"; then \
 			echo "    Checking out $(project_name) revision $(CONFIG_EDK2_TAG_OR_REV)"; \
 			git checkout --detach $(CONFIG_EDK2_TAG_OR_REV) -f; \
-			git submodule update --checkout --recursive; \
+			git submodule update --checkout --recursive -- $(EDK2_SUBMODULE_PATHSPEC); \
 		else \
 			echo "    Working directory not clean; will not overwrite"; \
 		fi; \
-		git submodule update --init --checkout --recursive
+		git submodule update --init --checkout --recursive -- $(EDK2_SUBMODULE_PATHSPEC) && \
+		if [ "$(CONFIG_EDK2_UEFIPAYLOAD)" = y ] && \
+			git config -f .gitmodules --get submodule.$(EDK2_SPDM_PATH).path >/dev/null; then \
+			git submodule update --init --checkout -- $(EDK2_SPDM_PATH); \
+		fi
 
 logo: $(EDK2_PATH)
 	case "$(CONFIG_EDK2_BOOTSPLASH_FILE)" in \
@@ -314,11 +354,40 @@ gop_driver: $(EDK2_PATH)
 		cp $(top)/$(CONFIG_INTEL_GMA_VBT_FILE) $(EDK2_PATH)/UefiPayloadPkg/vbt.bin; \
 	fi; \
 
+IPXE_FILE ?= $(top)/payloads/external/iPXE/ipxe/ipxe.rom
+
+ifeq ($(CONFIG_EDK2_INTEL_GIG_UNDI),y)
+BUILD_STR += -D NETWORK_INTEL_GIG_UNDI=TRUE
+INTEL_GIG_UNDI_FILE := $(call strip_quotes,$(CONFIG_EDK2_INTEL_GIG_UNDI_FILE))
+INTEL_GIG_UNDI_PATH := $(if $(filter /%,$(INTEL_GIG_UNDI_FILE)),$(INTEL_GIG_UNDI_FILE),$(abspath $(top)/$(INTEL_GIG_UNDI_FILE)))
+
+intel_gig_undi: patches
+	python3 $(top)/payloads/external/edk2/prepare_network_driver.py \
+		--input "$(INTEL_GIG_UNDI_PATH)" \
+		--sha256 "$(call strip_quotes,$(CONFIG_EDK2_INTEL_GIG_UNDI_SHA256))" \
+		--output "$(EDK2_PATH)/UefiPayloadPkg/NetworkDrivers/GigUndiDxe.efi"
+
+prep: intel_gig_undi
+.PHONY: intel_gig_undi
+endif
+
+ifeq ($(CONFIG_EDK2_CSMWRAP),y)
+BUILD_STR += -D CSMWRAP_ENABLE=TRUE
+
+csmwrap: $(EDK2_PATH)
+	python3 $(top)/payloads/external/CSMWrap/build.py \
+		--workspace $(abspath $(top)/payloads/external/CSMWrap/workspace) \
+		--output $(EDK2_PATH)/UefiPayloadPkg/CsmWrap/csmwrap.efi
+
+prep: csmwrap
+.PHONY: csmwrap
+endif
+
 ipxe_rom: $(EDK2_PATH)
 	if [ "$(CONFIG_EDK2_IPXE)" == "y" ]; then \
 		echo "    Including externally built iPXE"; \
 		mkdir -p $(EDK2_PATH)/UefiPayloadPkg/NetworkDrivers/; \
-		cp $(top)/payloads/external/iPXE/ipxe/ipxe.rom \
+		cp "$(IPXE_FILE)" \
 			$(EDK2_PATH)/UefiPayloadPkg/NetworkDrivers/ipxe.efi; \
 	fi \
 
@@ -333,6 +402,7 @@ checktools:
 	echo -n "EDK2: Checking nasm:"
 	type nasm > /dev/null 2>&1 && echo "        Found!" || \
 		( echo "        Not found!"; echo "ERROR: Please install nasm."; exit 1 )
+ifneq ($(call strip_quotes,$(CONFIG_EDK2_BOOTSPLASH_FILE)),)
 	echo -n "EDK2: Checking imagemagick:"
 	-convert -size 1x1 xc: test.png &> /dev/null;
 	if [ -f test.png ]; then \
@@ -342,6 +412,7 @@ checktools:
 		echo "ERROR: Please install imagemagick"; \
 		exit 1; \
 	fi
+endif
 
 ifeq ($(CONFIG_DRIVERS_EFI_UPDATE_CAPSULES),y)
 capsule_keys: $(EDK2_PATH)
@@ -379,7 +450,11 @@ print:
 		-e 's/s /Build:          Silent/' \
 		-e 's/t /Toolchain:      /'
 
-prep: $(EDK2_PATH) $(EDK2_PLATFORMS_PATH) clean checktools logo gop_driver ipxe_rom
+patches: $(EDK2_PATH)
+	python3 patches.py apply --source "$(EDK2_PATH)" --state "$(EDK2_PATCH_STATE)" \
+		$(foreach patch,$(EDK2_PATCHES),--patch "$(patch)")
+
+prep: $(EDK2_PATH) $(EDK2_PLATFORMS_PATH) clean checktools logo gop_driver ipxe_rom patches
 	cd $(WORKSPACE); \
 		source $(EDK2_PATH)/edksetup.sh; \
 		unset CC; $(MAKE) -C $(EDK2_PATH)/BaseTools 2>&1; \
@@ -427,7 +502,7 @@ clean:
 distclean:
 	rm -rf $(WORKSPACE)
 
-.PHONY: $(EDK2_PATH) checktools logo UefiPayloadPkg UniversalPayload clean distclean
+.PHONY: $(EDK2_PATH) checktools logo patches UefiPayloadPkg UniversalPayload clean distclean
 
 .PHONY: coreboot_capsule capsule_keys
 

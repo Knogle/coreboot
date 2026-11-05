@@ -79,6 +79,9 @@ __weak int platform_is_resuming(void)
  */
 void prevent_unsupported_s3_resume(void)
 {
+	if ((CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE)))
+		return;
+
 	if (CONFIG(HAVE_ACPI_RESUME))
 		return;
 

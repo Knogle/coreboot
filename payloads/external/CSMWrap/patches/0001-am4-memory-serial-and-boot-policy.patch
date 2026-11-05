@@ -1,0 +1,103 @@
+diff --git a/seabios-config b/seabios-config
+index e55d81b..36c5555 100644
+--- a/seabios-config
++++ b/seabios-config
+@@ -3,3 +3,7 @@ CONFIG_CSM=y
+ # CONFIG_VGAHOOKS is not set
+ # CONFIG_TCGBIOS is not set
+ CONFIG_VGA_COREBOOT=y
++CONFIG_DEBUG_LEVEL=3
++CONFIG_DEBUG_SERIAL=y
++CONFIG_DEBUG_SERIAL_PORT=0x2f8
++CONFIG_CSM_SERCON_PORT=0x2f8
+diff --git a/src/config.c b/src/config.c
+index c4f043b..2e44733 100644
+--- a/src/config.c
++++ b/src/config.c
+@@ -7,9 +7,15 @@
+ #include <config.h>
+ #include <printf.h>
+ 
++#ifndef CSMWRAP_SERIAL_PORT
++#define CSMWRAP_SERIAL_PORT 0x3f8
++#endif
++#ifndef CSMWRAP_SERIAL_DEBUG
++#define CSMWRAP_SERIAL_DEBUG false
++#endif
+ struct csmwrap_config gConfig = {
+-    .serial_debug = false,
+-    .serial_port = 0x3f8,
++    .serial_debug = CSMWRAP_SERIAL_DEBUG,
++    .serial_port = CSMWRAP_SERIAL_PORT,
+     .serial_baud = 115200,
+     .vgabios_path = {0},
+     .iommu_disable = true,
+diff --git a/src/csmwrap.c b/src/csmwrap.c
+index acff638..8bcfd41 100644
+--- a/src/csmwrap.c
++++ b/src/csmwrap.c
+@@ -529,6 +529,20 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
+     gBS = SystemTable->BootServices;
+     gRT = SystemTable->RuntimeServices;
+ 
++    /* A built-in FV application must respect the platform boot policy too. */
++    EFI_GUID variable_guid = EFI_GLOBAL_VARIABLE;
++    UINT8 secure_boot = 0;
++    UINTN secure_boot_size = sizeof(secure_boot);
++    Status = gRT->GetVariable(L"SecureBoot", &variable_guid, NULL,
++                             &secure_boot_size, &secure_boot);
++    if ((Status == EFI_SUCCESS && (secure_boot_size != 1 || secure_boot != 0)) ||
++        (Status != EFI_SUCCESS && Status != EFI_NOT_FOUND)) {
++        if (gST->ConOut != NULL)
++            gST->ConOut->OutputString(gST->ConOut,
++                L"CSMWrap: legacy boot requires Secure Boot to be disabled.\r\n");
++        return EFI_SECURITY_VIOLATION;
++    }
++
+     calibrate_tsc();
+ 
+     csmwrap_video_early_init(&priv);
+diff --git a/src/csmwrap.h b/src/csmwrap.h
+index dd7b8f8..b0ad19d 100644
+--- a/src/csmwrap.h
++++ b/src/csmwrap.h
+@@ -95,7 +95,9 @@ struct low_stub {
+ #define CB_TABLE_START  0x00000500
+ #define CONVEN_START    0x00007E00
+ /* We may have some stack here */
++#ifndef LOW_STUB_BASE
+ #define LOW_STUB_BASE   0x00020000
++#endif
+ /*
+  * Conventional memory ends at 640KB (0xA0000) - EBDA size.
+  * The 1KB initial EBDA matches SeaBIOS's EBDA_SIZE_START on entry; SeaBIOS
+diff --git a/src/e820.c b/src/e820.c
+index 7d446a0..ea9916c 100644
+--- a/src/e820.c
++++ b/src/e820.c
+@@ -389,6 +389,25 @@ int build_e820_map(struct csmwrap_priv *priv, EFI_MEMORY_DESCRIPTOR *memory_map,
+      */
+     e820_add(priv, 0, 0x9FC00, EfiAcpiAddressRangeMemory);
+     e820_add(priv, 0x9FC00, 0x400, EfiAcpiAddressRangeReserved);
++    /* Preserve firmware-owned low-memory holes, such as coreboot's AP
++     * SIPI area. Page zero is repurposed for the legacy IVT/BDA. Loader
++     * allocations remain conventional RAM until SeaBIOS reserves its PMM.
++     */
++    for (memory_map_ptr = memory_map;
++         memory_map_ptr < memory_map_end;
++         memory_map_ptr = NextMemoryDescriptor(memory_map_ptr, descriptor_size)) {
++        if (memory_map_ptr->Type != EfiReservedMemoryType &&
++            memory_map_ptr->Type != EfiACPIMemoryNVS &&
++            memory_map_ptr->Type != EfiRuntimeServicesCode &&
++            memory_map_ptr->Type != EfiRuntimeServicesData)
++            continue;
++        uint64_t start = memory_map_ptr->PhysicalStart;
++        uint64_t end = start + memory_map_ptr->NumberOfPages * EFI_PAGE_SIZE;
++        if (start < EFI_PAGE_SIZE) start = EFI_PAGE_SIZE;
++        if (end > CONVEN_END) end = CONVEN_END;
++        if (start < end)
++            e820_add(priv, start, end - start, EfiAcpiAddressRangeReserved);
++    }
+     /* Reserve Expansion BIOS (video RAM, option ROMs, system ROM) */
+     e820_add(priv, 0xa0000, 0x100000 - 0xa0000, EfiAcpiAddressRangeReserved);
+ 

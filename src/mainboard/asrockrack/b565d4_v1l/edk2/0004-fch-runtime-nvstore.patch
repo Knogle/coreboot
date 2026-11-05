@@ -1,0 +1,112 @@
+From: coreboot board integration
+Subject: [PATCH] UefiPayloadPkg: add board-scoped FCH runtime NV storage
+
+Reuse the standard FVB, FTW and runtime variable drivers with the AMD FCH
+provider. This mode retains NO_SMM; no Intel SPI or SMI provider is selected.
+The board provider source is installed by the normal payload preparation.
+
+--- a/UefiPayloadPkg/UefiPayloadPkg.dsc
++++ b/UefiPayloadPkg/UefiPayloadPkg.dsc
+@@ -292,7 +292,7 @@
+ !include MdePkg/MdeLibs.dsc.inc
+ 
+ [Packages]
+-!if $(VARIABLE_SUPPORT) == "EMU" || $(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "SPI"
++!if $(VARIABLE_SUPPORT) == "EMU" || ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI") || $(VARIABLE_SUPPORT) == "SPI"
+   UefiPayloadPkg/UserAuthPkg/UserAuthPkg.dec
+ !endif
+ !if $(LVGL_ENABLE) == TRUE
+@@ -415,7 +415,7 @@
+   PlatformHookLib|UefiPayloadPkg/Library/PlatformHookLib/PlatformHookLib.inf
+ !endif
+   PlatformBootManagerLib|UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
+-!if $(VARIABLE_SUPPORT) == "EMU" || $(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "SPI"
++!if $(VARIABLE_SUPPORT) == "EMU" || ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI") || $(VARIABLE_SUPPORT) == "SPI"
+   PlatformPasswordLib|UefiPayloadPkg/UserAuthPkg/Library/PlatformPasswordLibNull/PlatformPasswordLibNull.inf
+ !endif
+   IoApicLib|PcAtChipsetPkg/Library/BaseIoApicLib/BaseIoApicLib.inf
+@@ -463,7 +463,7 @@
+ 
+ !if $(VARIABLE_SUPPORT) == "EMU"
+   TpmMeasurementLib|MdeModulePkg/Library/TpmMeasurementLibNull/TpmMeasurementLibNull.inf
+-!elseif $(VARIABLE_SUPPORT) == "SMMSTORE"
++!elseif ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI")
+   TpmMeasurementLib|MdeModulePkg/Library/TpmMeasurementLibNull/TpmMeasurementLibNull.inf
+ !elseif $(VARIABLE_SUPPORT) == "SPI"
+   PlatformSecureLib|SecurityPkg/Library/PlatformSecureLibNull/PlatformSecureLibNull.inf
+@@ -471,7 +471,9 @@
+   S3BootScriptLib|MdePkg/Library/BaseS3BootScriptLibNull/BaseS3BootScriptLibNull.inf
+   MmUnblockMemoryLib|MdePkg/Library/MmUnblockMemoryLib/MmUnblockMemoryLibNull.inf
+ !endif
+-!if $(VARIABLE_SUPPORT) == "SMMSTORE" || ($(CAPSULE_SUPPORT) && $(BOOTLOADER) == "COREBOOT")
++!if $(VARIABLE_SUPPORT) == "FCH_SPI"
++  SmmStoreLib|UefiPayloadPkg/Library/FchNvStoreLib/FchNvStoreLib.inf
++!elseif $(VARIABLE_SUPPORT) == "SMMSTORE" || ($(CAPSULE_SUPPORT) && $(BOOTLOADER) == "COREBOOT")
+   SmmStoreLib|UefiPayloadPkg/Library/SmmStoreLib/SmmStoreLib.inf
+ !endif
+ 
+@@ -778,7 +780,7 @@
+   gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0x10000
+ !if $(VARIABLE_SUPPORT) == "EMU"
+   gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvModeEnable        |TRUE
+-!elseif $(VARIABLE_SUPPORT) == "SPI" || $(VARIABLE_SUPPORT) == "SMMSTORE"
++!elseif $(VARIABLE_SUPPORT) == "SPI" || ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI")
+   gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvModeEnable        |FALSE
+ !endif
+ 
+@@ -829,7 +831,7 @@
+   ## Whether embedded drivers in FMP capsules are supported (opt-in).
+   gEfiMdeModulePkgTokenSpaceGuid.PcdCapsuleEmbeddedDriverSupport|FALSE
+ 
+-!if $(VARIABLE_SUPPORT) == "EMU" || $(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "SPI"
++!if $(VARIABLE_SUPPORT) == "EMU" || ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI") || $(VARIABLE_SUPPORT) == "SPI"
+   ## User Authentication PCD
+   gUserAuthFeaturePkgTokenSpaceGuid.PcdPasswordCleared|FALSE
+ !endif
+@@ -1021,7 +1023,7 @@
+   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase64|0
+   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0
+   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0
+-!if $(VARIABLE_SUPPORT) == "SPI" || $(VARIABLE_SUPPORT) == "SMMSTORE"
++!if $(VARIABLE_SUPPORT) == "SPI" || ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI")
+   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize  |0
+   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize|0
+   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize  |0
+@@ -1299,7 +1301,7 @@
+ !else
+   MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
+ !endif
+-!if $(VARIABLE_SUPPORT) == "EMU" || $(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "SPI"
++!if $(VARIABLE_SUPPORT) == "EMU" || ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI") || $(VARIABLE_SUPPORT) == "SPI"
+   UefiPayloadPkg/UserAuthPkg/UserAuthenticationDxe/UserAuthenticationDxe.inf
+ !if $(BOOTSPLASH_IMAGE)
+   UefiPayloadPkg/BootSplashConfigDxe/BootSplashConfigDxe.inf
+@@ -1452,7 +1454,7 @@
+ 
+ !if $(VARIABLE_SUPPORT) == "EMU"
+   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
+-!elseif $(VARIABLE_SUPPORT) == "SMMSTORE"
++!elseif ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI")
+   UefiPayloadPkg/SmmStoreFvb/SmmStoreFvbRuntimeDxe.inf
+   MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
+   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf {
+--- a/UefiPayloadPkg/UefiPayloadPkg.fdf
++++ b/UefiPayloadPkg/UefiPayloadPkg.fdf
+@@ -235,7 +235,7 @@
+ 
+ !if $(VARIABLE_SUPPORT) == "EMU"
+   INF MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
+-!elseif $(VARIABLE_SUPPORT) == "SMMSTORE"
++!elseif ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI")
+   INF UefiPayloadPkg/SmmStoreFvb/SmmStoreFvbRuntimeDxe.inf
+   INF MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
+   INF MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
+@@ -307,7 +307,7 @@
+ !endif
+ INF MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
+ INF MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
+-!if $(VARIABLE_SUPPORT) == "EMU" || $(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "SPI"
++!if $(VARIABLE_SUPPORT) == "EMU" || ($(VARIABLE_SUPPORT) == "SMMSTORE" || $(VARIABLE_SUPPORT) == "FCH_SPI") || $(VARIABLE_SUPPORT) == "SPI"
+ INF UefiPayloadPkg/UserAuthPkg/UserAuthenticationDxe/UserAuthenticationDxe.inf
+ !if $(BOOTSPLASH_IMAGE)
+ INF UefiPayloadPkg/BootSplashConfigDxe/BootSplashConfigDxe.inf

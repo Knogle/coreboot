@@ -1,0 +1,43 @@
+--- a/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
++++ b/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
+@@ -2772,6 +2772,7 @@
+     if (EfiBootManagerFindLoadOption (&BootOptions[Index], NvBootOptions, NvBootOptionCount) == -1) {
+       UINTN   InsertPosition;
+       BOOLEAN IsRemovable;
++      BOOLEAN IsNetwork;
+       EFI_HANDLE  Handle;
+       EFI_BLOCK_IO_PROTOCOL  *BlkIo;
+       EFI_DEVICE_PATH_PROTOCOL  *TempDevicePath;
+@@ -2817,11 +2818,31 @@
+       }
+ 
+       //
++      // New network boot options must not displace an existing OS selection.
++      // A network path has no BlockIo and is not a fixed storage device.
++      // Preserve the user's order for options which already exist.
++      //
++      IsNetwork = FALSE;
++      for (Node = BootOptions[Index].FilePath; !IsDevicePathEnd (Node); Node = NextDevicePathNode (Node)) {
++        if ((DevicePathType (Node) == MESSAGING_DEVICE_PATH) &&
++            ((DevicePathSubType (Node) == MSG_MAC_ADDR_DP) ||
++             (DevicePathSubType (Node) == MSG_IPv4_DP) ||
++             (DevicePathSubType (Node) == MSG_IPv6_DP) ||
++             (DevicePathSubType (Node) == MSG_URI_DP)))
++        {
++          IsNetwork = TRUE;
++          break;
++        }
++      }
++
++      //
+       // Determine insertion position based on priority
+       // External priority (0): removable devices at front (0), fixed at end (-1)
+       // Internal priority (1): fixed devices at front (0), removable at end (-1)
+       //
+-      if (BootDevicePriority == 0) {
++      if (IsNetwork) {
++        InsertPosition = (UINTN)-1;
++      } else if (BootDevicePriority == 0) {
+         // External priority: external devices at front, internal at end
+         InsertPosition = IsRemovable ? 0 : (UINTN)-1;
+       } else {

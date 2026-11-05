@@ -9,6 +9,42 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if CONFIG(BOARD_ASROCKRACK_B565D4_V1L)
+#if FMAP_OFFSET != 0 || FMAP_SIZE != 182 || \
+	FMAP_SECTION_B565D4_RAM_START != 0 || FMAP_SECTION_B565D4_RAM_SIZE != 0x80000 || \
+	FMAP_SECTION_COREBOOT_START != 0x1000 || FMAP_SECTION_COREBOOT_SIZE != 0x7f000
+#error "B565D4 logical memory medium geometry changed"
+#endif
+#elif CONFIG(B565D4_NORMAL_ROMSTAGE_UART_MILESTONE)
+/* This default-off experiment uses a separately owned read-only RAM medium.
+ * CONFIG_ROM_SIZE still describes the unchanged physical vendor flash. */
+#if FMAP_SECTION_NORMAL_RAM_START != 0 || \
+	FMAP_SECTION_NORMAL_RAM_SIZE != CONFIG_B565D4_RAM_CBFS_SIZE
+	#error "B565 RAM FMAP must match its exact read-only media extent"
+#endif
+#if FMAP_OFFSET != 0 || FMAP_SIZE > 0x1000 || \
+	FMAP_SECTION_BIOS_START != 0 || \
+	FMAP_SECTION_BIOS_SIZE != FMAP_SECTION_NORMAL_RAM_SIZE || \
+	FMAP_SECTION_COREBOOT_START != 0x1000 || \
+	FMAP_SECTION_COREBOOT_SIZE != FMAP_SECTION_NORMAL_RAM_SIZE - 0x1000
+	#error "Unreviewed B565 RAM FMAP/COREBOOT layout"
+#endif
+#elif (CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) || CONFIG(SOC_AMD_CEZANNE_NATIVE))
+/* This retained-entry profile uses a separately admitted 512KiB RAM medium.
+ * CONFIG_ROM_SIZE continues to describe the unchanged physical vendor flash. */
+#if FMAP_SECTION_NATIVE84_PARENT_MEDIUM_START != 0 || \
+	FMAP_SECTION_NATIVE84_PARENT_MEDIUM_SIZE != 0x80000
+	#error "Native84 RAM FMAP must match its exact 512KiB medium"
+#endif
+#if FMAP_OFFSET != 0 || FMAP_SIZE > 0x1000 || \
+	FMAP_SECTION_FMAP_START != 0 || FMAP_SECTION_FMAP_SIZE != 0x1000 || \
+	FMAP_SECTION_BIOS_START != 0 || \
+	FMAP_SECTION_BIOS_SIZE != FMAP_SECTION_NATIVE84_PARENT_MEDIUM_SIZE || \
+	FMAP_SECTION_COREBOOT_START != 0x1000 || \
+	FMAP_SECTION_COREBOOT_SIZE != FMAP_SECTION_NATIVE84_PARENT_MEDIUM_SIZE - 0x1000
+	#error "Unreviewed Native84 RAM FMAP/COREBOOT layout"
+#endif
+#else
 #if FMAP_SECTION_FLASH_START != 0
 	#error "FMAP must always start flash address 0"
 #endif
@@ -20,6 +56,7 @@
 #if FMAP_SECTION_FLASH_SIZE != CONFIG_ROM_SIZE
 	#error "ROM_SIZE must always be equal to FMAP flash size"
 #endif
+#endif /* B565D4_NORMAL_ROMSTAGE_UART_MILESTONE */
 
 /* Return the name of the boot region. Falls back to COREBOOT, if not overridden
  * by any multi-slot mechanism (e.g Intel Top Swap, vboot). */

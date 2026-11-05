@@ -1,0 +1,623 @@
+{
+  "schema": 1,
+  "board": "asrockrack/b565d4_v1l",
+  "source_cohort": 111,
+  "base_commit": "94fab62214e6e125b52263788efdaf46c2236124",
+  "source_date_epoch": 1793531444,
+  "default_profiles": {
+    "edk2": "configs/config.asrockrack_b565d4_v1l_edk2_vermeer",
+    "seabios": "configs/config.asrockrack_b565d4_v1l_seabios_vermeer"
+  },
+  "repositories": [
+    {
+      "path": "3rdparty/vboot",
+      "url": "https://review.coreboot.org/vboot.git",
+      "commit": "5c360ef458b0a013d8a6d47724bb0fffb5accbcf",
+      "cache_artifact": {
+        "path": "repositories/5c360ef458b0a013d8a6d47724bb0fffb5accbcf.pack",
+        "bytes": 82414733,
+        "sha256": "604ecb5c74124efe3a6ac1cfac11d59b1c53644fa71af08c1a65b0639b51f42b"
+      },
+      "cache_shallow_boundary": {
+        "path": "repositories/5c360ef458b0a013d8a6d47724bb0fffb5accbcf.shallow",
+        "bytes": 41,
+        "sha256": "980154473678843daffcf37f1830338f35cd0191bb733d886421ab8b9e2953e0"
+      }
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox",
+      "url": "https://github.com/mrchromebox/edk2",
+      "commit": "57642656c3ddc5d55aeb2e8c3fb86c81276da4a7",
+      "cache_artifact": {
+        "path": "repositories/57642656c3ddc5d55aeb2e8c3fb86c81276da4a7.bundle",
+        "bytes": 335027219,
+        "sha256": "69294faab32a1fafde07a872f748db7aa288e07a91b43ea3a38829bc40543ccb"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/BaseTools/Source/C/BrotliCompress/brotli",
+      "url": "https://github.com/google/brotli",
+      "commit": "e230f474b87134e8c6c85b630084c612057f253e",
+      "cache_artifact": {
+        "path": "repositories/e230f474b87134e8c6c85b630084c612057f253e.bundle",
+        "bytes": 43999610,
+        "sha256": "c52354b9922519c381949d55592d7a7c6c3174fb4542d75d2e995a391f95b910"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/MbedTlsLib/mbedtls",
+      "url": "https://github.com/ARMmbed/mbedtls",
+      "commit": "0bebf8b8c7f07abe3571ded48a11aa907a1ffb20",
+      "cache_artifact": {
+        "path": "repositories/0bebf8b8c7f07abe3571ded48a11aa907a1ffb20.bundle",
+        "bytes": 138148835,
+        "sha256": "f5db61b41ed1d30239ede68837b91e0550eab8be0686bcaad8d790d3d1b2614d"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/MbedTlsLib/mbedtls/framework",
+      "url": "https://github.com/Mbed-TLS/mbedtls-framework",
+      "commit": "dff9da04438d712f7647fd995bc90fadd0c0e2ce",
+      "cache_artifact": {
+        "path": "repositories/dff9da04438d712f7647fd995bc90fadd0c0e2ce.bundle",
+        "bytes": 100910262,
+        "sha256": "11773b4da1da8d2b7702886baa6be92889ae796cf196cbec1bc0ddcee8f8768e"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl",
+      "url": "https://github.com/openssl/openssl",
+      "commit": "8cf17aaeb4599f8af87fefd810b5b5fee90fe69e",
+      "cache_artifact": {
+        "path": "repositories/8cf17aaeb4599f8af87fefd810b5b5fee90fe69e.bundle",
+        "bytes": 377176959,
+        "sha256": "218434e2a7427aeae2f4f933b49b60a576ac7be0d85b31bd56bd00ffbb9c2dc4"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/cloudflare-quiche",
+      "url": "https://github.com/cloudflare/quiche",
+      "commit": "7ab6a55cfe471267d61e4d28ba43d41defcd87e0",
+      "cache_artifact": {
+        "path": "repositories/7ab6a55cfe471267d61e4d28ba43d41defcd87e0.bundle",
+        "bytes": 22020379,
+        "sha256": "2f3c6c7f11425daef238b313f8b077bee6e7d5a7ade39d8eca71280e93575ed0"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/cloudflare-quiche/quiche/deps/boringssl",
+      "url": "https://github.com/google/boringssl.git",
+      "commit": "f1c75347daa2ea81a941e953f2263e0a4d970c8d",
+      "cache_artifact": {
+        "path": "repositories/f1c75347daa2ea81a941e953f2263e0a4d970c8d.bundle",
+        "bytes": 284972899,
+        "sha256": "d791613d32514ecb8b28fd9c19ff8c585728474f8973676b1ce6d6259921fe70"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/fuzz/corpora",
+      "url": "https://github.com/openssl/fuzz-corpora",
+      "commit": "ce771805c094d098c25a218bc8e9f7344eccbc5a",
+      "cache_artifact": {
+        "path": "repositories/ce771805c094d098c25a218bc8e9f7344eccbc5a.bundle",
+        "bytes": 13852800,
+        "sha256": "a2c030e4da5135b64aa411cbb7190cbbf5a59665eee2eba10f5fe54e9159a5e1"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/gost-engine",
+      "url": "https://github.com/gost-engine/engine",
+      "commit": "74b1f4fddbc2d6de969815b1992ddc1ae7c643fe",
+      "cache_artifact": {
+        "path": "repositories/74b1f4fddbc2d6de969815b1992ddc1ae7c643fe.bundle",
+        "bytes": 3207648,
+        "sha256": "2debd63444a0e2abd60b9e1afcf3c6c4822953e28ea437f85c19d4a6b4aba271"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/gost-engine/libprov",
+      "url": "https://github.com/provider-corner/libprov.git",
+      "commit": "0b445c73ae1e87577430c6884cdeeca1afa36dbd",
+      "cache_artifact": {
+        "path": "repositories/0b445c73ae1e87577430c6884cdeeca1afa36dbd.bundle",
+        "bytes": 26302,
+        "sha256": "822bf11a9dadbbe6b580033de9547a3a44724b52a80d146794cf17a704079428"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/krb5",
+      "url": "https://github.com/krb5/krb5",
+      "commit": "784c38f50e70a739400cdd3f2620bac2e2788e6c",
+      "cache_artifact": {
+        "path": "repositories/784c38f50e70a739400cdd3f2620bac2e2788e6c.bundle",
+        "bytes": 76351930,
+        "sha256": "c6905165b11ed6c72632b7004ec10ee3ee75f5a1a8d522fa1cff30088c70cf0d"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/oqs-provider",
+      "url": "https://github.com/open-quantum-safe/oqs-provider.git",
+      "commit": "7bc597c04b534ddea9b6654481deb31ded8e1bbc",
+      "cache_artifact": {
+        "path": "repositories/7bc597c04b534ddea9b6654481deb31ded8e1bbc.bundle",
+        "bytes": 1716646,
+        "sha256": "5662c8873e84c899c82dc7ff5b74099abf472caea53b5ecc75a2456559b854b1"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/pkcs11-provider",
+      "url": "https://github.com/latchset/pkcs11-provider.git",
+      "commit": "663dea335c80bec7fd96d544ff875af08d6461a9",
+      "cache_artifact": {
+        "path": "repositories/663dea335c80bec7fd96d544ff875af08d6461a9.bundle",
+        "bytes": 2527430,
+        "sha256": "1b5388c2dbf67c4684b82e233e0057ef9282faa940a15610958c7d109b9459cb"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/pkcs11-provider/python-ecdsa",
+      "url": "https://github.com/tlsfuzzer/python-ecdsa.git",
+      "commit": "ea9666903c109a8e88a37eb1c60d4e98f01f0299",
+      "cache_artifact": {
+        "path": "repositories/ea9666903c109a8e88a37eb1c60d4e98f01f0299.bundle",
+        "bytes": 1158883,
+        "sha256": "b1167de5abc1bb297a6b0d3fcaa8e253d4ca9013d9991e8affc6ea971b68f10d"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/pkcs11-provider/tlsfuzzer",
+      "url": "https://github.com/tlsfuzzer/tlsfuzzer.git",
+      "commit": "32fcb0d8e78fd9ffc4568d11ba5916936a46af8c",
+      "cache_artifact": {
+        "path": "repositories/32fcb0d8e78fd9ffc4568d11ba5916936a46af8c.bundle",
+        "bytes": 9319120,
+        "sha256": "4237b2809015e88d7c456c7a099493f2aafdfc786d71139bbf982416be2b0ac6"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/pkcs11-provider/tlslite-ng",
+      "url": "https://github.com/tlsfuzzer/tlslite-ng.git",
+      "commit": "4e16574d7c52f17c81c3f5e0aa547776a67fdf8e",
+      "cache_artifact": {
+        "path": "repositories/4e16574d7c52f17c81c3f5e0aa547776a67fdf8e.bundle",
+        "bytes": 4538116,
+        "sha256": "2219e5821adfdf7855885c5b66f3c35ca0532202a0c5429d08d5d9a059845456"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/pyca-cryptography",
+      "url": "https://github.com/pyca/cryptography.git",
+      "commit": "7e33b0e7739d633c77b8c478620167f693ed13f4",
+      "cache_artifact": {
+        "path": "repositories/7e33b0e7739d633c77b8c478620167f693ed13f4.bundle",
+        "bytes": 91206663,
+        "sha256": "3d03f1e02740b01be9d7de0f55534b4427cd133c9a6b60eacc70bd7910241040"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/python-ecdsa",
+      "url": "https://github.com/tlsfuzzer/python-ecdsa",
+      "commit": "4096fa01715929e08b97e73f3173aee9d57f2a3f",
+      "cache_artifact": {
+        "path": "repositories/4096fa01715929e08b97e73f3173aee9d57f2a3f.bundle",
+        "bytes": 1158883,
+        "sha256": "429c8418520c30a249d51af60024bb8033bd2bd5ee64aedb9da3d3b4a2906367"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/tlsfuzzer",
+      "url": "https://github.com/tlsfuzzer/tlsfuzzer",
+      "commit": "61f45d9701294fd87ef92d2a7e3dfb076653a562",
+      "cache_artifact": {
+        "path": "repositories/61f45d9701294fd87ef92d2a7e3dfb076653a562.bundle",
+        "bytes": 9319120,
+        "sha256": "8af7e734c59683c18005ba0cc22c33f6b5b362755ae083f06323af7c6cd4a24e"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/tlslite-ng",
+      "url": "https://github.com/tlsfuzzer/tlslite-ng",
+      "commit": "77ef321dde1a9e6bcf94d73c80f8789a770d8031",
+      "cache_artifact": {
+        "path": "repositories/77ef321dde1a9e6bcf94d73c80f8789a770d8031.bundle",
+        "bytes": 4538116,
+        "sha256": "9911ec01628d14fabec1aa043b195b1b35699312baaf5dee64fb072e707473ef"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/CryptoPkg/Library/OpensslLib/openssl/wycheproof",
+      "url": "https://github.com/google/wycheproof",
+      "commit": "2196000605e45d91097147c9c71f26b72af58003",
+      "cache_artifact": {
+        "path": "repositories/2196000605e45d91097147c9c71f26b72af58003.bundle",
+        "bytes": 81630307,
+        "sha256": "8cbc946a3d37df36c5eb7e4139b511eef5e9377981a54b74f6a6724136392f51"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/LvglPkg",
+      "url": "https://github.com/MrChromebox/LvglPkg.git",
+      "commit": "659b502401d9439443dc636acb10ca711afe8bc5",
+      "cache_artifact": {
+        "path": "repositories/659b502401d9439443dc636acb10ca711afe8bc5.bundle",
+        "bytes": 12848941,
+        "sha256": "49761892dbbfeaaa7cb8ac7e04600a70c6b7f8ec419571a919655f927dc28d87"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/LvglPkg/Library/LvglLib/lvgl",
+      "url": "https://github.com/lvgl/lvgl.git",
+      "commit": "85aa60d18b3d5e5588d7b247abf90198f07c8a63",
+      "cache_artifact": {
+        "path": "repositories/85aa60d18b3d5e5588d7b247abf90198f07c8a63.bundle",
+        "bytes": 516153080,
+        "sha256": "90d7fd0b095234b9a91d106b778d649a32104b38bd5219bb80c6b681d0bd1500"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/MdeModulePkg/Library/BrotliCustomDecompressLib/brotli",
+      "url": "https://github.com/google/brotli",
+      "commit": "e230f474b87134e8c6c85b630084c612057f253e",
+      "cache_artifact": {
+        "path": "repositories/e230f474b87134e8c6c85b630084c612057f253e.bundle",
+        "bytes": 43999610,
+        "sha256": "c52354b9922519c381949d55592d7a7c6c3174fb4542d75d2e995a391f95b910"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/MdeModulePkg/Universal/RegularExpressionDxe/oniguruma",
+      "url": "https://github.com/kkos/oniguruma",
+      "commit": "4ef89209a239c1aea328cf13c05a2807e5c146d1",
+      "cache_artifact": {
+        "path": "repositories/4ef89209a239c1aea328cf13c05a2807e5c146d1.bundle",
+        "bytes": 6649413,
+        "sha256": "b76a600d3719cfd13e8d33be551a99c52b93a43a2b4af99b57947ae8899bad5c"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/MdePkg/Library/BaseFdtLib/libfdt",
+      "url": "https://github.com/devicetree-org/pylibfdt.git",
+      "commit": "cfff805481bdea27f900c32698171286542b8d3c",
+      "cache_artifact": {
+        "path": "repositories/cfff805481bdea27f900c32698171286542b8d3c.bundle",
+        "bytes": 81441,
+        "sha256": "eb434c4872d6a4fe1d764392d0f933095999919a97b4d94009a472feda5f3c8f"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/MdePkg/Library/MipiSysTLib/mipisyst",
+      "url": "https://github.com/MIPI-Alliance/public-mipi-sys-t.git",
+      "commit": "370b5944c046bab043dd8b133727b2135af7747a",
+      "cache_artifact": {
+        "path": "repositories/370b5944c046bab043dd8b133727b2135af7747a.bundle",
+        "bytes": 477074,
+        "sha256": "02784a9766c375a5b601c6b0660ac5c5fdfd8ebc874421c05511dd635a85bb46"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/MdePkg/Library/MipiSysTLib/mipisyst/external/googletest",
+      "url": "https://github.com/google/googletest.git",
+      "commit": "a6f06bf2fd3b832822cd4e9e554b7d47f32ec084",
+      "cache_artifact": {
+        "path": "repositories/a6f06bf2fd3b832822cd4e9e554b7d47f32ec084.bundle",
+        "bytes": 14417845,
+        "sha256": "c455948ba2b08fbc0308e507274bfaffab131d266b53ee2666d40a871457267f"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/MdePkg/Library/MipiSysTLib/mipisyst/external/pugixml",
+      "url": "https://github.com/zeux/pugixml.git",
+      "commit": "c53fdab93af76106b963216d85897614b996f8b6",
+      "cache_artifact": {
+        "path": "repositories/c53fdab93af76106b963216d85897614b996f8b6.bundle",
+        "bytes": 6939140,
+        "sha256": "09244b3cf43974566c17e8d4e681e15b355a088a376fbe54ea5f31d8de7c7c7d"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/RedfishPkg/Library/JsonLib/jansson",
+      "url": "https://github.com/akheron/jansson",
+      "commit": "e9ebfa7e77a6bee77df44e096b100e7131044059",
+      "cache_artifact": {
+        "path": "repositories/e9ebfa7e77a6bee77df44e096b100e7131044059.bundle",
+        "bytes": 1994972,
+        "sha256": "5744ffb8c939c87a81bfd13e91ab07d6845a9e6dde56111e9aee1bc09d472145"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/SecurityPkg/DeviceSecurity/SpdmLib/libspdm",
+      "url": "https://github.com/DMTF/libspdm.git",
+      "commit": "f55cf6d48ec69b4ac60a63903e9c6a2cb0fd155d",
+      "cache_artifact": {
+        "path": "repositories/f55cf6d48ec69b4ac60a63903e9c6a2cb0fd155d.bundle",
+        "bytes": 43006654,
+        "sha256": "5fdc457cbf2d2ee6ca68214e94bc3033ebc6f58e7f81497b5fddb42917a80129"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/SecurityPkg/DeviceSecurity/SpdmLib/libspdm/unit_test/cmockalib/cmocka",
+      "url": "https://gitlab.com/cmocka/cmocka.git",
+      "commit": "a01cc69ee9536f90e57c61a198f2d1944d3d4313",
+      "cache_artifact": {
+        "path": "repositories/a01cc69ee9536f90e57c61a198f2d1944d3d4313.bundle",
+        "bytes": 1511774,
+        "sha256": "b372a6edeb25303f7de4176c40b6e168fecd3dd6f49d6c512a7d2babfff0bd82"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/TcgTpmPkg/Library/TpmLib/TPM",
+      "url": "https://github.com/TrustedComputingGroup/TPM",
+      "commit": "bc29a21d44b01396223c152a4834e52318591770",
+      "cache_artifact": {
+        "path": "repositories/bc29a21d44b01396223c152a4834e52318591770.bundle",
+        "bytes": 1146465,
+        "sha256": "2696755ea5fdeffdbe215969d51048b0da30822dad051965c44637907747eb1e"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/edk2/workspace/mrchromebox/UnitTestFrameworkPkg/Library/SubhookLib/subhook",
+      "url": "https://github.com/tianocore/edk2-subhook.git",
+      "commit": "83d4e1ebef3588fae48b69a7352cc21801cb70bc",
+      "cache_artifact": {
+        "path": "repositories/83d4e1ebef3588fae48b69a7352cc21801cb70bc.bundle",
+        "bytes": 178565,
+        "sha256": "1839b31dfb39c1f1dc025b91c17db0b403610794332f5ee3239f95fcfc279c19"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/CSMWrap/workspace/csmwrap",
+      "url": "https://github.com/CSMWrap/CSMWrap.git",
+      "commit": "008f141f419db566f6f4ee23bfe394f6a4e638d7",
+      "cache_artifact": {
+        "path": "repositories/008f141f419db566f6f4ee23bfe394f6a4e638d7.bundle",
+        "bytes": 1640835,
+        "sha256": "1f426a9fe3321546b74ec3889df609fdcc35043dd6533d8f710d296319d15c65"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/CSMWrap/workspace/csmwrap/cc-runtime",
+      "url": "https://github.com/osdev0/cc-runtime.git",
+      "commit": "dae79833b57a01b9fd3e359ee31def69f5ae899b",
+      "cache_artifact": {
+        "path": "repositories/dae79833b57a01b9fd3e359ee31def69f5ae899b.bundle",
+        "bytes": 249092,
+        "sha256": "f06109a3e1fa0f20fd2e21317169ec24a40ca9f80c339d5a69e988ecd25f3e6c"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/CSMWrap/workspace/csmwrap/flanterm",
+      "url": "https://github.com/Mintsuki/Flanterm.git",
+      "commit": "dfa1922c0749faf64c4423a81b233a20c08a7db7",
+      "cache_artifact": {
+        "path": "repositories/dfa1922c0749faf64c4423a81b233a20c08a7db7.bundle",
+        "bytes": 340616,
+        "sha256": "070a3f0a2fcc6531b3cc6f8b2fb838645ffabdce1c7240cbd2ef67ec6388b5ec"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/CSMWrap/workspace/csmwrap/freestnd-c-hdrs",
+      "url": "https://github.com/osdev0/freestnd-c-hdrs-0bsd.git",
+      "commit": "097259a899d30f0a4b7a694de2de5fdda942e923",
+      "cache_artifact": {
+        "path": "repositories/097259a899d30f0a4b7a694de2de5fdda942e923.bundle",
+        "bytes": 93438,
+        "sha256": "34a169862583395e61c8b123df43e908acecceb86572e339d7550329102e94fe"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/CSMWrap/workspace/csmwrap/nanoprintf",
+      "url": "https://github.com/charlesnicholson/nanoprintf.git",
+      "commit": "526cbca59d23fcb4e4aee3a93beaf22bc63e67a5",
+      "cache_artifact": {
+        "path": "repositories/526cbca59d23fcb4e4aee3a93beaf22bc63e67a5.bundle",
+        "bytes": 1045182,
+        "sha256": "8e60aa8ca1a10f78ff2dfb95d44623d4082fd3b782218355de62cc8f0ac8722b"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/CSMWrap/workspace/csmwrap/picoefi",
+      "url": "https://github.com/PicoEFI/PicoEFI.git",
+      "commit": "af14129ec21ba482873289e36311ec02f1e19964",
+      "cache_artifact": {
+        "path": "repositories/af14129ec21ba482873289e36311ec02f1e19964.bundle",
+        "bytes": 543779,
+        "sha256": "f90cce9ce4e3f7cd3ab5f09a629b9d38350bef7940963707993b83ef69d8effc"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/CSMWrap/workspace/csmwrap/seabios",
+      "url": "https://github.com/CSMWrap/seabios-csmwrap.git",
+      "commit": "578d260b94f62150bf6ab9149784287bd1154f06",
+      "cache_artifact": {
+        "path": "repositories/578d260b94f62150bf6ab9149784287bd1154f06.bundle",
+        "bytes": 4230491,
+        "sha256": "2f62f9661f2fc8a201671923f152aaeb0c68cab82e9786991507813cd6ec3705"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/CSMWrap/workspace/csmwrap/uACPI",
+      "url": "https://github.com/uACPI/uACPI.git",
+      "commit": "338dc389ef38c5264e317c61d8121aace5ac865d",
+      "cache_artifact": {
+        "path": "repositories/338dc389ef38c5264e317c61d8121aace5ac865d.bundle",
+        "bytes": 3523828,
+        "sha256": "5ecda4518d8c0ed5e7eb55dcd05c7d20ec9f9342a56653df242ce8a29331054e"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/SeaBIOS/seabios",
+      "url": "https://review.coreboot.org/seabios.git",
+      "commit": "b52ca86e094d19b58e2304417787e96b940e39c6",
+      "cache_artifact": {
+        "path": "repositories/b52ca86e094d19b58e2304417787e96b940e39c6.bundle",
+        "bytes": 3819817,
+        "sha256": "4fc7855eb3d0d391d4b37a671eccb41d639da8860b3e7c61e1caf8690b1555fc"
+      },
+      "cache_shallow_boundary": null
+    },
+    {
+      "path": "payloads/external/iPXE/ipxe",
+      "url": "https://git.ipxe.org/ipxe.git",
+      "commit": "7c39c04a537ce29dccc6f2bae9749d1d371429c1",
+      "cache_artifact": {
+        "path": "repositories/7c39c04a537ce29dccc6f2bae9749d1d371429c1.bundle",
+        "bytes": 30148741,
+        "sha256": "dbaa9019cd0c86ee64312f46e092e48d2de6ccbfbad37a6d0aef3b3028dcc898"
+      },
+      "cache_shallow_boundary": null
+    }
+  ],
+  "private_inputs": {
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_8700.bin": {
+      "bytes": 3200,
+      "sha256": "a22b8075cac88bcad0f31d76e58ccdd18123f0668051b846bb5d17e4dfb024e6"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_8710.bin": {
+      "bytes": 3200,
+      "sha256": "c31409a89c3f8d839b4ca5b7648b915d856a39261e1441a875eaa6f9c9d1ea2b"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_a200.bin": {
+      "bytes": 5568,
+      "sha256": "fdaf5195f6802819a0045a66f096e055db3f7d388e8b9626359a768ed18c7ba6"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_a210.bin": {
+      "bytes": 5568,
+      "sha256": "9dd86ac1add6c65c274b3685f36ee5f83a05037515c7ea75e9f5d7ba45a72325"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_a212.bin": {
+      "bytes": 5568,
+      "sha256": "72089265a025f253079dc1831d6c7b263f1bd20482b78ecb799b88a87569f6d0"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_8700.bin": {
+      "bytes": 3200,
+      "sha256": "a22b8075cac88bcad0f31d76e58ccdd18123f0668051b846bb5d17e4dfb024e6"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_8710.bin": {
+      "bytes": 3200,
+      "sha256": "c31409a89c3f8d839b4ca5b7648b915d856a39261e1441a875eaa6f9c9d1ea2b"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_a200.bin": {
+      "bytes": 5568,
+      "sha256": "fdaf5195f6802819a0045a66f096e055db3f7d388e8b9626359a768ed18c7ba6"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_a210.bin": {
+      "bytes": 5568,
+      "sha256": "9dd86ac1add6c65c274b3685f36ee5f83a05037515c7ea75e9f5d7ba45a72325"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_a212.bin": {
+      "bytes": 5568,
+      "sha256": "e86d516a8e72f3fe6e16bc62594017e96d3d0e6ba7ace368f755f013bb22f641"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/network/GigUndiDxe.efi": {
+      "bytes": 176128,
+      "sha256": "7e1253db4c8d420184d51c5755d61864095845fa6546be71727dde56c0053b89"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/vermeer-f20-abl.bin": {
+      "bytes": 511680,
+      "sha256": "f67f88a0bcf1949dae9c1f74cb9a889e4c645f83d9eb4ebe7bbd36b741862f5a"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/cpu_microcode_a500.bin": {
+      "bytes": 5568,
+      "sha256": "233d707d03c3c4f42b82c605da800af1d75b653a7dabdfa2115e967e71e9fc74"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/manifest.json": {
+      "bytes": 49393,
+      "sha256": "d0534c16bd6629e4b6246ce12f324a9349809acd6460332d67c344216fbb7360"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/manifest.json": {
+      "bytes": 1896,
+      "sha256": "9369f16c641a713016009fc1ec6ef38db3d6d2c37d7b32a3641a4a0b7a1cf0da"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer-bootstrap/README.md": {
+      "bytes": 753,
+      "sha256": "3b8170f02ca0849c0eb3507d0b25f8ce0e29f583d58732dfcfcb360f3ca401ce"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer-bootstrap/cpu_microcode_8700.bin": {
+      "bytes": 3200,
+      "sha256": "a22b8075cac88bcad0f31d76e58ccdd18123f0668051b846bb5d17e4dfb024e6"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer-bootstrap/cpu_microcode_8710.bin": {
+      "bytes": 3200,
+      "sha256": "c31409a89c3f8d839b4ca5b7648b915d856a39261e1441a875eaa6f9c9d1ea2b"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer-bootstrap/cpu_microcode_a200.bin": {
+      "bytes": 5568,
+      "sha256": "fdaf5195f6802819a0045a66f096e055db3f7d388e8b9626359a768ed18c7ba6"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer-bootstrap/cpu_microcode_a210.bin": {
+      "bytes": 5568,
+      "sha256": "9dd86ac1add6c65c274b3685f36ee5f83a05037515c7ea75e9f5d7ba45a72325"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer-bootstrap/cpu_microcode_a212.bin": {
+      "bytes": 5568,
+      "sha256": "69a117ecd0f66c95e21ec5591a520a27c4edd5591fbf00ff0888b5e112b6cc27"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer-bootstrap/provenance.json": {
+      "bytes": 1486,
+      "sha256": "19d689b875b34a8eb2232803e224a81120c6464c3e1ed8b57398d650d69ee09d"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/manifest.json": {
+      "bytes": 804,
+      "sha256": "17cfa6f050e5b145709463eafbb08aca86dba74940224202ffbfe5ac1e6c0685"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/pre-x86-template.rom": {
+      "bytes": 33554432,
+      "sha256": "aa9cbc87e545fef85c2ed754c2ec3d5ef1755c07ff9a5cfc3ab858dc2e7cf86d"
+    },
+    "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/promontory19.bin": {
+      "bytes": 114700,
+      "sha256": "e812303cc74e76cd20c2bc08f17e4f5176854873b8e410d4a6e49eefd41f2107"
+    }
+  },
+  "expected_host": {
+    "distribution": "Debian GNU/Linux 12 (bookworm)",
+    "compiler": "clang-19 19.1.7",
+    "crossgcc": "coreboot toolchain v2026-07-28_508d4deedd / GCC 15.2.0",
+    "binutils": "2.46.1",
+    "iasl": "20251212"
+  },
+  "qualified_cpu": "Ryzen 5 5600X B2; one32GiB ECC UDIMM",
+  "private_CPU32_unadopted": true
+}

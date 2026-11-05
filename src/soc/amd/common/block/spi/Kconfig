@@ -8,6 +8,16 @@ config SOC_AMD_COMMON_BLOCK_SPI
 	  This overwrites the structure spi_flash_ops to use FCH SPI code
 	  instead of individual SPI specific code.
 
+config SOC_AMD_COMMON_BLOCK_SPI_PRESERVE_BOOTBLOCK_MODE
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_SPI
+	default n
+	help
+	  Preserve the PSP-established SPI read mode and clock settings in
+	  bootblock. This is for a terminal board UART diagnostic that does
+	  not access CBFS or start another stage. Qualify the vendor EFS and
+	  flash mapping before using the normal flash-backed stage workflow.
+
 config SOC_AMD_COMMON_BLOCK_SPI_DWORD_ACCESS
 	bool
 	depends on SOC_AMD_COMMON_BLOCK_SPI

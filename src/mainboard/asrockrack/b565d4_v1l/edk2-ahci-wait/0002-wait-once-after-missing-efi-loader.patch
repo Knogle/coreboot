@@ -1,0 +1,24 @@
+diff --git a/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c b/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
+--- a/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
++++ b/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
+@@ -2101,11 +2101,17 @@
+       BootOption->Status = Status;
+ 
+       //
+-      // A disk without an EFI loader must not block the next boot option.
+-      // Preserve interactive diagnostics for other load failures.
++      // Diagnostic image: reproduce the original missing-loader key wait once.
++      // Later missing loaders retain automatic fallback.
+       //
+       if (Status == EFI_NOT_FOUND) {
+-        return;
++        STATIC BOOLEAN  MissingLoaderWaited = FALSE;
++
++        if (MissingLoaderWaited) {
++          return;
++        }
++
++        MissingLoaderWaited = TRUE;
+       }
+ 
+       if (gST->ConOut != NULL) {

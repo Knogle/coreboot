@@ -75,6 +75,27 @@
  */
 typedef void *(*cbfs_allocator_t)(void *arg, size_t size, const union cbfs_mdata *mdata);
 
+/*
+ * Explicit allocation with exact output-size reporting; no existing accessor selects it.
+ * Both allocator and size_out are required. A valid size_out is zeroed before lookup and
+ * remains zero on failure. A non-NULL result is published only after the ordinary load under
+ * the existing verification policy reports a nonzero byte count equal to the declared
+ * uncompressed size; size_out then receives that count. There is no map, cache-allocation or
+ * unverified-area variant.
+ * Normal configured boot-device lookup and preload cleanup policies are retained.
+ *
+ * The allocator must provide at least the requested capacity with qualified writable lifetime.
+ * name, size_out, referenced arg/allocator state and the returned buffer must remain valid;
+ * size_out must not alias the load buffer or be modified by the allocator. Decoder bounds and
+ * initialized-byte guarantees require separate qualification: a reported size is not a proof
+ * of decoder memory safety, mapping, ownership or executable format validity.
+ *
+ * Failure after allocation or decoding may leave buffer writes and allocated storage behind.
+ * There is no rollback, free or retry. A caller that requires exact source bytes must treat
+ * this as failure rather than falling back to an unchecked accessor.
+ */
+void *cbfs_alloc_exact(const char *name, cbfs_allocator_t allocator, void *arg, size_t *size_out);
+
 static inline size_t cbfs_load(const char *name, void *buf, size_t size);
 static inline size_t cbfs_ro_load(const char *name, void *buf, size_t size);
 static inline size_t cbfs_type_load(const char *name, void *buf, size_t size,

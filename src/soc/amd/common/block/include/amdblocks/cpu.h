@@ -22,6 +22,11 @@ uint32_t get_pstate_0_reg(void);
 uint32_t get_pstate_latency(void);
 uint32_t get_pstate_core_freq(union pstate_msr pstate_reg);
 uint32_t get_pstate_core_uvolts(union pstate_msr pstate_reg);
+/* Emit existing hardware P-states inside an open processor device. The limit
+ * is an index into _PSS, clamped to the enabled state count. No MSR is written.
+ */
+void amd_generate_cpu_pstate_entries(unsigned int cpu, unsigned int logical_cores,
+				    unsigned int performance_limit);
 const acpi_cstate_t *get_cstate_config_data(size_t *size);
 void amd_cpu_init(struct device *dev);
 
