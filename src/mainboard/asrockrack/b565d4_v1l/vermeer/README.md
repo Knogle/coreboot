@@ -18,8 +18,8 @@ below. The single 32-GiB ECC population has bounded EDAC/MCA, ACPI, RTC and
 tests on older images do not qualify this new firmware cohort. Native NVMe
 UEFI and legacy CorebootOS boots were separately observed on earlier images.
 These are ALPHA milestones, not production qualification. See
-[the current acceptance matrix](../../../../../porting/asrock_am4/PRODUCTION_READINESS_20261030.md) and
-[the physical Matisse report](../../../../../porting/asrock_am4/MATISSE_PHYSICAL_20261028.md).
+the current acceptance matrix (`../../../../../porting/asrock_am4/PRODUCTION_READINESS_20261030.md`; external historical evidence) and
+the physical Matisse report (`../../../../../porting/asrock_am4/MATISSE_PHYSICAL_20261028.md`; external historical evidence).
 They do not automatically detect and switch between Cezanne, Matisse and
 Vermeer at runtime. The default Cezanne profiles keep their original CPU admission.
 

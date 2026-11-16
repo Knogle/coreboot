@@ -67,6 +67,11 @@ build for a reproducibility claim, and the established full-chip rollback and
 Board regression procedure before any new firmware can be treated as
 qualified. Do not infer flash readiness from this source snapshot.
 
+The historical `porting/asrock_am4` evidence archive and operator-local
+`blobs-local`/`.site-local` paths referenced in the Board documentation are
+not included in this source repository. Those records must accompany any
+future physical-qualification claim.
+
 The historical
 [Board documentation](Documentation/mainboard/asrockrack/b565d4_v1l.md)
 records earlier experimental results; its physical observations do not

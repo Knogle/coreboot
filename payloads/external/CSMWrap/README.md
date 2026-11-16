@@ -33,7 +33,7 @@ legacy Proxmox with all twelve5600X threads, including a full AC cold start.
 The former helper CPU also executes pinned host computation and a KVM vCPU
 under verified load. Real-mode and JEMM386 V86 native SATA reads, RTC, ticks,
 RAM-disk FAT, XMS and BIOS serial keyboard input pass. These are scoped ALPHA
-results; production qualification remains open. See the [architecture and evidence report](../../../porting/asrock_am4/CSM_NO_RESERVED_THREAD_20261031.md).
+results; production qualification remains open. See the architecture and evidence report (`../../../porting/asrock_am4/CSM_NO_RESERVED_THREAD_20261031.md`; external historical evidence).
 
 When the firmware console owns its debug UART, SeaBIOS omits that port from
 the BIOS COM list through its existing `etc/advertise-serial-debug-port`

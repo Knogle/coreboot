@@ -49,6 +49,36 @@
       "use": "desktop CPU preparation microcode"
     },
     {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_8700.bin",
+      "sha256": "a22b8075cac88bcad0f31d76e58ccdd18123f0668051b846bb5d17e4dfb024e6",
+      "size": 3200,
+      "use": "Vermeer desktop microcode cohort"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_8710.bin",
+      "sha256": "c31409a89c3f8d839b4ca5b7648b915d856a39261e1441a875eaa6f9c9d1ea2b",
+      "size": 3200,
+      "use": "Vermeer desktop microcode cohort"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_a200.bin",
+      "sha256": "fdaf5195f6802819a0045a66f096e055db3f7d388e8b9626359a768ed18c7ba6",
+      "size": 5568,
+      "use": "Vermeer desktop microcode cohort"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_a210.bin",
+      "sha256": "9dd86ac1add6c65c274b3685f36ee5f83a05037515c7ea75e9f5d7ba45a72325",
+      "size": 5568,
+      "use": "Vermeer desktop microcode cohort"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode-vermeer/cpu_microcode_a212.bin",
+      "sha256": "72089265a025f253079dc1831d6c7b263f1bd20482b78ecb799b88a87569f6d0",
+      "size": 5568,
+      "use": "Vermeer desktop microcode cohort"
+    },
+    {
       "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/vermeer-f20-abl.bin",
       "sha256": "f67f88a0bcf1949dae9c1f74cb9a889e4c645f83d9eb4ebe7bbd36b741862f5a",
       "size": 511680,
