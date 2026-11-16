@@ -12,9 +12,15 @@ faster review and build work, not an upstream submission or a release ROM.
 - All 42 saved B565 configurations passed `make defconfig` in a fresh
   worktree. Each selected the B565 Board and ASRock Rack vendor without
   Kconfig warnings. This checks configuration, not full compilation.
-- One network-isolated Cezanne/SeaBIOS build from source commit
-  `3c1424d49d` completed and produced a 32 MiB ROM with SHA-256
-  `342fcc5b5c46d394a698d6a17afa9ec4bbf730b64b0d67e17258fd1b6ca13538`.
+- Code commit `05c72134d202392e3683ae13d0fab3c467795f90` adds one
+  backslash to the SeaBIOS `PAYLOAD_CONFIGFILE` default. Two isolated
+  checkout paths produced byte-identical Cezanne and Vermeer SeaBIOS
+  configurations; Make resolved each path and read the same Board SeaBIOS
+  config file. The Vermeer/EDK2 configuration was unchanged. This establishes
+  configuration and path consumption only; this revision has no full ROM build.
+- One network-isolated Cezanne/SeaBIOS build from ancestor source commit
+  `3c1424d49d` completed before the path fix and produced a 32 MiB ROM,
+  SHA-256 `342fcc5b5c46d394a698d6a17afa9ec4bbf730b64b0d67e17258fd1b6ca13538`.
   Its image report confirms the source-stage and template-preservation checks.
   The earlier four-profile f358 images and their host checks belong to an
   older source snapshot; the other current profiles have not been rebuilt.
@@ -65,8 +71,9 @@ from submodules; provide the three required files before building. The payload
 Makefile fetches SeaBIOS unless its pinned Git source is already available.
 A compatible x86 cross-toolchain, `iasl` and sufficient disk space are also
 required. An isolated offline run with local SeaBIOS, Vboot and verified
-firmware inputs completed the second command at source commit `3c1424d49d`.
-It is one host build, not an independent clean-build reproduction.
+firmware inputs completed the second command at ancestor source commit
+`3c1424d49d`. That ROM predates the SeaBIOS path fix and does not verify this
+revision. It is one host build, not an independent clean-build reproduction.
 The two saved `*_server_alpha` configurations carry more of the current
 feature set and require additional payload sources.
 
