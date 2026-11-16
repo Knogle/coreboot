@@ -12,8 +12,12 @@ faster review and build work, not an upstream submission or a release ROM.
 - All 42 saved B565 configurations passed `make defconfig` in a fresh
   worktree. Each selected the B565 Board and ASRock Rack vendor without
   Kconfig warnings. This checks configuration, not full compilation.
-- The earlier four-profile f358 images and their host checks belong to an
-  older source snapshot. This branch has no freshly linked 32 MiB ROM.
+- One network-isolated Cezanne/SeaBIOS build from source commit
+  `3c1424d49d` completed and produced a 32 MiB ROM with SHA-256
+  `342fcc5b5c46d394a698d6a17afa9ec4bbf730b64b0d67e17258fd1b6ca13538`.
+  Its image report confirms the source-stage and template-preservation checks.
+  The earlier four-profile f358 images and their host checks belong to an
+  older source snapshot; the other current profiles have not been rebuilt.
 - The older aa4 firmware has historical physical POST evidence. This source
   snapshot has not been flashed or physically qualified.
 - Logical upstream patch splitting, contributor signoff, additional toolchain
@@ -50,20 +54,24 @@ manifest; unused optional files may be absent for a Cezanne/SeaBIOS build.
 The smallest saved configuration is Cezanne with SeaBIOS:
 
 ```sh
+git submodule update --init 3rdparty/vboot
 make obj=build/b565d4-smoke KBUILD_DEFCONFIG=configs/config.asrockrack_b565d4_v1l_seabios defconfig
-make obj=build/b565d4-smoke -j4
+make UPDATED_SUBMODULES=1 obj=build/b565d4-smoke -j2
 ```
 
-The first command passed in this source snapshot. The second command is a
-build entry point and has **not** completed here. Before running it, provide
-the required private firmware files, Coreboot submodules, a compatible x86
-cross-toolchain, `iasl`, payload source/toolchains, and sufficient disk space.
-The local host did not meet the earlier full-build resource/toolchain gate.
+`3rdparty/vboot` supplies `vb2_sha.h` and the SHA source even in this Vboot-off
+configuration. The B565-specific firmware inputs in the manifest are separate
+from submodules; provide the three required files before building. The payload
+Makefile fetches SeaBIOS unless its pinned Git source is already available.
+A compatible x86 cross-toolchain, `iasl` and sufficient disk space are also
+required. An isolated offline run with local SeaBIOS, Vboot and verified
+firmware inputs completed the second command at source commit `3c1424d49d`.
+It is one host build, not an independent clean-build reproduction.
 The two saved `*_server_alpha` configurations carry more of the current
 feature set and require additional payload sources.
 
-A successful build would still need layout and input checks, a second clean
-build for a reproducibility claim, and the established full-chip rollback and
+The successful host build still needs an independent clean rebuild for a
+reproducibility claim, and the established full-chip rollback and
 Board regression procedure before any new firmware can be treated as
 qualified. Do not infer flash readiness from this source snapshot.
 
