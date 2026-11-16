@@ -1,0 +1,84 @@
+diff --git a/src/csmwrap.h b/src/csmwrap.h
+--- a/src/csmwrap.h
++++ b/src/csmwrap.h
+@@ -40,12 +40,15 @@
+     uint16_t vga_vendor_id;
+     uint16_t vga_device_id;
+     struct cb_framebuffer cb_fb;
++    uint8_t cmos_metadata[2048 + 24];
++    uint32_t cmos_metadata_size;
+ };
+ 
+ extern struct csmwrap_priv priv;
+ 
+ extern int unlock_bios_region();
+ extern int build_coreboot_table(struct csmwrap_priv *priv);
++void capture_coreboot_cmos(struct csmwrap_priv *priv);
+ bool acpi_init(struct csmwrap_priv *priv);
+ bool acpi_namespace_init(void);
+ int build_e820_map(struct csmwrap_priv *priv, EFI_MEMORY_DESCRIPTOR *memory_map, UINTN memory_map_size, UINTN descriptor_size);
+diff --git a/src/coreboot.c b/src/coreboot.c
+--- a/src/coreboot.c
++++ b/src/coreboot.c
+@@ -31,6 +31,33 @@
+   return (UINT16)((~Sum) & 0xFFFF);
+ }
+ 
++/* The EDK2 publisher validated the option layout and its current checksum.
++ * Copy while boot services own the source; SeaBIOS revalidates it before I/O.
++ */
++void capture_coreboot_cmos(struct csmwrap_priv *priv)
++{
++    static const EFI_GUID guid = {
++        0xd8ca7aa9, 0x3c49, 0x4dd3,
++        { 0xbc, 0xb5, 0xf0, 0x4a, 0x8d, 0x27, 0xce, 0x9b }
++    };
++    priv->cmos_metadata_size = 0;
++    for (UINTN i = 0; i < gST->NumberOfTableEntries; i++) {
++        EFI_CONFIGURATION_TABLE *table = &gST->ConfigurationTable[i];
++        if (memcmp(&table->VendorGuid, &guid, sizeof(guid)) != 0)
++            continue;
++        const uint32_t *layout = table->VendorTable;
++        if (!layout || layout[0] != 0xc8 || layout[1] < 12 ||
++            layout[1] > 2048 || layout[2] < 12 || layout[2] > layout[1])
++            return;
++        const uint32_t *checksum = (const void *)((const uint8_t *)layout + layout[1]);
++        if (checksum[0] != 0xcc || checksum[1] != 24 || checksum[5] != 1)
++            return;
++        priv->cmos_metadata_size = layout[1] + 24;
++        memcpy(priv->cmos_metadata, layout, priv->cmos_metadata_size);
++        return;
++    }
++}
++
+ int build_coreboot_table(struct csmwrap_priv *priv)
+ {
+         void *p = (void *)CB_TABLE_START;
+@@ -54,6 +81,16 @@
+             table_entries++;
+         }
+ 
++        /* Publish the same ordinary coreboot option/checksum records. The
++         * complete synthetic table stays below 0x1000, away from AP buffers.
++         */
++        if (priv->cmos_metadata_size &&
++            (uintptr_t)p + priv->cmos_metadata_size <= 0x1000) {
++            memcpy(p, priv->cmos_metadata, priv->cmos_metadata_size);
++            p += priv->cmos_metadata_size;
++            table_entries += 2;
++        }
++
+         /* Last header stuff */
+         header->table_entries = table_entries;
+         header->table_bytes = (uint32_t)((uintptr_t)p - (uintptr_t)tables);
+diff --git a/src/csmwrap.c b/src/csmwrap.c
+--- a/src/csmwrap.c
++++ b/src/csmwrap.c
+@@ -528,6 +528,7 @@
+     gST = SystemTable;
+     gBS = SystemTable->BootServices;
+     gRT = SystemTable->RuntimeServices;
++    capture_coreboot_cmos(&priv);
+ 
+     /* A built-in FV application must respect the platform boot policy too. */
+     EFI_GUID variable_guid = EFI_GLOBAL_VARIABLE;

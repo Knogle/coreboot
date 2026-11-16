@@ -105,7 +105,18 @@ endif
 $(addprefix run-,$(alltests)): run-%: $$(%-bin)
 	rm -f $(testobj)/junit-$(subst /,_,$(patsubst $(testobj)/%/,%,$(dir $^)))\(*\).xml
 	rm -f $(testobj)/$(subst /,_,$^).failed
-	-$^ || echo failed > $(testobj)/$(subst /,_,$^).failed
+	(if [ "$($*-run_cases)" = count ]; then \
+		count="$$($< --count)" || exit 1; \
+		case "$$count" in \
+		[1-9]|[1-9][0-9]) ;; \
+		*) exit 1;; \
+		esac; \
+		n=0; while [ "$$n" -lt "$$count" ]; do \
+			"$<" "$$n" || exit 1; n=$$((n + 1)); \
+		done; \
+	else \
+		$^; \
+	fi) || echo failed > $(testobj)/$(subst /,_,$^).failed
 
 $(addprefix build-,$(alltests)): build-%: $$(%-bin)
 
@@ -113,8 +124,10 @@ $(alltests): run-$$(@)
 
 $(addprefix try-,$(alltests)): try-%: clean-% $(TEST_COMMON_DEPENDENCIES)
 	mkdir -p $(testobj)/$*
-	echo "<testcase classname='coreboot_build_unit_test' name='$*'>" >> $(testobj)/$*.tmp; \
-	$(MAKE) V=$(V) Q=$(Q) COV=$(COV) JUNIT_OUTPUT=y "build-$*" >> $(testobj)/$*.tmp.2 2>&1 \
+	rm -f $(testobj)/$(subst /,_,$(testobj)/$*/run).failed
+	set -e; \
+	echo "<testcase classname='coreboot_build_unit_test' name='$*'>" > $(testobj)/$*.tmp; \
+	$(MAKE) V=$(V) Q=$(Q) COV=$(COV) JUNIT_OUTPUT=y "build-$*" > $(testobj)/$*.tmp.2 2>&1 \
 		&& type="system-out" || type="failure"; \
 	if [ $$type = "failure" ]; then \
 		echo "<failure type='buildFailed'>" >> $(testobj)/$*.tmp; \
@@ -125,23 +138,36 @@ $(addprefix try-,$(alltests)): try-%: clean-% $(TEST_COMMON_DEPENDENCIES)
 	cat $(testobj)/$*.tmp.2 >> $(testobj)/$*.tmp; \
 	echo "]]></$$type>" >> $(testobj)/$*.tmp; \
 	rm -f $(testobj)/$*.tmp.2; \
-	echo "</testcase>" >> $(testobj)/$*.tmp; \
 	if [ $$type != 'failure' ]; then \
-		$(MAKE) V=$(V) Q=$(Q) COV=$(COV) JUNIT_OUTPUT=y "run-$*"; \
-	fi
+		$(MAKE) V=$(V) Q=$(Q) COV=$(COV) JUNIT_OUTPUT=y "run-$*" || exit 1; \
+		if [ -f $(testobj)/$(subst /,_,$(testobj)/$*/run).failed ]; then \
+			echo "<failure type='runFailed'/>" >> $(testobj)/$*.tmp || exit 1; \
+		fi; \
+	else \
+		echo failed > $(testobj)/$(subst /,_,$(testobj)/$*/run).failed || exit 1; \
+	fi; \
+	echo "</testcase>" >> $(testobj)/$*.tmp
 
 
 TESTS_BUILD_XML_FILE := $(testobj)/junit-tests-build.xml
+TESTS_FAILED_MARKERS := $(foreach test,$(alltests),\
+	$(testobj)/$(subst /,_,$($(test)-bin)).failed)
 
 $(TESTS_BUILD_XML_FILE): clean-junit.xml-unit-tests $(addprefix try-,$(alltests))
 	mkdir -p $(dir $@)
 	echo '<?xml version="1.0" encoding="utf-8"?><testsuite>' > $@
-	for tst in $(alltests); do \
+	set -e; for tst in $(alltests); do \
 		cat $(testobj)/$$tst.tmp >> $@; \
 	done
 	echo "</testsuite>" >> $@
 
 junit.xml-unit-tests: $(TESTS_BUILD_XML_FILE)
+	@failed=0; \
+	[ $(words $(TESTS_FAILED_MARKERS)) -eq $(words $(sort $(TESTS_FAILED_MARKERS))) ] || failed=1; \
+	for marker in $(TESTS_FAILED_MARKERS); do \
+		[ ! -f "$$marker" ] || failed=1; \
+	done; \
+	exit $$failed
 
 clean-junit.xml-unit-tests:
 	rm -f $(TESTS_BUILD_XML_FILE)

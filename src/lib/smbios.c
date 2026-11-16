@@ -883,7 +883,7 @@ static int smbios_write_type20(unsigned long *current, int *handle,
 
 		u32 end_addr = start_addr + (dimm->dimm_size << 10) - 1;
 		totallen += smbios_write_type20_table(current, handle, start_addr, end_addr,
-				type17_handle, type19_handle);
+				type17_handle + i, type19_handle);
 		start_addr = end_addr + 1;
 	}
 	return totallen;

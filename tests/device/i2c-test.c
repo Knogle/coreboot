@@ -86,7 +86,7 @@ static void mock_expect_params_platform_i2c_transfer(void)
 	/* Flags should always be only within supported range */
 	expect_in_set_count(platform_i2c_transfer, segments->flags, expected_flags, -1);
 
-	expect_not_value_count(platform_i2c_transfer, segments->buf, NULL, -1);
+	expect_not_value_count(platform_i2c_transfer, segments->buf, (void *)NULL, -1);
 
 	expect_in_range_count(platform_i2c_transfer, count, 1, INT_MAX, -1);
 }

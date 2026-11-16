@@ -7,6 +7,12 @@
 
 void sanitize_cmos(void);
 
+/* Platforms with a staged CBFS medium may defer CMOS layout lookups until
+ * that medium is available. Reads use their fallback and writes fail while
+ * this returns false. The CMOS backend provides a default returning true.
+ */
+bool cmos_option_table_ready(void);
+
 /* The CBFS file option backend cannot be used in SMM due to vboot
  * dependencies, which are not added to SMM.
  * The UEFI variable store option backend cannot be used in verstage because:

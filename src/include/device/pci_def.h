@@ -437,6 +437,8 @@
 #define  PCI_EXP_LNKCTL_CCC	0x40	/* Common Clock Configuration */
 #define  PCI_EXP_EN_CLK_PM	0x100	/* Enable Clock Power Management */
 #define PCI_EXP_LNKSTA		18	/* Link Status */
+#define  PCI_EXP_LNKSTA_CLS	0x000f	/* Current Link Speed */
+#define  PCI_EXP_LNKSTA_NLW	0x03f0	/* Negotiated Link Width */
 #define  PCI_EXP_LNKSTA_LT	0x800	/* Link Training */
 #define  PCI_EXP_LNKSTA_DLLLA	0x2000	/* Data Link Layer Link Active */
 #define  PCI_EXP_LNKSTA_SLC	0x1000	/* Slot Clock Configuration */
@@ -458,9 +460,14 @@
 #define PCI_EXP_RTCAP		30	/* Root Capabilities */
 #define PCI_EXP_RTSTA		32	/* Root Status */
 #define PCI_EXP_DEVCAP2		36	/* Device capabilities 2 */
+#define  PCI_EXP_DEVCAP2_ARI	0x0020	/* ARI forwarding supported */
 #define  PCI_EXP_DEVCAP2_LTR	0x0800	/* LTR supported */
 #define PCI_EXP_DEVCTL2		40	/* Device Control 2 */
+#define  PCI_EXP_DEVCTL2_ARI	0x0020	/* ARI forwarding enable */
 #define  PCI_EXP_DEV2_LTR	0x0400	/* LTR enabled */
+#define PCI_EXP_LNKCAP2		44	/* Link Capabilities 2 */
+#define PCI_EXP_LNKCTL2		48	/* Link Control 2 */
+#define  PCI_EXP_LNKCTL2_TLS	0x000f	/* Target Link Speed */
 
 /* Extended Capabilities (PCI-X 2.0 and Express) */
 #define PCI_EXT_CAP_ID(header)		(header & 0x0000ffff)
@@ -481,6 +488,7 @@
 #define  PCIE_EXT_CAP_LTR_ID		 0x0018
 #define  PCIE_EXT_CAP_RESIZABLE_BAR	 0x0015
 #define  PCIE_EXT_CAP_RCECEA_ID	0x0007
+#define  PCIE_EXT_CAP_ARI_ID	0x000e
 #define  PCIE_EXT_CAP_SRIOV_ID	0x0010
 
 /* Secondary PCI Express Extended Capability Structure */

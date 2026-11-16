@@ -35,7 +35,7 @@ config PXE_ROM_FILE
 
 config PXE_ROM_ID
 	string "network card PCI IDs"
-	depends on !IPXE_BUILD_EFI
+	depends on !IPXE_BUILD_EFI || IPXE_EFI_DEVICE_SPECIFIC
 	default "10ec,8168"
 	help
 	  The comma-separated PCI vendor and device ID that would associate
@@ -126,6 +126,14 @@ config IPXE_BUILD_EFI
 	help
 	  Build iPXE for EFI target, enabling it to be executed from EDK2. If not
 	  selected, iPXE will be built for use with legacy BIOS.
+
+config IPXE_EFI_DEVICE_SPECIFIC
+	bool "Build EFI iPXE for the selected network card"
+	depends on IPXE_BUILD_EFI
+	default n
+	help
+	  Build an EFI image for the configured network card PCI ID instead of
+	  including all supported network drivers. This reduces payload size.
 
 endif # BUILD_IPXE
 

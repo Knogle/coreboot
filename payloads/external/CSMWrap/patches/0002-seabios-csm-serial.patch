@@ -1,0 +1,32 @@
+diff --git a/src/Kconfig b/src/Kconfig
+index 676c70af..a3cf302f 100644
+--- a/src/Kconfig
++++ b/src/Kconfig
+@@ -308,6 +308,14 @@ menu "Hardware support"
+         help
+             Support USB mice.
+ 
++    config CSM_SERCON_PORT
++        depends on CSM
++        hex "CSM serial console port (zero disables)"
++        default 0
++        help
++            Publish the serial-console port to the CSM BIOS. This is
++            separate from firmware debug output.
++
+     config SERIAL
+         bool "Serial port"
+         default y
+diff --git a/src/fw/csm.c b/src/fw/csm.c
+index 0107904d..5c7b66aa 100644
+--- a/src/fw/csm.c
++++ b/src/fw/csm.c
+@@ -83,6 +83,8 @@ csm_maininit(struct bregs *regs)
+                               (void *)csm_compat_table.ExtraPciRootListPointer,
+                               csm_compat_table.ExtraPciRootListCount);
+     }
++    if (CONFIG_CSM_SERCON_PORT)
++        const_romfile_add_int("etc/sercon-port", CONFIG_CSM_SERCON_PORT);
+     pci_probe_devices();
+ 
+     csm_compat_table.PnPInstallationCheckSegment = SEG_BIOS;

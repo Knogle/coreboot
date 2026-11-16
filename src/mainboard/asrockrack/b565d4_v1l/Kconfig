@@ -1,0 +1,532 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+if BOARD_ASROCKRACK_B565D4_V1L
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select SOC_AMD_CEZANNE if !B565D4_DESKTOP_NATIVE
+	select SOC_AMD_CEZANNE_BASE if B565D4_DESKTOP_NATIVE
+	select SOC_AMD_CEZANNE_FSP_USB_LAYOUT if B565D4_DESKTOP_NATIVE
+	select SOC_AMD_CEZANNE_NATIVE
+	select SOC_AMD_COMMON_BLOCK_CPU_SYNC_PSP_ADDR_MSR
+	select SOC_AMD_COMMON_BLOCK_UCODE_BOOTBLOCK if B565D4_MATISSE
+	select SOC_AMD_COMMON_BLOCK_CLEAR_HLE_RTM
+	select SOC_AMD_COMMON_BLOCK_APOB_NV_DISABLE
+	select SOC_AMD_COMMON_BLOCK_SPI_PRESERVE_BOOTBLOCK_MODE
+	select BOARD_ROMSIZE_KB_32768
+	select SUPERIO_NUVOTON_NCT6796D
+	select SUPERIO_ASPEED_AST2400
+	select SUPERIO_ASPEED_HAS_UART_DELAY_WORKAROUND
+	select BOOTBLOCK_CONSOLE
+	select NO_STAGE_CACHE
+	select NO_XIP_EARLY_STAGES
+	select NO_SMM
+	select NO_FMAP_CACHE
+	select NO_CBFS_MCACHE
+	select CBMEM_BOUNDED_ARENA
+	select CBMEM_BOUNDED_EXTERNAL_HANDLE
+	select CBMEM_BOUNDED_SKIP_RAM_CHECK
+	select GENERATE_SMBIOS_TABLES
+	select POWER_STATE_DEFAULT_ON_AFTER_FAILURE
+
+config MAINBOARD_DIR
+	default "asrockrack/b565d4_v1l"
+
+config B565D4_VERMEER
+	bool "Experimental Vermeer native bring-up"
+	depends on !B565D4_MATISSE
+	select B565D4_DESKTOP_NATIVE
+	help
+	  Build the separate desktop CPU path for Ryzen 5000 Vermeer. The
+	  retained board PSP/ABL/APCB cohort still owns DRAM training. This
+	  selects desktop register interfaces before the first model-specific
+	  access. Physical CPU-swap qualification is required. Keep the
+	  qualified Cezanne image available as the return image.
+
+config B565D4_MATISSE
+	bool "Experimental Matisse native bring-up"
+	select B565D4_DESKTOP_NATIVE
+	help
+	  Build the separate Ryzen 3000 Matisse desktop path. The initial
+	  target is a single-CCD 3700X with two four-core complexes. Preserve
+	  the matching board PSP/ABL/APCB cohort and qualify the actual
+	  memory, AP, device and payload handoff after a physical CPU swap.
+
+config B565D4_DESKTOP_NATIVE
+	bool
+	select B565D4_DESKTOP_CPU_PREPARATION
+	select SOC_AMD_COMMON_BLOCK_ROOT_COMPLEX
+
+config B565D4_DESKTOP_INTX
+	bool "Describe desktop GNB child INTx routes"
+	depends on B565D4_VERMEER
+	default y
+	help
+	  Generate IOAPIC-only child _PRT tables from the logical GNB interrupt
+	  registers. Physical NBIF port remapping does not renumber these routes.
+	  This replaces the retained APU child
+	  tables and does not reprogram interrupt routing or describe root-port
+	  own interrupts. Physical INTx delivery needs separate qualification.
+
+config B565D4_DESKTOP_PCIE_MAX_SPEED
+	int "CPU PCIe slot maximum generation (0: unchanged)"
+	depends on B565D4_DESKTOP_NATIVE
+	range 0 4
+	default 3 if B565D4_VERMEER
+	default 0
+	help
+	  Request a CPU-port generation during DXIO initialization and through
+	  its bound-engine speed service before ordinary PCI scanning. The
+	  chipset uplink is handled separately. Zero keeps the existing policy.
+	  The standard PCIe pre-scan path checks the resulting link state.
+	  Vermeer defaults to the qualified Gen3 initialization. Higher rates
+	  require independent board and endpoint qualification.
+
+config B565D4_DESKTOP_PCH_MAX_SPEED
+	int "Chipset uplink maximum generation (0: unchanged)"
+	depends on B565D4_DESKTOP_NATIVE
+	range 0 3
+	default 3 if B565D4_VERMEER
+	default 0
+	help
+	  Request the chipset uplink speed through the bound DXIO engine after
+	  Promontory firmware upload and before permanent resource assignment.
+	  Zero keeps the existing initialization sequence. Vermeer refreshes the
+	  bound port speed policy after chipset firmware and defaults to Gen3.
+	  Lower limits remain available for board and endpoint qualification.
+
+config B565D4_VERMEER_SMU_TELEMETRY
+	bool "Reserve the original Vermeer SMU telemetry buffer"
+	depends on B565D4_VERMEER
+	help
+	  Register a persistent 16-KiB CBMEM owner for SMU384c telemetry,
+	  following the original board's reserved-memory allocation contract.
+	  This does not request a table export or change CPU power policy.
+	  Experimental; target buffer and OS telemetry access need qualification.
+
+config B565D4_VERMEER_CORE_C6
+	bool "Vermeer core C6 idle support"
+	depends on B565D4_VERMEER
+	help
+	  Prepare the original Zen3 per-core C6 controls and desktop C-state
+	  I/O address during normal CPU initialization. After all CPUs and the
+	  matching SMU384c PowerPlay service are ready, request core C6 once.
+	  Publish the matching ACPI C2 entry only after that preparation succeeds.
+	  Package C6, fabric C-states and S3 are separate paths. This opt-in
+	  setting requires physical idle, KVM and selected-payload qualification.
+	  Desktop board setup can disable the policy for the next cold boot.
+
+config B565D4_DESKTOP_PCIE_ACS
+	bool "Request desktop PCIe Access Control Services (experimental)"
+	depends on B565D4_VERMEER
+	help
+	  Request the seven wrapper ACS features using the native desktop DXIO
+	  reconfiguration path before training. Linux must discover and enable
+	  the resulting hardware capabilities. This does not override IOMMU
+	  groups or guarantee chipset isolation.
+
+config B565D4_MATISSE_IRQ_DIAGNOSTIC
+	bool "Stop after native Matisse interrupt diagnostics"
+	depends on B565D4_MATISSE
+	help
+	  Measure owned BSP interrupts before and after MP initialization.
+	  Compare CPUID-qualified original-board MSR masks on the BSP, with separate
+	  interrupt measurements. This is a private register-group experiment.
+	  This private diagnostic deliberately stops before loading a payload;
+	  pending diagnostic vectors must not cross the payload handoff.
+	  Leave disabled for normal firmware builds.
+
+config B565D4_MATISSE_PCI_ACCESS_DIAGNOSTIC
+	bool "Log Matisse PCI configuration access before payload entry"
+	depends on B565D4_MATISSE
+	help
+	  Compare byte, word and DWORD reads through ECAM and CF8/CFC on the
+	  discovered chipset path. Preserve the incoming CF8 selector and log
+	  the existing NBIO machine-check status without clearing it. This
+	  diagnostic does not repair configuration or stop before the payload.
+	  Leave disabled for normal firmware builds.
+
+config B565D4_MATISSE_PRE_SOC_IRQ_DIAGNOSTIC
+	bool "Stop after Matisse interrupt diagnostic before SoC initialization"
+	depends on B565D4_MATISSE
+	help
+	  After the raw UART setup, test a separate software interrupt and an
+	  owned BSP fixed IPI before entering the ordinary SoC C initialization.
+	  This private diagnostic stops in bootblock and does not load a payload.
+	  Leave disabled for normal firmware builds.
+
+config B565D4_MATISSE_SKIP_EARLY_MICROCODE
+	bool "Defer microcode to MP initialization for the private IRQ comparison"
+	depends on B565D4_MATISSE_IRQ_DIAGNOSTIC
+	help
+	  Compare the original-board BSP register group before applying a patch,
+	  as observed in the original PEI path. Ordinary MP initialization still
+	  applies the selected microcode. The private diagnostic stops before
+	  loading a payload. Leave disabled for normal firmware builds.
+
+config B565D4_MATISSE_ALL_CPU_MSR_TRIAL
+	bool "Compare original Matisse MSR selectors during per-CPU initialization"
+	depends on B565D4_MATISSE_SKIP_EARLY_MICROCODE
+	help
+	  Apply the private register group with the original thread/core/CCX
+	  selector predicates in each ordinary CPU initialization callback.
+	  This is limited to the installed 16-thread 870F10 test configuration;
+	  it does not generalize the platform-dependent table predicates.
+	  The existing IRQ diagnostic still stops before loading a payload.
+	  Leave disabled for normal firmware builds.
+
+config B565D4_MATISSE_SINGLE_MSR_IRQ_TRIAL
+	bool "Measure one Matisse IRQ after the private per-CPU MSR comparison"
+	depends on B565D4_MATISSE_ALL_CPU_MSR_TRIAL
+	help
+	  Apply the same private register group and complete ordinary MP
+	  initialization before requesting the first diagnostic fixed interrupt.
+	  This separates the register comparison from an earlier pending request.
+	  Stop after that single measurement, before loading a payload.
+	  Leave disabled for normal firmware builds.
+
+config B565D4_MATISSE_PRE_SOC_MICROCODE
+	bool "Apply matching microcode before the private pre-SoC IRQ test"
+	depends on B565D4_MATISSE_PRE_SOC_IRQ_DIAGNOSTIC
+	help
+	  Compare a separate cold boot with microcode loaded before the first
+	  diagnostic APIC enable and before ordinary SoC C initialization.
+	  This option is only for the private diagnostic, which stops in bootblock.
+
+config B565D4_MATISSE_PRE_SOC_STGI
+	bool "Execute STGI before the private pre-SoC IRQ test"
+	depends on B565D4_MATISSE_PRE_SOC_MICROCODE
+	help
+	  Compare a separate cold boot with SVM enabled only for STGI, before
+	  the first diagnostic APIC enable. Restore EFER without entering a VM.
+	  This private diagnostic stops before ordinary SoC C initialization.
+
+config B565D4_MATISSE_PRE_SOC_CACHE
+	bool "Set up ordinary caching before the private pre-SoC IRQ test"
+	depends on B565D4_MATISSE_PRE_SOC_STGI
+	help
+	  Call the existing DRAM-first early_cache_setup before the private IRQ
+	  comparison. Do not run the remaining SoC initialization or a payload.
+	  This diagnostic leaves the ordinary memory types and caches enabled.
+
+config DEVICETREE
+	default "vermeer/devicetree.cb" if B565D4_DESKTOP_NATIVE
+
+config CHIPSET_DEVICETREE
+	default "mainboard/asrockrack/b565d4_v1l/vermeer/chipset.cb" if B565D4_DESKTOP_NATIVE
+
+config B565D4_BOARD_SETUP
+	bool "Extended board setup (experimental)"
+	depends on B565D4_PCIE_RUNTIME_OPTIONS && !B565D4_DESKTOP_NATIVE
+	help
+	  Share checked CMOS board settings between nvramcui and EDK2 CFR.
+	  This profile uses a versioned CMOS layout and requires qualification
+	  of each hardware policy. Existing release profiles remain unchanged.
+
+config B565D4_DESKTOP_SETUP
+	bool "Desktop board setup development backend"
+	depends on B565D4_VERMEER && B565D4_PCIE_RUNTIME_OPTIONS
+	help
+	  Develop native desktop consumers of the shared checked CMOS settings.
+	  This backend is incomplete and is not a release profile. It does not
+	  enable the Cezanne DF or CPU power implementations.
+
+config SEABIOS_PATCHES_DIR
+	default "src/mainboard/asrockrack/b565d4_v1l/seabios" if B565D4_DESKTOP_SETUP && PAYLOAD_SEABIOS
+
+config CMOS_LAYOUT_FILE
+	default "src/mainboard/asrockrack/b565d4_v1l/cmos_desktop_setup.layout" if B565D4_DESKTOP_SETUP
+	default "src/mainboard/asrockrack/b565d4_v1l/cmos_setup.layout" if B565D4_BOARD_SETUP
+	default "src/mainboard/asrockrack/b565d4_v1l/cmos_desktop.layout" if B565D4_DESKTOP_NATIVE
+
+config B565D4_CPU_TCTL_LIMIT
+	int "CPU Tctl ceiling in degrees C (experimental)"
+	depends on B565D4_BOARD_SETUP || B565D4_VERMEER
+	range 60 90
+	default 85
+	help
+	  Request a conservative thermal ceiling on the qualified Cezanne or
+	  Vermeer SMU. The Ryzen 5500 and 5600X use separate, version-checked
+	  commands. Other CPU or SMU versions retain their own initialization.
+	  This does not replace the platform's complete power or fan policy.
+
+config B565D4_EDK2_NVSTORE
+	bool "Persistent EFI variables in upper NVAR (experimental)"
+	depends on B565D4_BOARD_SETUP || B565D4_DESKTOP_NATIVE
+	depends on PAYLOAD_EDK2 && EDK2_REPO_MRCHROMEBOX
+	help
+	  Use the board's AMD FCH runtime FVB provider and ordinary EDK2 FTW
+	  and variable services. Only the allocated 128-KiB upper NVAR volume
+	  is writable. This retains NO_SMM and has no whole-flash update API.
+	  External firmware updates must preserve this allocated store explicitly.
+
+config B565D4_EDK2_CAPSULE_FCH
+	bool "Experimental SMI-free EDK2 capsule handoff from upper NVAR"
+	depends on B565D4_EDK2_NVSTORE && NO_SMM && BOOT_DEVICE_SUPPORTS_WRITES
+	help
+	  Let the generic EFI capsule scanner read CapsuleUpdateData and
+	  OsIndications from this board's allocated upper NVAR region instead
+	  of SMMSTORE. This only supplies capsule discovery and handoff.
+	  It does not enable a flash writer; a separately qualified EDK2 FMP
+	  backend is mandatory before selecting a physical update profile.
+
+config B565D4_EDK2_CAPSULE_WRITE
+	bool "Experimental board-specific EDK2 capsule flash backend"
+	depends on B565D4_EDK2_CAPSULE_FCH
+	help
+	  Build the isolated full-image FMP policy and checked FCH sector backend.
+	  This remains an experimental, unreleased profile until live ESRT, FMP,
+	  capsule authentication, power-loss recovery and physical write gates pass.
+	  Generic RMAP, BIOS-region and whole-flash fallback are bypassed.
+
+config CMOS_DEFAULT_FILE
+	default "src/mainboard/asrockrack/b565d4_v1l/cmos_desktop_setup.default" if B565D4_DESKTOP_SETUP
+	default "src/mainboard/asrockrack/b565d4_v1l/cmos_setup.default" if B565D4_BOARD_SETUP
+
+config MAINBOARD_PART_NUMBER
+	default "B565D4-V1L"
+
+config MAINBOARD_SMBIOS_PRODUCT_NAME
+	default "B565D4-V1L"
+
+config EDK2_PATCHES_DIR
+	default "src/mainboard/asrockrack/b565d4_v1l/edk2" if EDK2_REPO_MRCHROMEBOX
+
+config UART_FOR_CONSOLE
+	default 1
+
+config MEMLAYOUT_LD_FILE
+	default "src/mainboard/asrockrack/b565d4_v1l/memlayout.ld"
+
+config EARLY_RESERVED_DRAM_BASE
+	default 0x09c00000
+
+config EARLYRAM_BSP_STACK_SIZE
+	default 0x4000
+
+config C_ENV_BOOTBLOCK_SIZE
+	default 0x20000
+
+config ROMSTAGE_ADDR
+	default 0x0a000000
+
+config ROMSTAGE_SIZE
+	default 0xa0000
+
+config FSP_TEMP_RAM_SIZE
+	default 0x80000
+
+config FSP_M_ADDR
+	default 0x09e00000
+
+config FSP_M_SIZE
+	default 0xc0000
+
+config PSP_APOB_DRAM_ADDRESS
+	default 0x0a200000
+
+config PSP_APOB_DRAM_RESERVED_SIZE
+	default 0x28000
+
+config PRERAM_CBMEM_CONSOLE_SIZE
+	default 0
+
+config CBFS_CACHE_SIZE
+	default 0
+
+config PRERAM_CBFS_CACHE_SIZE
+	default 0
+
+config POSTRAM_CBFS_CACHE_IN_BSS
+	default n
+
+config ECAM_MMCONF_BASE_ADDRESS
+	default 0xf0000000
+
+config ECAM_MMCONF_BUS_NUMBER
+	default 128
+
+config FMDFILE
+	default "src/mainboard/asrockrack/b565d4_v1l/memory.fmd"
+
+config SEABIOS_ADD_SERCON_PORT_FILE
+	default y if PAYLOAD_BUILD_SEABIOS
+
+config SEABIOS_BOOTORDER_FILE
+	default "src/mainboard/asrockrack/b565d4_v1l/bootorder" if PAYLOAD_BUILD_SEABIOS
+
+config PAYLOAD_CONFIGFILE
+	default "$(top)/src/mainboard/asrockrack/b565d4_v1l/config_seabios" if PAYLOAD_BUILD_SEABIOS
+
+config ON_DEVICE_ROM_LOAD
+	default n
+
+config B565D4_FIRMWARE_TEMPLATE
+	string "Qualified pre-x86 firmware container"
+	default "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/pre-x86-template.rom"
+	help
+	  Exact qualified container carrying PSP, ABL and APCB firmware. The
+	  build replaces the x86 stages and payload; it preserves the signed
+	  pre-x86 components and their directory and DRAM contracts.
+
+config B565D4_PROMONTORY_FIRMWARE
+	string "Promontory firmware (directory type 0x19)"
+	default "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/promontory19.bin"
+
+config B565D4_MICROCODE
+	string "Cezanne microcode patch"
+	default "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/cpu_microcode_a500.bin"
+
+config B565D4_DESKTOP_CPU_PREPARATION
+	bool "Include Matisse/Vermeer microcode for CPU port preparation"
+	help
+	  Include five matching processor-revision patches alongside the existing
+	  Cezanne patch. The default files come from the qualified board firmware.
+	  An explicitly selected directory may supply newer matching patches;
+	  processor bindings and revision floors are checked during packing.
+	  The build audits the retained Matisse/Vermeer PSP, ABL and APCB data.
+	  This option alone only prepares firmware inputs. Select Matisse or
+	  Vermeer to use a desktop runtime. Physical CPU-swap qualification
+	  remains necessary. Without a desktop runtime, the Cezanne backend
+	  and its CPU match remain unchanged.
+
+config B565D4_DESKTOP_MICROCODE_DIR
+	string "Desktop microcode directory"
+	depends on B565D4_DESKTOP_CPU_PREPARATION
+	default "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode"
+
+config B565D4_VERMEER_BOOT_MICROCODE
+	bool
+	depends on B565D4_VERMEER && B565D4_DESKTOP_CPU_PREPARATION
+	help
+	  Select the same qualified original A21213 input for CBFS and the two
+	  existing BIOS type 0x66 slots. Packing checks the exact processor,
+	  size and original file hash. Selected by the matching ABL cohort;
+	  the old ABL with these boot slots failed physical qualification.
+
+config B565D4_VERMEER_ABL_F20
+	bool "Use the original Vermeer B2 F20 ABL cohort (experimental)"
+	depends on B565D4_VERMEER && B565D4_DESKTOP_CPU_PREPARATION
+	depends on PAYLOAD_EDK2 || PAYLOAD_SEABIOS
+	select B565D4_VERMEER_BOOT_MICROCODE
+	select B565D4_LARGE_PAYLOAD
+	help
+	  Install the complete original signed Vermeer ABL from the qualified
+	  F20 firmware. The packer checks the exact whole-unit hash, all twenty
+	  stages and four directory updates. Other PSP code, keys, APCB and fuse
+	  policy remain unchanged. The larger payload layout leaves space for
+	  this unit and is required for both EDK2 and SeaBIOS.
+	  Normal Vermeer B2 SeaBIOS and EDK2 builds have bounded physical
+	  boot and KVM evidence. Other CPUs and production qualification
+	  remain separate. The packer rejects either half of this cohort alone.
+
+config B565D4_VERMEER_ABL_FILE
+	string "Original Vermeer F20 ABL binary"
+	depends on B565D4_VERMEER_ABL_F20
+	default "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/vermeer-f20-abl.bin"
+
+config B565D4_VERMEER_MICROCODE_ADDRESS
+	bool "Use the original Vermeer microcode pointer handoff (experimental)"
+	depends on B565D4_VERMEER_BOOT_MICROCODE
+	help
+	  Reproduce the literal patch-buffer pointer handoff observed in both
+	  original ASRock and comparison Zen3 DXE loaders before the ordinary
+	  PATCH_LOADER write. Limited to the studied Vermeer B2 / A21213 path;
+	  other CPUs keep the existing path. Requires physical qualification.
+	  No microcode signature, revision or firmware authentication is changed.
+
+config B565D4_LARGE_PAYLOAD
+	bool "Use the larger payload storage region (experimental)"
+	depends on PAYLOAD_EDK2 || PAYLOAD_SEABIOS
+	help
+	  Store a payload of up to approximately 3 MiB in place of three unused
+	  vendor FV_IMAGE files. The native coreboot flow does not execute these
+	  files. PSP and BIOS directory sources remain outside this region.
+	  This changes only payload storage, not its load address in DRAM.
+
+choice
+	prompt "CPU x16 slot lane configuration"
+	default B565D4_PCIE_X16
+
+config B565D4_PCIE_X16
+	bool "x16"
+
+config B565D4_PCIE_X8X4X4
+	bool "x8/x4/x4"
+	depends on !B565D4_DESKTOP_NATIVE
+	help
+	  Split the CPU slot across the Cezanne GFX and GPP hardware blocks.
+	  Physical lanes 9-12 use logical DXIO lanes 12-15.
+
+config B565D4_PCIE_FOUR_X4
+	bool "x4/x4/x4/x4"
+	help
+	  The experimental Vermeer backend builds its separate desktop six-port
+	  policy. Its physical link allocation still needs qualification.
+
+	  Use the six-engine SMU allocation observed on this board: four
+	  slot engines plus the existing separate GPP and chipset links. The slot
+	  engines span two GFX and two GPP hardware ports.
+
+config B565D4_PCIE_FOUR_X4_PROBE
+	bool "Four x4 engines: SMU allocation probe, stops before mapping"
+	depends on !B565D4_DESKTOP_NATIVE
+	help
+	  Experimental diagnostic for the requested x4/x4/x4/x4 topology.
+	  The documented Cezanne GFX bridge exposes only three root ports.
+	  Report the SMU engine-allocation result, then stop before programming
+	  an unqualified fourth host port. This option does not boot a payload.
+
+endchoice
+
+config B565D4_PCIE_RUNTIME_OPTIONS
+	bool "Allow changing CPU-slot PCIe lanes in CMOS"
+	depends on !B565D4_PCIE_FOUR_X4_PROBE
+	select HAVE_OPTION_TABLE
+	select HAVE_CMOS_DEFAULT
+	select MAINBOARD_NEEDS_CMOS_OPTIONS
+	select DRIVERS_OPTION_CFR_ENABLED
+	help
+	  Read the CPU-slot lane configuration through the standard coreboot
+	  option API. Use CMOS as the option backend. The lane choice above
+	  remains the default when no valid override is stored.
+
+	  SeaBIOS can expose the CMOS options through the nvramcui secondary
+	  payload. CFR describes the same option for a compatible setup menu.
+	  A changed setting requires a full power cycle.
+	  The desktop backends support x16 and x4/x4/x4/x4 only.
+
+config B565D4_NATIVE_GRAPHICS
+	bool "Initialize the ASPEED framebuffer"
+	select DRIVERS_ASPEED_AST2050
+	help
+	  Initialize AST2500 graphics with the existing ASPEED native driver.
+	  A linear framebuffer can be shared with SeaBIOS and EDK2. Serial
+	  remains available independently of graphics.
+
+config B565D4_PCIE_ACS
+	bool "Initialize Cezanne PCIe Access Control Services (experimental)"
+	depends on !B565D4_DESKTOP_NATIVE
+	help
+	  Apply the Cezanne NBIF ACS straps and request the seven ACS features
+	  through the normal DXIO wrapper descriptors before link training.
+	  Linux must discover and enable the resulting hardware capabilities.
+	  This does not override IOMMU groups or guarantee chipset isolation.
+
+config B565D4_FADT_COLD_RESET
+	bool "Prepare and advertise the CF9 cold reset (experimental)"
+	help
+	  Enable CF9 decoding and the complete power-good reset policy before
+	  describing the reset register in ACPI. This option requires physical
+	  reboot qualification with the selected payload. It does not add S3
+	  resume support or trigger a reset during board initialization.
+
+config B565D4_SKIP_SAS_OPROM
+	bool "Suppress the SAS2308 legacy boot ROM"
+	depends on PAYLOAD_BUILD_SEABIOS
+	help
+	  Provide SeaBIOS with an empty ROM override for PCI 1000:0087.
+	  Linux can initialize the adapter with mpt2sas independently of its
+	  legacy boot ROM. This setting leaves the adapter and its BARs enabled.
+
+endif

@@ -202,5 +202,6 @@ void fch_spi_early_init(void)
 	lpc_enable_spi_rom(SPI_ROM_ENABLE);
 	lpc_enable_spi_prefetch();
 	fch_spi_configure_4dw_burst();
-	fch_spi_config_modes();
+	if (!ENV_BOOTBLOCK || !CONFIG(SOC_AMD_COMMON_BLOCK_SPI_PRESERVE_BOOTBLOCK_MODE))
+		fch_spi_config_modes();
 }

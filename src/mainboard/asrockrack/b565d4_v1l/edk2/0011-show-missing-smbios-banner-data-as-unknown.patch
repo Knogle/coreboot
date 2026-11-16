@@ -1,0 +1,33 @@
+diff --git a/MdeModulePkg/Application/UiApp/FrontPage.c b/MdeModulePkg/Application/UiApp/FrontPage.c
+--- a/MdeModulePkg/Application/UiApp/FrontPage.c
++++ b/MdeModulePkg/Application/UiApp/FrontPage.c
+@@ -956,10 +956,11 @@
+       while ((TrimLen > 0) && (TrimmedString[TrimLen - 1] == 0x20)) {
+         TrimmedString[--TrimLen] = L'\0';
+       }
+-      // Allocate buffer: "CPU: " (5) + trimmed string + null
+-      BufferSize = (5 + StrLen (TrimmedString) + 1) * sizeof (CHAR16);
++      // A missing SMBIOS string is unknown, not an empty processor model.
++      CONST CHAR16  *DisplayName = TrimLen != 0 ? TrimmedString : L"not reported by SMBIOS";
++      BufferSize = (5 + StrLen (DisplayName) + 1) * sizeof (CHAR16);
+       TmpBuffer  = AllocateZeroPool (BufferSize);
+-      UnicodeSPrint (TmpBuffer, BufferSize, L"%s%s", L"CPU: ", TrimmedString);
++      UnicodeSPrint (TmpBuffer, BufferSize, L"%s%s", L"CPU: ", DisplayName);
+       HiiSetString (gFrontPagePrivate.HiiHandle, STRING_TOKEN (STR_FRONT_PAGE_CPU_MODEL), TmpBuffer, NULL);
+       FreePool (OriginalString);
+       FreePool (TmpBuffer);
+@@ -1018,6 +1019,14 @@
+   //
+   // Now update the total installed RAM size
+   //
++  if (InstalledMemory == 0) {
++    HiiSetString (
++      gFrontPagePrivate.HiiHandle, STRING_TOKEN (STR_FRONT_PAGE_MEMORY_SIZE),
++      L"RAM: not reported by SMBIOS", NULL
++      );
++    return;
++  }
++
+   ConvertMemorySizeToString ((UINT32)InstalledMemory, &NewString);
+   // Allocate buffer: "RAM: " (5) + memory size string + null
+   UINTN   BufferSize = (5 + StrLen (NewString) + 1) * sizeof (CHAR16);

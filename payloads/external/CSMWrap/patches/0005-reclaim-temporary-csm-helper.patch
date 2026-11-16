@@ -1,0 +1,135 @@
+Subject: [PATCH] CSMWrap: publish and hand back the temporary firmware processor
+
+Open implementation for the AM4 test port. Temporary firmware AP ownership
+ends when a multiprocessor OS sends INIT/SIPI; no CPU is hidden or disabled.
+V86 BIOS I/O requires the helper to remain firmware-owned, and must not race
+OS AP startup. Ordinary real-mode call32 uses the upstream SeaBIOS thunk.
+No proprietary AMI code or SMM mode-state transplant is included.
+
+diff --git a/seabios-config b/seabios-config
+--- a/seabios-config
++++ b/seabios-config
+@@ -3,7 +3,8 @@
+ # CONFIG_VGAHOOKS is not set
+ # CONFIG_TCGBIOS is not set
+ CONFIG_VGA_COREBOOT=y
+-CONFIG_DEBUG_LEVEL=3
++CONFIG_DEBUG_LEVEL=1
+ CONFIG_DEBUG_SERIAL=y
+ CONFIG_DEBUG_SERIAL_PORT=0x2f8
+ CONFIG_CSM_SERCON_PORT=0x2f8
++CONFIG_CSM_FSEG_SIZE=8192
+diff --git a/src/ap_trampoline.asm b/src/ap_trampoline.asm
+--- a/src/ap_trampoline.asm
++++ b/src/ap_trampoline.asm
+@@ -161,25 +161,9 @@
+ 
+ .continue_boot:
+ 
+-    ; Hardware-disable LAPIC to prevent the legacy OS from sending IPIs
+-    ; (including INIT) to this core. The helper core communicates via
+-    ; memory mailbox only and does not need interrupt delivery.
+-    ; Must clear both EN (bit 11) and EXTD (bit 10) simultaneously
+-    ; to correctly transition from x2APIC mode to disabled state.
+-    ;
+-    ; If the AP came up already in x2APIC mode (EXTD set), the BSP-side
+-    ; apic_prepare_for_legacy() must have left x2APIC alone, meaning the
+-    ; mode is locked (e.g. Nova Lake xAPIC deprecation) or the silicon has
+-    ; no xAPIC support at all. In either case clearing EXTD here would #GP,
+-    ; so we leave the APIC enabled. A legacy OS cannot send x2APIC-mode
+-    ; IPIs via MMIO anyway, so the helper stays unreachable to it.
+-    mov ecx, MSR_IA32_APIC_BASE
+-    rdmsr
+-    test eax, APIC_BASE_EXTD
+-    jnz .skip_apic_disable
+-    and eax, ~(APIC_BASE_EN | APIC_BASE_EXTD)
+-    wrmsr
+-.skip_apic_disable:
++    ; Temporary firmware ownership only. Keep APIC enabled so the OS can
++    ; reclaim this published processor with its normal INIT/SIPI sequence.
++    ; Do not change the inherited APIC base or xAPIC/x2APIC mode here.
+ 
+     ; Load 32-bit values into registers for SeaBIOS
+     ; (16-bit mode can still use 32-bit registers with operand size prefix)
+diff --git a/src/bios_proxy.c b/src/bios_proxy.c
+--- a/src/bios_proxy.c
++++ b/src/bios_proxy.c
+@@ -16,7 +16,7 @@
+ #include <uacpi/acpi.h>
+ 
+ /* Must match the signature in SeaBIOS stacks.c so it can find the mailbox. */
+-#define BIOS_PROXY_SIGNATURE 0x79787250504D5343ULL  /* "CSMPPrxy" */
++#define BIOS_PROXY_SIGNATURE 0x32787250504D5343ULL  /* "CSMPPrx2": reclaimable helper ABI */
+ 
+ /* Authoritative size of the helper core's stack. SeaBIOS does not allocate
+  * or switch stacks for the helper - it runs every dispatched func_ptr (reset
+@@ -37,6 +37,8 @@
+     uint32_t reset_cr3;
+     uint32_t reset_fn_lo;
+     uint32_t reset_fn_hi;
++    uint32_t helper_ack;       /* offset48: completed liveness requests */
++    uint32_t helper_lost;      /* offset52: permanently stop new proxy calls */
+ };
+ 
+ /* Separately allocated stack for helper core */
+@@ -699,11 +701,11 @@
+         return -1;
+     }
+ 
+-    /* Patch ACPI tables to hide the helper core from the OS */
++    /* Keep every configured CPU, including the temporary helper, OS-visible. */
+     if (rsdp_copy) {
+-        if (patch_acpi_hide_helper(rsdp_copy, selected_ap_id) < 0) {
+-            printf("Warning: Failed to patch MADT, OS may see helper core\n");
+-            /* Continue anyway - helper will still work */
++        if (patch_acpi_hide_helper(rsdp_copy, -1) < 0) {
++            printf("Failed to publish the configured CPU topology\n");
++            return -1;
+         }
+     }
+ 
+@@ -726,7 +728,7 @@
+     }
+     helper_stack_buffer = (uint8_t *)(uintptr_t)stack_addr;
+ 
+-    printf("BIOS proxy ready (AP %d)\n", selected_ap_id);
++    printf("BIOS proxy ABI2 ready (temporary AP %d, OS may reclaim)\n", selected_ap_id);
+     return 0;
+ }
+ 
+@@ -790,5 +792,6 @@
+  */
+ int bios_proxy_get_helper_apic_id(void)
+ {
+-    return selected_ap_id;
+-}
++    /* No CPU is reserved from the OS in the reclaimable-helper ABI. */
++    return -1;
++}
+diff --git a/src/bios_proxy.h b/src/bios_proxy.h
+--- a/src/bios_proxy.h
++++ b/src/bios_proxy.h
+@@ -34,9 +34,8 @@
+ int bios_proxy_start_helper(uintptr_t csm_final_base);
+ 
+ /*
+- * Get the APIC ID of the helper core.
+- * Returns -1 if no helper core has been selected.
+- * Used by mptable generation to exclude the helper from MP tables.
++ * Get the APIC ID reserved from the OS, or -1 when none is reserved.
++ * ABI2 uses temporary firmware ownership: the OS can reclaim the helper.
+  */
+ int bios_proxy_get_helper_apic_id(void);
+ 
+diff --git a/src/mptable.c b/src/mptable.c
+--- a/src/mptable.c
++++ b/src/mptable.c
+@@ -617,7 +617,7 @@
+     struct madt_data madt;
+     int helper_apic_id = bios_proxy_get_helper_apic_id();
+ 
+-    printf("mptable: building MP table (excluding helper core APIC ID %d)\n", helper_apic_id);
++    printf("mptable: building MP table (reserved firmware CPU %d)\n", helper_apic_id);
+ 
+     /* MP spec 1.4 fields are 8-bit; an unrepresentable BSP makes the whole
+      * table malformed (no BSP marker, misrouted local interrupts). */

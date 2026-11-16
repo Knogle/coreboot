@@ -131,6 +131,10 @@ bool psp_get_hsti_state_rom_armor_enforced(void)
 }
 #endif
 
+/* Retained first-payload trial preserves inherited PSP/SCI/GPE state.
+ * No cold callback replay; selected board ACPI code owns finite SCI setup.
+ */
+#if !CONFIG(SOC_AMD_CEZANNE_NATIVE)
 /*
  * Notify the PSP that the system is completing the boot process.  Upon
  * receiving this command, the PSP will only honor commands where the buffer
@@ -154,3 +158,4 @@ static void psp_notify_boot_done(void *unused)
 }
 
 BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_BOOT, BS_ON_ENTRY, psp_notify_boot_done, NULL);
+#endif

@@ -14,10 +14,13 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <fw_config.h>
+#include <halt.h>
 #include <soc/amd_pci_int_defs.h>
 #include <soc/iomap.h>
 #include <soc/i2c.h>
+#if !CONFIG(SOC_AMD_CEZANNE_NATIVE)
 #include <soc/platform_descriptors.h>
+#endif
 #include <soc/smi.h>
 #include <soc/southbridge.h>
 #include <static.h>
@@ -80,6 +83,7 @@ const struct irq_idx_name *sb_get_apic_reg_association(size_t *size)
 	return irq_association;
 }
 
+#if !CONFIG(SOC_AMD_CEZANNE_NATIVE)
 static void fch_clk_output_48Mhz(void)
 {
 	uint32_t ctrl = misc_read32(MISC_CLK_CNTL0);
@@ -97,7 +101,9 @@ static void fch_clk_output_48Mhz(void)
 	misc_write32(MISC_CLK_CNTL0, ctrl);
 }
 
-static void fch_init_acpi_ports(void)
+#endif
+
+void fch_init_acpi_ports(void)
 {
 	u32 reg;
 
@@ -140,6 +146,7 @@ static void fch_init_acpi_ports(void)
 		pm_write32(PM_ACPI_CONF, pm_read32(PM_ACPI_CONF) | PM_ACPI_RTC_WAKE_EN);
 }
 
+#if !CONFIG(SOC_AMD_CEZANNE_NATIVE)
 /* Configure the general purpose PCIe clock outputs according to the devicetree settings */
 static void gpp_clk_setup(void)
 {
@@ -171,8 +178,13 @@ static void cgpll_clock_gate_init(void)
 	pm_write32(PM_ISACONTROL, t);
 }
 
+#endif
+
 void fch_init(void *chip_info)
 {
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE)
+	halt();
+#else
 	if (!CONFIG(SOC_AMD_V2000A) && !CONFIG(SOC_AMD_RENOIR))
 		set_resets_to_cold();
 
@@ -185,12 +197,15 @@ void fch_init(void *chip_info)
 	gpp_clk_setup();
 	fch_clk_output_48Mhz();
 	cgpll_clock_gate_init();
+#endif
 }
 
 void fch_final(void *chip_info)
 {
 }
 
+/* No unqualified board IRQ hook is registered in the entry-only build. */
+#if !CONFIG(SOC_AMD_CEZANNE_NATIVE)
 static void set_pci_irqs(void *unused)
 {
 	/* Write PCI_INTR regs 0xC00/0xC01 */
@@ -208,3 +223,4 @@ static void set_pci_irqs(void *unused)
  * on entry into BS_DEV_ENABLE.
  */
 BOOT_STATE_INIT_ENTRY(BS_DEV_ENABLE, BS_ON_ENTRY, set_pci_irqs, NULL);
+#endif

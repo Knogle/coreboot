@@ -9,9 +9,15 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pciexp.h>
+#include <halt.h>
 #include <soc/pci_devs.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#if ENV_RAMSTAGE && CONFIG(SOC_AMD_CEZANNE_NATIVE)
+#include <console/console.h>
+#include <console/uart.h>
+#endif
 
 static const char *pcie_gpp_acpi_name(const struct device *dev)
 {
@@ -309,8 +315,97 @@ struct device_operations amd_internal_pcie_gpp_ops = {
 	.acpi_fill_ssdt		= acpi_device_write_gpp_pci_dev,
 };
 
+#if ENV_RAMSTAGE && CONFIG(SOC_AMD_CEZANNE_NATIVE)
+static void native104_empty_pcie_bus(struct bus *bus, unsigned int min_devfn,
+				    unsigned int max_devfn)
+{
+	(void)min_devfn;
+	(void)max_devfn;
+	printk(BIOS_INFO, "NATIVE104 EMPTY EXTERNAL BUS %02x no child config access\n",
+	       bus->secondary);
+	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
+}
+
+static bool native104_external_link_down(struct device *dev)
+{
+	u16 flags = 0xffff, status = 0xffff;
+	u32 link_cap = 0xffffffff;
+	const u16 cap = pci_find_capability(dev, PCI_CAP_ID_PCIE);
+	unsigned int width = 0x3f;
+	bool valid = false, down = false, empty;
+
+	/* This helper is called only by the external GPP operations below.
+	 * Internal 00:08.x bridges retain their genuine pci_scan_bridge path.
+	 * A missing/malformed capability never becomes evidence of link down.
+	 */
+	if (cap >= 0x40 && cap <= 0xec) {
+		flags = pci_read_config16(dev, cap + PCI_EXP_FLAGS);
+		link_cap = pci_read_config32(dev, cap + PCI_EXP_LNKCAP);
+		status = pci_read_config16(dev, cap + PCI_EXP_LNKSTA);
+		/* Link Status negotiated width occupies bits 9:4. */
+		width = (status >> 4) & 0x3f;
+		valid = (flags & PCI_EXP_FLAGS_VERS) && flags != 0xffff &&
+			((flags & PCI_EXP_FLAGS_TYPE) >> 4) == PCI_EXP_TYPE_ROOT_PORT &&
+			link_cap != 0xffffffff &&
+			((link_cap & PCI_EXP_LNKCAP_MLW) || CONFIG(B565D4_DESKTOP_NATIVE)) &&
+			(link_cap & PCI_EXP_LNKCAP_MLS) && status != 0xffff;
+		if (valid)
+			down = !width || (status & PCI_EXP_LNKSTA_LT) ||
+				((link_cap & PCI_EXP_LNKCAP_DLLLARC) &&
+				 !(status & PCI_EXP_LNKSTA_DLLLA));
+	}
+	/* The current external ports have no static children. Do not silently
+	 * discard a future explicit child topology when taking the empty path.
+	 */
+	empty = down && (!dev->downstream || !dev->downstream->children);
+	printk(BIOS_INFO, "NATIVE104 EXTERNAL %s cap=%02x flags=%04x "
+	       "LNKCAP=%08x LNKSTA=%04x width=%u valid=%u down=%u empty=%u\n",
+	       dev_path(dev), cap, flags, link_cap, status, width, valid, down, empty);
+	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
+	return empty;
+}
+#endif
+
+__weak void mainboard_pcie_gpp_pre_scan(struct device *dev)
+{
+	(void)dev;
+}
+
 static void pcie_gpp_scan_bridge(struct device *dev)
 {
+	mainboard_pcie_gpp_pre_scan(dev);
+#if ENV_RAMSTAGE && CONFIG(SOC_AMD_CEZANNE_NATIVE)
+	if (native104_external_link_down(dev)) {
+		if (CONFIG(B565D4_DESKTOP_NATIVE) && !CONFIG(PCIEXP_HOTPLUG) &&
+		    !dev->hotplug_buses) {
+			struct bus *link = dev->downstream ? dev->downstream : alloc_bus(dev);
+			const u32 before = pci_read_config32(dev, PCI_PRIMARY_BUS);
+			const u32 closed = (before & 0xff000000U) | dev->upstream->secondary;
+
+			/* Do not route a payload's config requests into an inactive
+			 * desktop link. Reserve no bus number when hotplug is disabled;
+			 * the existing empty-link predicate also excludes static children.
+			 * Keep the bridge visible and preserve its latency byte.
+			 */
+			pci_write_config32(dev, PCI_PRIMARY_BUS, closed);
+			if (pci_read_config32(dev, PCI_PRIMARY_BUS) != closed)
+				die("Desktop empty PCIe route did not close: %s\n", dev_path(dev));
+			link->secondary = 0;
+			link->subordinate = 0;
+			link->max_subordinate = dev->upstream->max_subordinate;
+			link->segment_group = dev->upstream->segment_group;
+			printk(BIOS_INFO, "Desktop empty PCIe route closed: %s "
+			       "buses=%08x no bus allocation\n", dev_path(dev), closed);
+			return;
+		}
+		/* Keep genuine bridge allocation and SCAN/FINAL route bookkeeping,
+		 * but issue no downstream config request for this down-link snapshot.
+		 * No reset, retraining, GPIO, SMU, or permanent port disable follows.
+		 */
+		do_pci_scan_bridge(dev, native104_empty_pcie_bus);
+		return;
+	}
+#endif
 	if (CONFIG(PCIEXP_HOTPLUG) && pciexp_dev_is_slot_hot_plug_cap(dev))
 		pciexp_hotplug_scan_bridge(dev);
 	else

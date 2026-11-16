@@ -1,7 +1,13 @@
 #ifndef __FSPUSB_H__
 #define __FSPUSB_H__
 
+/* Native paths need the USB byte layout without FSP UPD types.
+ * Regular FSP paths retain the UPD include. */
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE)
+#include <stdint.h>
+#else
 #include <FspUpd.h>
+#endif
 
 #define FSP_USB_STRUCT_MAJOR_VERSION	0xd
 #define FSP_USB_STRUCT_MINOR_VERSION	0x6

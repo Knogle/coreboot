@@ -1,0 +1,90 @@
+--- a/MdeModulePkg/Bus/Pci/XhciDxe/Xhci.c
++++ b/MdeModulePkg/Bus/Pci/XhciDxe/Xhci.c
+@@ -1908,6 +1908,79 @@
+ }
+ 
+ /**
++  Publish the ASM1142 scratchpad requirement after the payload's controller reset.
++
++  Revision zero with the ASMedia subsystem ID loses this capability on HCRST.
++  Its context-save engine still needs sixteen buffers. The OS must see that
++  requirement before caching HCSPARAMS2 and allocating DCBAA slot zero.
++  Only the observed cold descriptor is changed, through the volatile XDATA
++  window; neither controller code nor its EEPROM is modified.
++**/
++STATIC
++VOID
++XhcPrepareAsmediaScratchpads (
++  IN USB_XHCI_INSTANCE  *Xhc
++  )
++{
++  EFI_PCI_IO_PROTOCOL  *PciIo;
++  EFI_STATUS           Status;
++  EFI_STATUS           RestoreStatus;
++  UINT32               Value;
++  UINT16               SavedSelector;
++  UINT16               Selector;
++  UINT8                HighByte;
++
++  PciIo = Xhc->PciIo;
++  Status = PciIo->Pci.Read (PciIo, EfiPciIoWidthUint32, 0, 1, &Value);
++  if (EFI_ERROR (Status) || (Value != 0x12421b21)) {
++    return;
++  }
++
++  Status = PciIo->Pci.Read (PciIo, EfiPciIoWidthUint32, 8, 1, &Value);
++  if (EFI_ERROR (Status) || (Value != 0x0c033000)) {
++    return;
++  }
++
++  Status = PciIo->Pci.Read (PciIo, EfiPciIoWidthUint32, 0x2c, 1, &Value);
++  if (EFI_ERROR (Status) || (Value != 0x12421b21) ||
++      !XHC_REG_BIT_IS_SET (Xhc, XHC_USBSTS_OFFSET, XHC_USBSTS_HALT) ||
++      (XhcReadCapReg (Xhc, XHC_HCSPARAMS2_OFFSET) != 0x000000fa))
++  {
++    return;
++  }
++
++  Status = PciIo->Pci.Read (PciIo, EfiPciIoWidthUint16, 0xe8, 1, &SavedSelector);
++  if (EFI_ERROR (Status)) {
++    return;
++  }
++
++  Selector = 0xf60b;
++  Status = PciIo->Pci.Write (PciIo, EfiPciIoWidthUint16, 0xe8, 1, &Selector);
++  if (!EFI_ERROR (Status)) {
++    gBS->Stall (100);
++    Status = PciIo->Pci.Read (PciIo, EfiPciIoWidthUint16, 0xe8, 1, &Selector);
++    if (!EFI_ERROR (Status) && (Selector == 0xf60b)) {
++      HighByte = 0x84;
++      Status = PciIo->Pci.Write (PciIo, EfiPciIoWidthUint8, 0xea, 1, &HighByte);
++      if (!EFI_ERROR (Status)) {
++        gBS->Stall (1000);
++      }
++    }
++  }
++
++  RestoreStatus = PciIo->Pci.Write (
++                              PciIo,
++                              EfiPciIoWidthUint16,
++                              0xe8,
++                              1,
++                              &SavedSelector
++                              );
++  Value = XhcReadCapReg (Xhc, XHC_HCSPARAMS2_OFFSET);
++  DEBUG ((DEBUG_INFO, "Xhc: ASM1142 OS scratchpad capability 0x%08x, write %r, restore %r\n",
++          Value, Status, RestoreStatus));
++}
++
++/**
+   One notified function to stop the Host Controller when gBS->ExitBootServices() called.
+ 
+   @param  Event                   Pointer to this event
+@@ -1934,6 +2007,7 @@
+   //
+   gBS->SetTimer (Xhc->PollTimer, TimerCancel, 0);
+   XhcHaltHC (Xhc, XHC_GENERIC_TIMEOUT);
++  XhcPrepareAsmediaScratchpads (Xhc);
+ 
+   if (Xhc->PollTimer != NULL) {
+     gBS->CloseEvent (Xhc->PollTimer);

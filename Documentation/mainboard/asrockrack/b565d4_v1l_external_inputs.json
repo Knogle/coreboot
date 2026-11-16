@@ -1,0 +1,67 @@
+{
+  "inputs": [
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/pre-x86-template.rom",
+      "sha256": "aa9cbc87e545fef85c2ed754c2ec3d5ef1755c07ff9a5cfc3ab858dc2e7cf86d",
+      "size": 33554432,
+      "use": "all B565 images; signed pre-x86 container template"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/promontory19.bin",
+      "sha256": "e812303cc74e76cd20c2bc08f17e4f5176854873b8e410d4a6e49eefd41f2107",
+      "size": 114700,
+      "use": "all B565 images; Promontory firmware"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/cpu_microcode_a500.bin",
+      "sha256": "233d707d03c3c4f42b82c605da800af1d75b653a7dabdfa2115e967e71e9fc74",
+      "size": 5568,
+      "use": "Cezanne/default microcode"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_8700.bin",
+      "sha256": "a22b8075cac88bcad0f31d76e58ccdd18123f0668051b846bb5d17e4dfb024e6",
+      "size": 3200,
+      "use": "desktop CPU preparation microcode"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_8710.bin",
+      "sha256": "c31409a89c3f8d839b4ca5b7648b915d856a39261e1441a875eaa6f9c9d1ea2b",
+      "size": 3200,
+      "use": "desktop CPU preparation microcode"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_a200.bin",
+      "sha256": "fdaf5195f6802819a0045a66f096e055db3f7d388e8b9626359a768ed18c7ba6",
+      "size": 5568,
+      "use": "desktop CPU preparation microcode"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_a210.bin",
+      "sha256": "9dd86ac1add6c65c274b3685f36ee5f83a05037515c7ea75e9f5d7ba45a72325",
+      "size": 5568,
+      "use": "desktop CPU preparation microcode"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/desktop-microcode/cpu_microcode_a212.bin",
+      "sha256": "e86d516a8e72f3fe6e16bc62594017e96d3d0e6ba7ace368f755f013bb22f641",
+      "size": 5568,
+      "use": "desktop CPU preparation microcode"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/vermeer-f20-abl.bin",
+      "sha256": "f67f88a0bcf1949dae9c1f74cb9a889e4c645f83d9eb4ebe7bbd36b741862f5a",
+      "size": 511680,
+      "use": "Vermeer F20 ABL cohort only"
+    },
+    {
+      "path": "3rdparty/blobs/mainboard/asrockrack/b565d4_v1l/network/GigUndiDxe.efi",
+      "sha256": "7e1253db4c8d420184d51c5755d61864095845fa6546be71727dde56c0053b89",
+      "size": 176128,
+      "use": "optional EDK2 network driver"
+    }
+  ],
+  "schema": 1,
+  "source_gitlink": "3rdparty/blobs@6f42f0f39b9ec4499c7e41a6d086f7b455823aa6",
+  "status": "local reference hashes only; binary contents are not in this source repository"
+}

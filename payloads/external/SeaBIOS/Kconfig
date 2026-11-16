@@ -6,11 +6,19 @@ config PAYLOAD_BUILD_SEABIOS
 if PAYLOAD_SEABIOS
 
 config PAYLOAD_FILE
-	default "payloads/external/SeaBIOS/seabios/out/bios.bin.elf"
+	default "$(obj)/seabios/bios.bin.elf"
 
 endif
 
 if PAYLOAD_BUILD_SEABIOS
+
+config SEABIOS_PATCHES_DIR
+	string "Directory containing additional SeaBIOS source patches"
+	default ""
+	help
+	  Apply the sorted patch files from this coreboot-relative directory
+	  after selecting the SeaBIOS revision. Owned patches are removed before
+	  the next checkout without discarding other source changes.
 
 choice
 	prompt "SeaBIOS version"
@@ -130,7 +138,7 @@ config SEABIOS_SERCON_PORT_ADDR
 config PAYLOAD_VGABIOS_FILE
 	string
 	depends on SEABIOS_VGA_COREBOOT
-	default "payloads/external/SeaBIOS/seabios/out/vgabios.bin"
+	default "$(obj)/seabios/vgabios.bin"
 
 config SEABIOS_DEBUG_LEVEL
 	int "SeaBIOS debug level (verbosity)"

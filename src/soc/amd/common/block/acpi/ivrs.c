@@ -17,6 +17,11 @@
 #include <soc/iomap.h>
 #include <soc/pci_devs.h>
 
+unsigned long __weak mainboard_fill_ivrs(unsigned long current, const struct device *domain)
+{
+	return current;
+}
+
 static unsigned long acpi_fill_ivrs_ioapic(unsigned long current, uintptr_t ioapic_base,
 					    uint16_t src_devid, uint8_t dte_setting)
 {
@@ -215,7 +220,7 @@ static unsigned long acpi_ivhd_misc(unsigned long current, struct device *dev)
 				      SMBUS_DEVFN, dte_setting);
 	}
 
-	return current;
+	return mainboard_fill_ivrs(current, dev);
 }
 
 static unsigned long acpi_fill_ivrs40(unsigned long current, acpi_ivrs_ivhd_t *ivhd,

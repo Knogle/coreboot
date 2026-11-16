@@ -1,0 +1,4 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config BOARD_ASROCKRACK_B565D4_V1L
+	bool "B565D4-V1L"

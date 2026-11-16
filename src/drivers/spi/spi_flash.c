@@ -810,6 +810,12 @@ void lb_spi_flash(struct lb_header *header)
 	struct lb_spi_flash *flash;
 	const struct spi_flash *spi_flash_dev;
 
+	/* The retained payload boots from an admitted immutable RAM CBFS.
+	 * Omit this optional physical-flash record; do not initialize/probe SPI.
+	 */
+	if (CONFIG(SOC_AMD_CEZANNE_NATIVE))
+		return;
+
 	if (!CONFIG(BOOT_DEVICE_SPI_FLASH))
 		return;
 

@@ -4,6 +4,10 @@
 #include <cpu/cpu.h>
 #include <device/device.h>
 #include <soc/cpu.h>
+#if CONFIG(B565D4_DESKTOP_NATIVE)
+#include <b565d4_cpu_ids.h>
+void b565d4_desktop_cpu_init(struct device *dev);
+#endif
 
 _Static_assert(CONFIG_MAX_CPUS == 16, "Do not override MAX_CPUS. To reduce the number of "
 	"available cores, use the downcore_mode and disable_smt devicetree settings instead.");
@@ -29,12 +33,24 @@ u8 smbios_cache_speed(u8 level)
 }
 
 static struct device_operations cpu_dev_ops = {
+#if CONFIG(B565D4_DESKTOP_NATIVE)
+	.init = b565d4_desktop_cpu_init,
+#else
 	.init = amd_cpu_init,
+#endif
 };
 
 static struct cpu_device_id cpu_table[] = {
+#if CONFIG(B565D4_MATISSE)
+	{ X86_VENDOR_AMD, B565D4_CPUID_MATISSE_A0, CPUID_ALL_STEPPINGS_MASK },
+	{ X86_VENDOR_AMD, B565D4_CPUID_MATISSE_B0, CPUID_ALL_STEPPINGS_MASK },
+#elif CONFIG(B565D4_VERMEER)
+	{ X86_VENDOR_AMD, B565D4_CPUID_VERMEER_A0, CPUID_ALL_STEPPINGS_MASK },
+	{ X86_VENDOR_AMD, B565D4_CPUID_VERMEER_B0, CPUID_ALL_STEPPINGS_MASK },
+#else
 	{ X86_VENDOR_AMD, CEZANNE_A0_CPUID, CPUID_ALL_STEPPINGS_MASK },
 	{ X86_VENDOR_AMD, RENOIR_A1_CPUID,  CPUID_ALL_STEPPINGS_MASK},
+#endif
 	CPU_TABLE_END
 };
 

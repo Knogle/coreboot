@@ -8,11 +8,15 @@ bootblock-y += pre_c.S
 bootblock-y += write_resume_eip.c
 bootblock-$(CONFIG_TPM_MEASURED_BOOT) += bootblock_measure.c
 romstage-y += memmap.c
+ifneq ($(CONFIG_SOC_AMD_CEZANNE_NATIVE),y)
 romstage-y += romstage.c
+endif
 ramstage-y += cpu.c
 romstage-y += cpu.c
 ramstage-y += memmap.c
+ifneq ($(CONFIG_SOC_AMD_CEZANNE_NATIVE),y)
 ramstage-y += mpinit.c
+endif
 
 # See memlayout_x86.ld for details:
 # AMDCOMPRESS only supports one PT_LOAD segment.

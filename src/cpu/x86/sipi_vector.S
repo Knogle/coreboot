@@ -42,6 +42,12 @@ cr3:
 .long 0
 ap_count:
 .long 0
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE)
+native131_rm_count:
+.long 0
+native131_pm_count:
+.long 0
+#endif
 
 #define CR0_CLEAR_FLAGS_CACHE_ENABLE (CR0_CD | CR0_NW)
 #define CR0_SET_FLAGS (CR0_CLEAR_FLAGS_CACHE_ENABLE | CR0_PE)
@@ -53,6 +59,15 @@ ap_count:
 .global _start
 _start:
 	cli
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE)
+	/* No stack or data segment yet: both relocated addresses cancel the
+	 * module base, leaving an offset addressed through the SIPI CS.
+	 */
+	movl	$(native131_rm_count), %ebx
+	sub	$(_start), %ebx
+	lock incl %cs:(%ebx)
+	cld
+#endif
 	xorl	%eax, %eax
 	movl	%eax, %cr3    /* Invalidate TLB*/
 
@@ -87,6 +102,11 @@ _start:
 	xor	%ax, %ax /* zero out the gs and fs segment index */
 	movw	%ax, %fs
 	movw	%ax, %gs /* Will be used for cpu_info */
+
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE)
+	/* Flat protected-mode data segment; no IDT/stack/high-data read yet. */
+	lock incl native131_pm_count
+#endif
 
 	/* Load the Interrupt descriptor table */
 	mov	idt_ptr, %ebx
@@ -184,7 +204,7 @@ microcode_done:
 	test	%ebx, %ebx
 	jz	1f
 
-#if CONFIG(X86_AMD_FIXED_MTRRS)
+#if CONFIG(X86_AMD_FIXED_MTRRS) && !CONFIG(SOC_AMD_CEZANNE_NATIVE)
 	/* Allow modification of RdDram and WrDram bits */
 	mov	$SYSCFG_MSR, %ecx
 	rdmsr
@@ -201,7 +221,7 @@ load_msr:
 	dec	%ebx
 	jnz	load_msr
 
-#if CONFIG(X86_AMD_FIXED_MTRRS)
+#if CONFIG(X86_AMD_FIXED_MTRRS) && !CONFIG(SOC_AMD_CEZANNE_NATIVE)
 	mov	$SYSCFG_MSR, %ecx
 	rdmsr
 	and	$~SYSCFG_MSR_MtrrFixDramModEn, %eax
@@ -212,6 +232,10 @@ load_msr:
 	/* Enable caching. */
 	mov	%cr0, %eax
 	and	$~(CR0_CLEAR_FLAGS_CACHE_ENABLE), %eax
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE)
+	/* Match the retained UART/context guard before any AP C printk. */
+	orl	$CR0_WP, %eax
+#endif
 	mov	%eax, %cr0
 
 #if CONFIG(SSE)

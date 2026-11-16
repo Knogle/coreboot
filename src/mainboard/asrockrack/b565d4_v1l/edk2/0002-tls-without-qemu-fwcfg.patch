@@ -1,0 +1,11 @@
+diff --git a/UefiPayloadPkg/UefiPayloadPkg.dsc b/UefiPayloadPkg/UefiPayloadPkg.dsc
+--- a/UefiPayloadPkg/UefiPayloadPkg.dsc
++++ b/UefiPayloadPkg/UefiPayloadPkg.dsc
+@@ -1495,6 +1495,7 @@
+   NetworkPkg/TlsAuthConfigDxe/TlsAuthConfigDxe.inf {
+     <LibraryClasses>
+       NULL|OvmfPkg/Library/TlsAuthConfigLib/TlsAuthConfigLib.inf
++      QemuFwCfgLib|OvmfPkg/Library/QemuFwCfgLib/QemuFwCfgLibNull.inf
+   }
+ !endif
+ 

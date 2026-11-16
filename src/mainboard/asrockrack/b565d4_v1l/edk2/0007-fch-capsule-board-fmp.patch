@@ -1,0 +1,74 @@
+From: coreboot board integration
+Subject: [PATCH] UefiPayloadPkg: opt-in B565D4 complete-image FMP backend
+
+The board-specific backend bypasses generic RMAP/BIOS/full-flash fallback.
+The existing read-only FMP build remains the default.
+
+diff --git a/UefiPayloadPkg/Library/FmpDeviceSmmLib/FmpDeviceSmmLib.c b/UefiPayloadPkg/Library/FmpDeviceSmmLib/FmpDeviceSmmLib.c
+--- a/UefiPayloadPkg/Library/FmpDeviceSmmLib/FmpDeviceSmmLib.c
++++ b/UefiPayloadPkg/Library/FmpDeviceSmmLib/FmpDeviceSmmLib.c
+@@ -36,6 +36,9 @@
+ #include "FmpDeviceSmmFlashRetry.h"
+ #include "FmpDeviceSmmManifest.h"
+ #include "FmpDeviceSmmUpdatePolicy.h"
++#ifdef B565D4_CAPSULE_WRITE
++#include "FchCapsuleBackend.h"
++#endif
+ 
+ //
+ // Minimal FMAP parsing to locate and compare the flash map before updating.
+@@ -1256,6 +1259,16 @@
+ 
+   *LastAttemptStatus = LAST_ATTEMPT_STATUS_ERROR_UNSUCCESSFUL;
+   *ImageUpdatable    = IMAGE_UPDATABLE_INVALID;
++#ifdef B565D4_CAPSULE_WRITE
++  // Complete live-SPI comparison replaces all generic manifest/fallback paths.
++  Status = B565D4CapsuleCheckImage (Image, ImageSize);
++  if (EFI_ERROR (Status)) {
++    return Status;
++  }
++  *LastAttemptStatus = LAST_ATTEMPT_STATUS_SUCCESS;
++  *ImageUpdatable = IMAGE_UPDATABLE_VALID;
++  return EFI_SUCCESS;
++#endif
+ 
+   Status = FmpDeviceGetSize (&FwSize);
+   if (EFI_ERROR (Status)) {
+@@ -1872,6 +1885,16 @@
+   BOOLEAN                      VariableStorePreserved;
+   UINTN                        VariableStoreOffset;
+   UINTN                        VariableStoreSize;
++
++#ifdef B565D4_CAPSULE_WRITE
++  // No RMAP, BIOS-region, full-flash or retry fallback is reachable here.
++  *LastAttemptStatus = LAST_ATTEMPT_STATUS_ERROR_UNSUCCESSFUL;
++  Status = B565D4CapsuleSetImage (Image, ImageSize, Progress);
++  if (!EFI_ERROR (Status)) {
++    *LastAttemptStatus = LAST_ATTEMPT_STATUS_SUCCESS;
++  }
++  return Status;
++#endif
+ 
+   *LastAttemptStatus = LAST_ATTEMPT_STATUS_ERROR_UNSUCCESSFUL;
+   BlockCount         = 0;
+diff --git a/UefiPayloadPkg/UefiPayloadPkg.dsc b/UefiPayloadPkg/UefiPayloadPkg.dsc
+--- a/UefiPayloadPkg/UefiPayloadPkg.dsc
++++ b/UefiPayloadPkg/UefiPayloadPkg.dsc
+@@ -1263,9 +1263,16 @@
+       !include $(FMP_DEVICE_PKCS7_PCD_INC)
+     <LibraryClasses>
+ !if $(BOOTLOADER) == "COREBOOT"
++!if $(VARIABLE_SUPPORT) == "FCH_SPI"
++!if $(B565D4_CAPSULE_WRITE) == TRUE
++      FmpDeviceLib|UefiPayloadPkg/Library/FmpDeviceSmmLib/FchCapsuleFmpLib.inf
++      SmmStoreLib|UefiPayloadPkg/Library/FchCapsuleReadLib/FchCapsuleFlashLib.inf
++!else
+       FmpDeviceLib|UefiPayloadPkg/Library/FmpDeviceSmmLib/FmpDeviceSmmLib.inf
+-!if $(VARIABLE_SUPPORT) == "FCH_SPI"
+       SmmStoreLib|UefiPayloadPkg/Library/FchCapsuleReadLib/FchCapsuleReadLib.inf
++!endif
++!else
++      FmpDeviceLib|UefiPayloadPkg/Library/FmpDeviceSmmLib/FmpDeviceSmmLib.inf
+ !endif
+ !else
+       # TODO: provide platform-specific implementation of firmware flashing

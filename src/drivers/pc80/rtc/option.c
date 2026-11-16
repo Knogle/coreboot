@@ -50,9 +50,17 @@ static enum cb_err get_cmos_value(unsigned long bit, unsigned long length,
 	return CB_SUCCESS;
 }
 
+__weak bool cmos_option_table_ready(void)
+{
+	return true;
+}
+
 static struct cmos_option_table *get_cmos_layout(void)
 {
 	static struct cmos_option_table *ct = NULL;
+
+	if (!cmos_option_table_ready())
+		return NULL;
 
 	/*
 	 * In case VBOOT is enabled and this function is called from SMM,

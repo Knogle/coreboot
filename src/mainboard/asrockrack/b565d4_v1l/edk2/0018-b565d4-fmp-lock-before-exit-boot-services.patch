@@ -1,0 +1,11 @@
+--- a/UefiPayloadPkg/UefiPayloadPkg.dsc
++++ b/UefiPayloadPkg/UefiPayloadPkg.dsc
+@@ -1256,6 +1256,8 @@
+       FILE_GUID = $(CAPSULE_MAIN_FW_GUID)
+     <PcdsFixedAtBuild>
+       gFmpDevicePkgTokenSpaceGuid.PcdFmpDeviceImageIdName|L"System Firmware"
++      # Keep the signed board FMP available to UEFI boot-service capsule clients.
++      gFmpDevicePkgTokenSpaceGuid.PcdFmpDeviceLockEventGuid|{0x74,0xe2,0xe0,0x8b,0x70,0x39,0x44,0x4b,0x80,0xc5,0x1a,0xb9,0x50,0x2f,0x3b,0xfc}
+       # Public certificate used for validation of UEFI capsules
+       #
+       # See BaseTools/Source/Python/Pkcs7Sign/Readme.md for more details on such

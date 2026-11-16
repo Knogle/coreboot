@@ -4,6 +4,13 @@ TAG-$(CONFIG_SEABIOS_REVISION)=$(CONFIG_SEABIOS_REVISION_ID)
 
 project_git_repo=https://review.coreboot.org/seabios.git
 project_dir=seabios
+seabios_patch_dir=$(subst ",,$(CONFIG_SEABIOS_PATCHES_DIR))
+ifneq ($(seabios_patch_dir),)
+seabios_patches=$(sort $(wildcard $(abspath $(top)/$(seabios_patch_dir))/*.patch))
+ifeq ($(seabios_patches),)
+$(error No SeaBIOS patches found in $(seabios_patch_dir))
+endif
+endif
 
 unexport KCONFIG_AUTOHEADER
 unexport KCONFIG_AUTOCONFIG
@@ -33,10 +40,16 @@ endif
 		git fetch; fi
 
 checkout: fetch
+	python3 ../edk2/patches.py undo --source "$(abspath seabios)" --state "$(abspath patches-seabios)"
 	echo "    Checking out SeaBIOS revision $(TAG-y)"
 	cd seabios; git checkout master; git branch -D coreboot 2>/dev/null; git checkout -b coreboot $(TAG-y)
+	python3 ../edk2/patches.py apply --source "$(abspath seabios)" --state "$(abspath patches-seabios)" \
+		$(foreach patch,$(seabios_patches),--patch "$(patch)")
 
 config: checkout
+	# A patch-set change can remove a source named by an old generated .d file.
+	# All profiles share this output directory, including CSMWrap builds.
+	$(MAKE) -C seabios OUT=out/ clean
 	echo "    CONFIG     SeaBIOS $(TAG-y)"
 	echo "CONFIG_COREBOOT=y" > seabios/.config
 ifeq ($(CONFIG_CONSOLE_SERIAL)$(CONFIG_DRIVERS_UART_8250IO),yy)

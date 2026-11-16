@@ -1,0 +1,34 @@
+From: coreboot board integration
+Subject: [PATCH] UefiBootManagerLib: delete a sole matching console instance
+
+A disabled serial console removes UART from ConIn and ConOut but left a
+sole UART ErrOut persistent: the device-path removal returns NULL, so the
+normal SetVariable branch is skipped. Delete an exact sole instance before
+allocating. Leave multi-instance and add/replace handling unchanged, and
+propagate the variable-service result.
+
+--- a/MdeModulePkg/Library/UefiBootManagerLib/BmConsole.c
++++ b/MdeModulePkg/Library/UefiBootManagerLib/BmConsole.c
+@@ -458,6 +458,22 @@
+   //
+   GetEfiGlobalVariable2 (mConVarName[ConsoleType], (VOID **)&VarConsole, NULL);
+   //
++  // Removing the sole exact instance must delete the variable. Otherwise
++  // BmDelPartMatchInstance() returns NULL and the update below is skipped.
++  // Handle this without allocating, so allocation failure cannot erase a
++  // console variable containing other instances.
++  //
++  if ((CustomizedConDevicePath == NULL) && (ExclusiveDevicePath != NULL) &&
++      (VarConsole != NULL) &&
++      (GetDevicePathSize (VarConsole) == GetDevicePathSize (ExclusiveDevicePath)) &&
++      (CompareMem (VarConsole, ExclusiveDevicePath, GetDevicePathSize (VarConsole)) == 0))
++  {
++    Status = gRT->SetVariable (mConVarName[ConsoleType], &gEfiGlobalVariableGuid, 0, 0, NULL);
++    FreePool (VarConsole);
++    return Status;
++  }
++
++  //
+   // Initialize NewDevicePath
+   //
+   NewDevicePath = VarConsole;

@@ -1,0 +1,15 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+if VENDOR_ASROCKRACK
+
+choice
+	prompt "Mainboard model"
+source "src/mainboard/asrockrack/*/Kconfig.name"
+endchoice
+
+source "src/mainboard/asrockrack/*/Kconfig"
+
+config MAINBOARD_VENDOR
+	default "ASRock Rack"
+
+endif

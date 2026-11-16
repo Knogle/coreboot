@@ -22,6 +22,7 @@ enum cb_err xhci_resource_for_each_ext_cap(const struct resource *res, void *con
 	uint32_t ext_caps_word_offset;
 	union xhci_ext_caps_header header;
 	struct xhci_ext_cap cap;
+	bool first_header = true;
 
 	if (!res || !callback)
 		return CB_ERR_ARG;
@@ -36,7 +37,11 @@ enum cb_err xhci_resource_for_each_ext_cap(const struct resource *res, void *con
 		return CB_ERR;
 	}
 
+	printk(BIOS_INFO, "xHCI XECP READ BEGIN bar=%llx size=%llx limit=%llx addr=%p\n",
+	       (unsigned long long)res->base, (unsigned long long)res->size,
+	       (unsigned long long)res->limit, res2mmio(res, XHCI_HCCPARAMS1_XECP, 0));
 	ext_caps_word_offset = read16(res2mmio(res, XHCI_HCCPARAMS1_XECP, 0));
+	printk(BIOS_INFO, "xHCI XECP READ DONE word_offset=%08x\n", ext_caps_word_offset);
 
 	if (!ext_caps_word_offset) {
 		printk(BIOS_ERR, "%s: No extended capabilities defined\n", __func__);
@@ -46,7 +51,18 @@ enum cb_err xhci_resource_for_each_ext_cap(const struct resource *res, void *con
 	ext_cap_ptr = res2mmio(res, ext_caps_word_offset << 2, 0);
 
 	while ((uintptr_t)ext_cap_ptr < (uintptr_t)res->limit) {
+		if (first_header)
+			printk(BIOS_INFO, "xHCI FIRST EXTCAP READ BEGIN addr=%p\n", ext_cap_ptr);
 		header.val = read32(ext_cap_ptr);
+		if (first_header) {
+			printk(BIOS_INFO, "xHCI FIRST EXTCAP READ DONE value=%08x\n", header.val);
+			first_header = false;
+		}
+
+		if (header.val == 0xffffffffU) {
+			printk(BIOS_ERR, "%s: Inaccessible extended-capability header\n", __func__);
+			return CB_ERR;
+		}
 
 		cap.cap_id = header.cap_id;
 

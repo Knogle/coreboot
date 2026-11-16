@@ -1,0 +1,112 @@
+From: coreboot board integration
+Subject: [PATCH] GenFw: use CodeView basenames with SOURCE_DATE_EPOCH
+
+Make the debug-name allocation and CodeView record independent of the
+absolute source/output workspace in reproducible builds. Preserve the
+original filename behavior when SOURCE_DATE_EPOCH is unset or empty.
+Apply this to both IA32 and X64 ELF conversion; diagnostics and PRM export
+names continue to use the original input filename. No firmware runtime
+policy, executable section, signature or device initialization is changed.
+
+--- a/BaseTools/Source/C/GenFw/ElfConvert.c
++++ b/BaseTools/Source/C/GenFw/ElfConvert.c
+@@ -62,6 +62,31 @@
+ //*****************************************************************************
+ //
+ 
++/** Use a relocatable CodeView filename for reproducible builds. */
++CONST CHAR8 *
++GetCodeViewImageName (
++  VOID
++  )
++{
++  CONST CHAR8  *Epoch;
++  CONST CHAR8  *Name;
++  CONST CHAR8  *Pos;
++
++  Epoch = getenv ("SOURCE_DATE_EPOCH");
++  Name  = mInImageName;
++  if ((Epoch == NULL) || (*Epoch == '\0')) {
++    return Name;
++  }
++
++  for (Pos = mInImageName; *Pos != '\0'; Pos++) {
++    if ((*Pos == '/') || (*Pos == '\\')) {
++      Name = Pos + 1;
++    }
++  }
++
++  return Name;
++}
++
+ VOID
+ CoffAddFixupEntry(
+   UINT16 Val
+--- a/BaseTools/Source/C/GenFw/ElfConvert.h
++++ b/BaseTools/Source/C/GenFw/ElfConvert.h
+@@ -125,3 +125,7 @@
+   UINT32       Size,
+   UINT32       Flags
+   );
++CONST CHAR8 *
++GetCodeViewImageName (
++  VOID
++  );
+--- a/BaseTools/Source/C/GenFw/Elf32Convert.c
++++ b/BaseTools/Source/C/GenFw/Elf32Convert.c
+@@ -481,7 +481,7 @@
+   }
+   mCoffOffset = mDebugOffset + sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY) +
+                 sizeof(EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY) +
+-                strlen(mInImageName) + 1;
++                strlen(GetCodeViewImageName ()) + 1;
+ 
+   mCoffOffset = CoffAlign(mCoffOffset);
+   if (SectionCount == 0) {
+@@ -864,7 +864,7 @@
+   EFI_IMAGE_DEBUG_DIRECTORY_ENTRY     *Dir;
+   EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY *Nb10;
+ 
+-  Len = strlen(mInImageName) + 1;
++  Len = strlen(GetCodeViewImageName ()) + 1;
+ 
+   Dir = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY*)(mCoffFile + mDebugOffset);
+   Dir->Type = EFI_IMAGE_DEBUG_TYPE_CODEVIEW;
+@@ -874,7 +874,7 @@
+ 
+   Nb10 = (EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY*)(Dir + 1);
+   Nb10->Signature = CODEVIEW_SIGNATURE_NB10;
+-  strcpy ((char *)(Nb10 + 1), mInImageName);
++  strcpy ((char *)(Nb10 + 1), GetCodeViewImageName ());
+ 
+ 
+   NtHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(mCoffFile + mNtHdrOffset);
+--- a/BaseTools/Source/C/GenFw/Elf64Convert.c
++++ b/BaseTools/Source/C/GenFw/Elf64Convert.c
+@@ -1018,7 +1018,7 @@
+   }
+   mCoffOffset = mDebugOffset + sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY) +
+                 sizeof(EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY) +
+-                strlen(mInImageName) + 1;
++                strlen(GetCodeViewImageName ()) + 1;
+ 
+   //
+   // Add more space in the .debug data region for the DllCharacteristicsEx
+@@ -2451,7 +2451,7 @@
+   EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY         *Nb10;
+   EFI_IMAGE_DEBUG_EX_DLLCHARACTERISTICS_ENTRY *DllEntry;
+ 
+-  Len = strlen(mInImageName) + 1;
++  Len = strlen(GetCodeViewImageName ()) + 1;
+ 
+   NtHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(mCoffFile + mNtHdrOffset);
+   DataDir = &NtHdr->Pe32Plus.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG];
+@@ -2484,7 +2484,7 @@
+ 
+   Nb10 = (EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY*)(Dir + 1);
+   Nb10->Signature = CODEVIEW_SIGNATURE_NB10;
+-  strcpy ((char *)(Nb10 + 1), mInImageName);
++  strcpy ((char *)(Nb10 + 1), GetCodeViewImageName ());
+ }
+ 
+ STATIC

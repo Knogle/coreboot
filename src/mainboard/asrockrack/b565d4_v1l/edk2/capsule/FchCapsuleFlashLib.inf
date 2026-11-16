@@ -1,0 +1,36 @@
+## @file
+# Opt-in DXE FCH-SPI backend. Generic SmmStoreLib write/erase stays disabled;
+# only the board image-policy routine can call the checked sector operation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x0001001B
+  BASE_NAME      = FchCapsuleFlashLib
+  FILE_GUID      = 58482da2-b846-4d1f-8ba7-9be1ddcfd045
+  MODULE_TYPE    = BASE
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = SmmStoreLib|DXE_DRIVER
+
+[Sources]
+  FchCapsuleReadLib.c
+  FchNvCore.c
+  FchNvCore.h
+  FchCapsuleBackend.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  UefiPayloadPkg/UefiPayloadPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  IoLib
+  PciLib
+  SynchronizationLib
+  TimerLib
+
+[BuildOptions]
+  GCC:*_*_*_CC_FLAGS = -DFCH_NV_EDK2 -DFCH_NV_CAPSULE_UPDATE

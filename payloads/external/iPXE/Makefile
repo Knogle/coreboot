@@ -1,6 +1,6 @@
 ## SPDX-License-Identifier: GPL-2.0-only
 
-# 2022.1 - Last commit of January 2022
+# 2025.12 - Pinned stable revision from December 2025
 # When updating, change the name both here and in payloads/external/iPXE/Kconfig
 STABLE_COMMIT_ID=7c39c04a537ce29dccc6f2bae9749d1d371429c1
 
@@ -12,11 +12,25 @@ project_dir=ipxe
 project_git_repo=https://git.ipxe.org/ipxe.git
 
 ifeq ($(CONFIG_IPXE_BUILD_EFI),y)
+ifeq ($(CONFIG_IPXE_EFI_DEVICE_SPECIFIC),y)
+IPXE_BUILD_TARGET := bin-x86_64-efi-sb/$(PXE_ROM_PCI_ID).efi
+else
 IPXE_BUILD_TARGET := bin-x86_64-efi-sb/ipxe.efi
+endif
 # Workaround problems with unrecognized ipxe/util/elf2efi relocations
-PXE_MAKE_OPTS += EXTRA_CFLAGS="$(CFLAGS_x86_64) -fno-pic"
+IPXE_EXTRA_CFLAGS := $(CFLAGS_x86_64) -fno-pic
 else
 IPXE_BUILD_TARGET := bin/$(PXE_ROM_PCI_ID).rom
+endif
+
+# iPXE hashes its object archive into the ROM build ID, including DWARF.
+# Normalize the source directory for reproducible builds while preserving
+# the upstream ID calculation and differences in executable inputs.
+ifneq ($(SOURCE_DATE_EPOCH),)
+IPXE_EXTRA_CFLAGS += -fdebug-prefix-map=$(abspath $(project_dir)/src)=.
+endif
+ifneq ($(strip $(IPXE_EXTRA_CFLAGS)),)
+PXE_MAKE_OPTS += EXTRA_CFLAGS="$(IPXE_EXTRA_CFLAGS)"
 endif
 
 all: build
@@ -35,9 +49,9 @@ fetch: $(project_dir)
 
 checkout: fetch
 	echo "    Checking out $(project_name) revision $(TAG-y)"
-	cd  $(project_dir); \
+	set -e; cd $(project_dir); \
 		git checkout master; \
-		git branch -D coreboot 2>/dev/null; \
+		git branch -D coreboot 2>/dev/null || true; \
 		git checkout -b coreboot $(TAG-y)
 
 config: checkout
@@ -59,16 +73,16 @@ ifeq ($(CONFIG_IPXE_TRUST_CMD),y)
 	sed -i'' 's|.*IMAGE_TRUST_CMD|#define IMAGE_TRUST_CMD|g' "$(project_dir)/src/config/general.h"
 endif
 
-build: config $(CONFIG_SCRIPT)
 ifeq ($(CONFIG_HAS_SCRIPT),y)
-	echo "    MAKE       $(project_name) $(TAG-y) EMBED=$(CONFIG_SCRIPT)"
-	$(MAKE) -C $(project_dir)/src $(IPXE_BUILD_TARGET) EMBED=$(CONFIG_SCRIPT) $(PXE_MAKE_OPTS)
-else
-	echo "    MAKE       $(project_name) $(TAG-y)"
-	$(MAKE) -C $(project_dir)/src $(IPXE_BUILD_TARGET) $(PXE_MAKE_OPTS)
+IPXE_EMBED_OPTION := EMBED=$(CONFIG_SCRIPT)
 endif
+
+build: config $(CONFIG_SCRIPT)
+	@set -e; \
+	trap 'git -C $(project_dir) restore src/config/console.h src/config/serial.h src/config/general.h' EXIT; \
+	echo "    MAKE       $(project_name) $(TAG-y) $(IPXE_EMBED_OPTION)"; \
+	$(MAKE) -C $(project_dir)/src $(IPXE_BUILD_TARGET) $(IPXE_EMBED_OPTION) $(PXE_MAKE_OPTS); \
 	cp $(project_dir)/src/$(IPXE_BUILD_TARGET) $(project_dir)/ipxe.rom
-	cd $(project_dir) && git restore src/config/console.h src/config/serial.h src/config/general.h
 
 clean:
 	test -d $(project_dir) && $(MAKE) -C $(project_dir)/src veryclean || exit 0

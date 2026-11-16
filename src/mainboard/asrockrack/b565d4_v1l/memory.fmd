@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0-only
+B565D4_RAM 0x80000 {
+	BIOS@0x0 0x80000 {
+		FMAP@0x0 0x1000
+		COREBOOT(CBFS)@0x1000
+	}
+}

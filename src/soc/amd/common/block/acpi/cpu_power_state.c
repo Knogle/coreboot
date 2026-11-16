@@ -4,7 +4,10 @@
 #include <acpi/acpigen.h>
 #include <amdblocks/cppc.h>
 #include <amdblocks/cpu.h>
+#include <arch/cpu.h>
+#include <commonlib/helpers.h>
 #include <console/console.h>
+#include <cpu/amd/cpuid.h>
 #include <cpu/amd/msr.h>
 #include <cpu/x86/msr.h>
 #include <soc/msr.h>
@@ -69,10 +72,12 @@ static size_t get_pstate_info(struct acpi_sw_pstate *pstate_values,
 	for (pstate = 0; pstate <= max_pstate; pstate++) {
 		pstate_reg.raw = rdmsr(PSTATE_MSR(pstate_0_reg + pstate)).raw;
 
-		if (!pstate_reg.pstate_en)
+		if (!pstate_reg.pstate_en || pstate_reg.raw == UINT64_MAX)
 			continue;
 
 		pstate_values[pstate_count].core_freq = get_pstate_core_freq(pstate_reg);
+		if (!pstate_values[pstate_count].core_freq)
+			continue;
 		pstate_values[pstate_count].power = get_pstate_core_power(pstate_reg);
 		pstate_values[pstate_count].transition_latency = latency;
 		pstate_values[pstate_count].bus_master_latency = latency;
@@ -91,6 +96,50 @@ static size_t get_pstate_info(struct acpi_sw_pstate *pstate_values,
 	}
 
 	return pstate_count;
+}
+
+static void write_pstate_tables(unsigned int cpu, unsigned int logical_cores,
+			       unsigned int threads_per_core,
+			       const struct acpi_sw_pstate *pstate_values,
+			       const struct acpi_xpss_sw_pstate *pstate_xpss_values,
+			       size_t pstate_count, unsigned int performance_limit)
+{
+	const acpi_addr_t perf_ctrl = {
+		.space_id = ACPI_ADDRESS_SPACE_FIXED,
+		.bit_width = 64,
+		.addrl = PS_CTL_REG,
+	};
+	const acpi_addr_t perf_sts = {
+		.space_id = ACPI_ADDRESS_SPACE_FIXED,
+		.bit_width = 64,
+		.addrl = PS_STS_REG,
+	};
+
+	if (!pstate_count || !threads_per_core || !logical_cores)
+		return;
+	acpigen_write_pct_package(&perf_ctrl, &perf_sts);
+	acpigen_write_pss_object(pstate_values, pstate_count);
+	acpigen_write_xpss_object(pstate_xpss_values, pstate_count);
+	if (CONFIG(ACPI_SSDT_PSD_INDEPENDENT))
+		acpigen_write_PSD_package(cpu / threads_per_core, threads_per_core, HW_ALL);
+	else
+		acpigen_write_PSD_package(0, logical_cores, SW_ALL);
+	acpigen_write_PPC(MIN(performance_limit, pstate_count - 1));
+}
+
+void amd_generate_cpu_pstate_entries(unsigned int cpu, unsigned int logical_cores,
+				    unsigned int performance_limit)
+{
+	struct acpi_sw_pstate pstate_values[MAX_PSTATES] = { {0} };
+	struct acpi_xpss_sw_pstate pstate_xpss_values[MAX_PSTATES] = { {0} };
+
+	if (cpu >= logical_cores || cpu_cpuid_extended_level() < CPUID_EXT_PM ||
+	    !(cpuid_edx(CPUID_EXT_PM) & BIT(7)))
+		return;
+	size_t count = get_pstate_info(pstate_values, pstate_xpss_values);
+
+	write_pstate_tables(cpu, logical_cores, get_threads_per_core(), pstate_values,
+			    pstate_xpss_values, count, performance_limit);
 }
 
 static uint16_t get_cstate_io_base_address(void)
@@ -167,17 +216,6 @@ void generate_cpu_entries(const struct device *device)
 	struct acpi_xpss_sw_pstate pstate_xpss_values[MAX_PSTATES] = { {0} };
 	uint32_t threads_per_core;
 
-	const acpi_addr_t perf_ctrl = {
-		.space_id = ACPI_ADDRESS_SPACE_FIXED,
-		.bit_width = 64,
-		.addrl = PS_CTL_REG,
-	};
-	const acpi_addr_t perf_sts = {
-		.space_id = ACPI_ADDRESS_SPACE_FIXED,
-		.bit_width = 64,
-		.addrl = PS_STS_REG,
-	};
-
 	threads_per_core = get_threads_per_core();
 	cstate_count = get_cstate_info(cstate_values);
 	pstate_count = get_pstate_info(pstate_values, pstate_xpss_values);
@@ -186,19 +224,8 @@ void generate_cpu_entries(const struct device *device)
 	for (cpu = 0; cpu < logical_cores; cpu++) {
 		acpigen_write_processor_device(cpu);
 
-		acpigen_write_pct_package(&perf_ctrl, &perf_sts);
-
-		acpigen_write_pss_object(pstate_values, pstate_count);
-
-		acpigen_write_xpss_object(pstate_xpss_values, pstate_count);
-
-		if (CONFIG(ACPI_SSDT_PSD_INDEPENDENT))
-			acpigen_write_PSD_package(cpu / threads_per_core, threads_per_core,
-						  HW_ALL);
-		else
-			acpigen_write_PSD_package(0, logical_cores, SW_ALL);
-
-		acpigen_write_PPC(0);
+		write_pstate_tables(cpu, logical_cores, threads_per_core, pstate_values,
+				    pstate_xpss_values, pstate_count, 0);
 
 		acpigen_write_CST_package(cstate_values, cstate_count);
 

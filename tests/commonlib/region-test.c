@@ -176,7 +176,7 @@ static void test_rdev_success(void **state)
 
 static void test_rdev_failure(void **state)
 {
-	will_return(mock_mmap, NULL);
+	will_return(mock_mmap, (void *)NULL);
 	will_return(mock_unmap, -1);
 	will_return(mock_readat, -1);
 	will_return(mock_writeat, -1);

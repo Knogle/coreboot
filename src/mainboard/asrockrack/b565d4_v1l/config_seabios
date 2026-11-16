@@ -1,0 +1,3 @@
+# The later CBFS is authenticated and copied to reserved DRAM before handoff.
+# Must equal B565D4_NATIVE_DRAM_BASE + 0x150000 in b565d4_memlayout.h.
+CONFIG_CBFS_LOCATION=0x02150000

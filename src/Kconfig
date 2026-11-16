@@ -1568,6 +1568,49 @@ config NO_XIP_EARLY_STAGES
 	help
 	  Identify if early stages are eXecute-In-Place(XIP).
 
+config CBMEM_BOUNDED_ARENA
+	bool
+	default n
+	help
+	  Require a platform-qualified lower and upper CBMEM arena endpoint and
+	  the bounded IMD create/recover APIs. The platform must implement
+	  cbmem_bottom_chipset() in every stage using CBMEM. Invalid bounds or
+	  failed creation/recovery halt without an empty-arena fallback.
+	  This opt-in is restricted to a page-aligned below-4GiB interval in
+	  one 32-bit signed-address half. Numeric bounds do not establish memory
+	  mapping, ownership, lifetime, exclusion or native handoff authority.
+	  No platform selects this option by default.
+
+config CBMEM_BOUNDED_SKIP_RAM_CHECK
+	bool
+	default n
+	depends on CBMEM_BOUNDED_ARENA
+	help
+	  Diagnostic opt-in for separately qualified preinitialized DRAM only.
+	  Skip only the stock quick RAM check before bounded CBMEM initialization;
+	  endpoint validation, bounded creation/recovery, failure handling and
+	  allocation/hook order remain unchanged. A separately selected platform
+	  profile must establish parent containment, mapping, permissions,
+	  cache consistency, lifetime and all-agent exclusion. This does not
+	  establish those premises or claim UC memory. It makes no CPU cache,
+	  MTRR or CR0 changes and does not authorize native transfer.
+
+config CBMEM_BOUNDED_EXTERNAL_HANDLE
+	bool
+	default n
+	depends on CBMEM_BOUNDED_ARENA
+	help
+	  Obtain a validated external IMD handle from the platform's by-value
+	  cbmem_imd_handle_storage_chipset() callback before CBMEM uses it.
+	  The whole control bank must be outside the entire bounded allocator
+	  arena, including its unused portion. No static-handle fallback exists.
+	  The platform must qualify the stable descriptor, bank, mapping,
+	  permissions, cache consistency, lifetime and all-agent exclusion in
+	  every stage. Numeric validation establishes none of those premises.
+	  Creation/recovery stages may use separate qualified handle slots;
+	  each operation and its nested hooks must retain one stable snapshot.
+	  No platform selects this option by default.
+
 config EARLY_CBMEM_LIST
 	bool
 	default n

@@ -290,13 +290,13 @@ static void test_cbfs_map(void **state)
 	size_out = 0;
 	expect_lookup_result(CB_CBFS_NOT_FOUND);
 	mapping = cbfs_map("unknown_fname", &size_out);
-	assert_ptr_equal(NULL, mapping);
+	assert_null(mapping);
 	assert_int_equal(0, size_out);
 
 	size_out = 0;
 	expect_lookup_result(CB_CBFS_NOT_FOUND);
 	mapping = cbfs_map("", &size_out);
-	assert_ptr_equal(NULL, mapping);
+	assert_null(mapping);
 	assert_int_equal(0, size_out);
 }
 

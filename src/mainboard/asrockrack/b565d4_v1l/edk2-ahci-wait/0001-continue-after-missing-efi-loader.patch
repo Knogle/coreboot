@@ -1,0 +1,19 @@
+diff --git a/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c b/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
+index d5b8433010..fed6c8c921 100644
+--- a/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
++++ b/MdeModulePkg/Library/UefiBootManagerLib/BmBoot.c
+@@ -2100,6 +2100,14 @@ EfiBootManagerBoot (
+       BmReportLoadFailure (EFI_SW_DXE_BS_EC_BOOT_OPTION_LOAD_ERROR, Status);
+       BootOption->Status = Status;
+ 
++      //
++      // A disk without an EFI loader must not block the next boot option.
++      // Preserve interactive diagnostics for other load failures.
++      //
++      if (Status == EFI_NOT_FOUND) {
++        return;
++      }
++
+       if (gST->ConOut != NULL) {
+         //
+         // Clear screen

@@ -264,3 +264,53 @@ ux_locales-test-mocks += _cbfs_alloc \
 			vb2api_get_locale_id \
 			vboot_get_context
 ux_locales-test-config += CONFIG_VBOOT=1
+
+# Numeric bounded CBMEM preflight checks with no low-address host mapping.
+tests-y += imd_cbmem-bounded-negative-ramstage-static-test
+tests-y += imd_cbmem-bounded-negative-ramstage-external-test
+tests-y += imd_cbmem-bounded-negative-romstage-static-test
+tests-y += imd_cbmem-bounded-negative-romstage-external-test
+
+imd_cbmem-bounded-negative-ramstage-static-test-stage := ramstage
+imd_cbmem-bounded-negative-ramstage-static-test-srcs += tests/lib/imd_cbmem-bounded-negative-test.c
+imd_cbmem-bounded-negative-ramstage-static-test-srcs += src/lib/imd_cbmem.c
+imd_cbmem-bounded-negative-ramstage-static-test-srcs += src/lib/imd.c
+imd_cbmem-bounded-negative-ramstage-static-test-no_test_framework := 1
+imd_cbmem-bounded-negative-ramstage-static-test-config += CONFIG_CBMEM_BOUNDED_ARENA=1 \
+	CONFIG_CBMEM_BOUNDED_EXTERNAL_HANDLE=0 \
+	CONFIG_CBMEM_BOUNDED_SKIP_RAM_CHECK=1
+imd_cbmem-bounded-negative-ramstage-static-test-cflags += -DTEST_EXTERNAL=0
+imd_cbmem-bounded-negative-ramstage-static-test-run_cases := count
+
+imd_cbmem-bounded-negative-ramstage-external-test-stage := ramstage
+imd_cbmem-bounded-negative-ramstage-external-test-srcs += tests/lib/imd_cbmem-bounded-negative-test.c
+imd_cbmem-bounded-negative-ramstage-external-test-srcs += src/lib/imd_cbmem.c
+imd_cbmem-bounded-negative-ramstage-external-test-srcs += src/lib/imd.c
+imd_cbmem-bounded-negative-ramstage-external-test-no_test_framework := 1
+imd_cbmem-bounded-negative-ramstage-external-test-config += CONFIG_CBMEM_BOUNDED_ARENA=1 \
+	CONFIG_CBMEM_BOUNDED_EXTERNAL_HANDLE=1 \
+	CONFIG_CBMEM_BOUNDED_SKIP_RAM_CHECK=1
+imd_cbmem-bounded-negative-ramstage-external-test-cflags += -DTEST_EXTERNAL=1
+imd_cbmem-bounded-negative-ramstage-external-test-run_cases := count
+
+imd_cbmem-bounded-negative-romstage-static-test-stage := romstage
+imd_cbmem-bounded-negative-romstage-static-test-srcs += tests/lib/imd_cbmem-bounded-negative-test.c
+imd_cbmem-bounded-negative-romstage-static-test-srcs += src/lib/imd_cbmem.c
+imd_cbmem-bounded-negative-romstage-static-test-srcs += src/lib/imd.c
+imd_cbmem-bounded-negative-romstage-static-test-no_test_framework := 1
+imd_cbmem-bounded-negative-romstage-static-test-config += CONFIG_CBMEM_BOUNDED_ARENA=1 \
+	CONFIG_CBMEM_BOUNDED_EXTERNAL_HANDLE=0 \
+	CONFIG_CBMEM_BOUNDED_SKIP_RAM_CHECK=1
+imd_cbmem-bounded-negative-romstage-static-test-cflags += -DTEST_EXTERNAL=0
+imd_cbmem-bounded-negative-romstage-static-test-run_cases := count
+
+imd_cbmem-bounded-negative-romstage-external-test-stage := romstage
+imd_cbmem-bounded-negative-romstage-external-test-srcs += tests/lib/imd_cbmem-bounded-negative-test.c
+imd_cbmem-bounded-negative-romstage-external-test-srcs += src/lib/imd_cbmem.c
+imd_cbmem-bounded-negative-romstage-external-test-srcs += src/lib/imd.c
+imd_cbmem-bounded-negative-romstage-external-test-no_test_framework := 1
+imd_cbmem-bounded-negative-romstage-external-test-config += CONFIG_CBMEM_BOUNDED_ARENA=1 \
+	CONFIG_CBMEM_BOUNDED_EXTERNAL_HANDLE=1 \
+	CONFIG_CBMEM_BOUNDED_SKIP_RAM_CHECK=1
+imd_cbmem-bounded-negative-romstage-external-test-cflags += -DTEST_EXTERNAL=1
+imd_cbmem-bounded-negative-romstage-external-test-run_cases := count

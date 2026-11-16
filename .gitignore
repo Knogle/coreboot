@@ -13,6 +13,10 @@ coreboot-builds*/
 generated/
 
 site-local
+/.site-local/
+/blobs-local/
+/CODE.tar.zst
+/build-native*/
 
 *.\#
 *.a

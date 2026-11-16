@@ -12,7 +12,10 @@
 #include <drivers/i2c/designware/dw_i2c.h>
 #include <types.h>
 
-#if CONFIG(SOC_AMD_CEZANNE)
+#if CONFIG(SOC_AMD_CEZANNE_FSP_USB_LAYOUT) && \
+	(CONFIG(SOC_AMD_RENOIR) || CONFIG(SOC_AMD_V2000A))
+#error "Cezanne FspUsb layout conflicts with Renoir/V2000A"
+#elif CONFIG(SOC_AMD_CEZANNE_FSP_USB_LAYOUT)
 #include <vendorcode/amd/fsp/cezanne/FspUsb.h>
 #elif CONFIG(SOC_AMD_RENOIR) || CONFIG(SOC_AMD_V2000A)
 #include <vendorcode/amd/fsp/renoir/FspUsb.h>

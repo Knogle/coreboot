@@ -1,0 +1,55 @@
+diff --git a/UefiPayloadPkg/UefiPayloadPkg.dsc b/UefiPayloadPkg/UefiPayloadPkg.dsc
+--- a/UefiPayloadPkg/UefiPayloadPkg.dsc
++++ b/UefiPayloadPkg/UefiPayloadPkg.dsc
+@@ -50,6 +50,7 @@
+   DEFINE CAPSULE_SUPPORT              = FALSE
+   DEFINE LOCKBOX_SUPPORT              = FALSE
+   DEFINE LOAD_OPTION_ROMS             = FALSE
++  DEFINE CSMWRAP_ENABLE               = FALSE
+   DEFINE FOLLOW_BGRT_SPEC             = FALSE
+   DEFINE FMP_DEVICE_PKCS7_PCD_INC     = BaseTools/Source/Python/Pkcs7Sign/TestRoot.cer.gFmpDevicePkgTokenSpaceGuid.PcdFmpDevicePkcs7CertBufferXdr.inc
+ 
+diff --git a/UefiPayloadPkg/UefiPayloadPkg.fdf b/UefiPayloadPkg/UefiPayloadPkg.fdf
+--- a/UefiPayloadPkg/UefiPayloadPkg.fdf
++++ b/UefiPayloadPkg/UefiPayloadPkg.fdf
+@@ -532,6 +532,16 @@
+ !endif
+ 
+ #
++# Optional source-built SeaBIOS CSM EFI application.
++#
++!if $(CSMWRAP_ENABLE) == TRUE
++FILE APPLICATION = 36ec4547-100c-4f6b-8703-66b9aa307002 {
++  SECTION PE32 = UefiPayloadPkg/CsmWrap/csmwrap.efi
++  SECTION UI = "Legacy BIOS boot (SeaBIOS CSM)"
++}
++!endif
++
++#
+ # Shell
+ #
+ !if $(SHELL_TYPE) == BUILD_SHELL
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c
+--- a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c
+@@ -10,6 +10,10 @@
+ #include "PlatformBootManager.h"
+ #include "PlatformConsole.h"
+ #include <Protocol/FirmwareVolume2.h>
++
++STATIC EFI_GUID  mCsmWrapFileGuid = {
++  0x36ec4547, 0x100c, 0x4f6b, { 0x87, 0x03, 0x66, 0xb9, 0xaa, 0x30, 0x70, 0x02 }
++};
+ 
+ /**
+   Signal EndOfDxe event and install SMM Ready to lock protocol.
+@@ -527,6 +531,9 @@
+   //
+   PlatformRegisterFvBootOption (&gUefiShellFileGuid, L"UEFI Shell", LOAD_OPTION_ACTIVE);
+ 
++  // A missing optional FV application does not create a boot option.
++  PlatformRegisterFvBootOption (&mCsmWrapFileGuid, L"Legacy BIOS boot (SeaBIOS CSM)", LOAD_OPTION_ACTIVE);
++
+   //
+   // Register iPXE if the binary is present in the firmware volume.
+   //

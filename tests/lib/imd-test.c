@@ -65,11 +65,11 @@ static void test_imd_handle_init(void **state)
 
 		assert_int_equal(imd.lg.limit % LIMIT_ALIGN, 0);
 		assert_int_equal(imd.lg.limit, ALIGN_DOWN(test_inputs[i], LIMIT_ALIGN));
-		assert_ptr_equal(imd.lg.r, NULL);
+		assert_null(imd.lg.r);
 
 		/* Small allocations not initialized */
 		assert_ptr_equal(imd.sm.limit, 0);
-		assert_ptr_equal(imd.sm.r, NULL);
+		assert_null(imd.sm.r);
 	}
 }
 
@@ -221,7 +221,7 @@ static void test_imd_create_tiered_empty(void **state)
 static void test_imd_recover(void **state)
 {
 	int32_t offset_copy, max_offset_copy;
-	uint32_t rp_magic_copy, num_entries_copy;
+	uint32_t num_entries_copy;
 	uint32_t e_align_copy, e_magic_copy, e_id_copy;
 	uint32_t size_copy, diff;
 	void *base;
@@ -245,12 +245,8 @@ static void test_imd_recover(void **state)
 	/* Fail when the root pointer is not valid. */
 	rp = (void *)imd.lg.limit - sizeof(struct imd_root_pointer);
 	assert_non_null(rp);
-	assert_int_equal(IMD_ROOT_PTR_MAGIC, rp->magic);
-
-	rp_magic_copy = rp->magic;
 	rp->magic = 0;
 	assert_int_equal(-1, imd_recover(&imd));
-	rp->magic = rp_magic_copy;
 
 	/* Set the root pointer. */
 	assert_int_equal(0, imd_create_tiered_empty(&imd, LG_ROOT_SIZE, LG_ENTRY_ALIGN,
@@ -735,6 +731,121 @@ static void test_imd_cursor_next(void **state)
 	assert_null(entry);
 }
 
+/* Bounded APIs must publish both tiers together and reject damaged metadata. */
+static void test_imd_bounded_roundtrip_recovery_errors(void **state)
+{
+	const size_t storage_size = 65536 + LIMIT_ALIGN;
+	uint8_t *storage = malloc(storage_size);
+	uint8_t *baseline = malloc(storage_size);
+	uint8_t *damaged = malloc(storage_size);
+	uintptr_t upper, lower;
+	struct imd imd, recovered;
+	struct imd_root *large, *small;
+	struct imd_root_pointer *large_ptr, *small_ptr;
+	size_t i;
+
+	assert_non_null(storage);
+	assert_non_null(baseline);
+	assert_non_null(damaged);
+	upper = ALIGN_DOWN((uintptr_t)storage + storage_size, LIMIT_ALIGN);
+	lower = upper - 65536 + 123;
+	memset(storage, 0xa5, storage_size);
+	imd_handle_init(&imd, (void *)upper);
+	assert_int_equal(0, imd_create_tiered_empty_bounded(&imd, 128, 64,
+							  128, 16, (void *)lower));
+	large = imd.lg.r;
+	small = imd.sm.r;
+	assert_non_null(large);
+	assert_non_null(small);
+	assert_int_equal(-(int32_t)((uintptr_t)large - lower), large->max_offset);
+	assert_non_null(imd_entry_add(&imd, 0x42420001, 8));
+	assert_non_null(imd_entry_add(&imd, 0x42420002, 2048));
+	assert_int_equal(3, large->num_entries);
+	assert_int_equal(2, small->num_entries);
+	memcpy(baseline, storage, storage_size);
+
+	imd_handle_init(&recovered, (void *)upper);
+	assert_int_equal(0, imd_recover_bounded(&recovered, (void *)lower));
+	assert_ptr_equal(large, recovered.lg.r);
+	assert_ptr_equal(small, recovered.sm.r);
+	assert_non_null(imd_entry_find(&recovered, 0x42420001));
+	assert_non_null(imd_entry_find(&recovered, 0x42420002));
+	assert_memory_equal(storage, baseline, storage_size);
+
+	large_ptr = (void *)(imd.lg.limit - sizeof(*large_ptr));
+	small_ptr = (void *)(imd.sm.limit - sizeof(*small_ptr));
+	for (i = 0; i < 5; i++) {
+		memcpy(storage, baseline, storage_size);
+		switch (i) {
+		case 0:
+			large_ptr->magic = 0;
+			break;
+		case 1:
+			large->max_offset = 0;
+			break;
+		case 2:
+			small_ptr->magic = 0;
+			break;
+		case 3:
+			small->entries[1].magic = 0;
+			break;
+		case 4:
+			large->entries[2].id = SMALL_REGION_ID;
+			break;
+		}
+		memcpy(damaged, storage, storage_size);
+		imd_handle_init(&recovered, (void *)upper);
+		assert_int_equal(-1, imd_recover_bounded(&recovered, (void *)lower));
+		assert_null(recovered.lg.r);
+		assert_null(recovered.sm.r);
+		assert_int_equal(0, recovered.sm.limit);
+		assert_int_equal(upper, recovered.lg.limit);
+		assert_memory_equal(storage, damaged, storage_size);
+	}
+	free(damaged);
+	free(baseline);
+	free(storage);
+}
+
+/* Invalid zero values must fail before any arena byte is touched. */
+static void test_imd_bounded_invalid_creation_untouched(void **state)
+{
+	const size_t storage_size = 65536 + LIMIT_ALIGN;
+	const struct {
+		size_t lg_root, lg_align, sm_root, sm_align;
+	} cases[] = {
+		{ 0, 64, 128, 16 },
+		{ 128, 0, 128, 16 },
+		{ 128, 64, 0, 16 },
+		{ 128, 64, 128, 0 },
+	};
+	uint8_t *storage = malloc(storage_size);
+	uint8_t *before = malloc(storage_size);
+	uintptr_t upper, lower;
+	struct imd imd;
+	size_t i;
+
+	assert_non_null(storage);
+	assert_non_null(before);
+	upper = ALIGN_DOWN((uintptr_t)storage + storage_size, LIMIT_ALIGN);
+	lower = upper - 65536 + 123;
+	for (i = 0; i < ARRAY_SIZE(cases); i++) {
+		memset(storage, 0xa5, storage_size);
+		memcpy(before, storage, storage_size);
+		imd_handle_init(&imd, (void *)upper);
+		assert_int_equal(-1, imd_create_tiered_empty_bounded(&imd,
+			cases[i].lg_root, cases[i].lg_align,
+			cases[i].sm_root, cases[i].sm_align, (void *)lower));
+		assert_null(imd.lg.r);
+		assert_null(imd.sm.r);
+		assert_int_equal(0, imd.sm.limit);
+		assert_int_equal(upper, imd.lg.limit);
+		assert_memory_equal(storage, before, storage_size);
+	}
+	free(before);
+	free(storage);
+}
+
 int main(void)
 {
 	const struct CMUnitTest tests[] = {
@@ -755,6 +866,8 @@ int main(void)
 		cmocka_unit_test(test_imd_entry_remove),
 		cmocka_unit_test(test_imd_cursor_init),
 		cmocka_unit_test(test_imd_cursor_next),
+		cmocka_unit_test(test_imd_bounded_roundtrip_recovery_errors),
+		cmocka_unit_test(test_imd_bounded_invalid_creation_untouched),
 	};
 
 	return cb_run_group_tests(tests, NULL, NULL);

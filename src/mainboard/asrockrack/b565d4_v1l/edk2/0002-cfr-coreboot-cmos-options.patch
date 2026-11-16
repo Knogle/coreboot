@@ -1,0 +1,715 @@
+From: coreboot board integration
+Subject: [PATCH] UefiPayloadPkg: back CFR numeric options with the coreboot CMOS table
+
+Use the existing coreboot CMOS option layout and checksum when provided.
+Keep the normal CFR UI and UEFI option path for other options. CMOS commits
+follow the existing variable policy. No SMMSTORE, SPI write or runtime
+variable hook is introduced. Only legacy bank-0 numeric fields are supported.
+
+diff --git a/UefiPayloadPkg/CfrSetupMenuDxe/CfrCmos.c b/UefiPayloadPkg/CfrSetupMenuDxe/CfrCmos.c
+new file mode 100644
+--- /dev/null
++++ b/UefiPayloadPkg/CfrSetupMenuDxe/CfrCmos.c
+@@ -0,0 +1,375 @@
++/** @file
++  Back numeric CFR settings with the CMOS layout supplied by coreboot.
++
++  Only the option bits and their declared checksum are writable. No firmware
++  flash access or UEFI runtime-variable interception is involved. Layouts that
++  require extended CMOS banks are not supported by this legacy bank-0 backend.
++
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++**/
++
++#include "CfrCmos.h"
++#include <PiDxe.h>
++#include <Guid/CmosOptionTableHob.h>
++#include <Library/BaseLib.h>
++#include <Library/BaseMemoryLib.h>
++#include <Library/HobLib.h>
++#include <Library/IoLib.h>
++
++#define CMOS_INDEX_PORT  0x70
++#define CMOS_DATA_PORT   0x71
++#define CMOS_BANK_BYTES  128
++#define CMOS_RTC_BYTES   14
++
++typedef struct {
++  CONST CB_CMOS_LAYOUT            *Layout;
++  CONST CB_CMOS_ENTRY             *Entry;
++  CONST CB_CMOS_CHECKSUM_ENTRY    *Checksum;
++} CMOS_OPTION;
++
++STATIC
++EFI_STATUS
++FindCmosOption (
++  IN  CONST CHAR16  *Name,
++  OUT CMOS_OPTION  *Option
++  )
++{
++  EFI_HOB_GUID_TYPE               *Hob;
++  CONST CB_CMOS_LAYOUT           *Layout;
++  CONST CB_CMOS_CHECKSUM_ENTRY    *Checksum;
++  CONST CB_CMOS_RECORD           *Record;
++  CONST CB_CMOS_ENTRY            *Entry;
++  CONST CB_CMOS_ENTRY            *Found;
++  UINTN                          DataSize;
++  UINTN                          Offset;
++  UINTN                          Index;
++  UINTN                          NameBytes;
++  CHAR8                          AsciiName[CB_CMOS_NAME_LENGTH];
++
++  if ((Name == NULL) || (Option == NULL)) {
++    return EFI_INVALID_PARAMETER;
++  }
++
++  for (Index = 0; Index < sizeof (AsciiName); Index++) {
++    if (Name[Index] > 0x7f) {
++      return EFI_NOT_FOUND;
++    }
++    AsciiName[Index] = (CHAR8)Name[Index];
++    if (Name[Index] == 0) {
++      break;
++    }
++  }
++  if ((Index == 0) || (Index == sizeof (AsciiName))) {
++    return EFI_NOT_FOUND;
++  }
++
++  Hob = GetFirstGuidHob (&gEfiCmosOptionTableHobGuid);
++  if (Hob == NULL) {
++    return EFI_NOT_FOUND;
++  }
++  if (Hob->Header.HobLength < sizeof (*Hob) + sizeof (*Layout) + sizeof (*Checksum)) {
++    return EFI_COMPROMISED_DATA;
++  }
++  DataSize = GET_GUID_HOB_DATA_SIZE (Hob);
++  Layout = GET_GUID_HOB_DATA (Hob);
++  if ((Layout->Tag != CB_CMOS_OPTION_TABLE) ||
++      (Layout->HeaderLength < sizeof (*Layout)) ||
++      (Layout->HeaderLength > Layout->Size) ||
++      (Layout->Size > DataSize - sizeof (*Checksum))) {
++    return EFI_COMPROMISED_DATA;
++  }
++  Checksum = (CONST VOID *)((CONST UINT8 *)Layout + Layout->Size);
++  if ((Checksum->Tag != CB_CMOS_CHECKSUM) ||
++      (Checksum->Size != sizeof (*Checksum)) ||
++      (Checksum->Type != CB_CMOS_CHECKSUM_SUM)) {
++    return EFI_COMPROMISED_DATA;
++  }
++
++  Found = NULL;
++  for (Offset = Layout->HeaderLength; Offset < Layout->Size; Offset += Record->Size) {
++    if (Layout->Size - Offset < sizeof (*Record)) {
++      return EFI_COMPROMISED_DATA;
++    }
++    Record = (CONST VOID *)((CONST UINT8 *)Layout + Offset);
++    if ((Record->Size < sizeof (*Record)) || (Record->Size > Layout->Size - Offset)) {
++      return EFI_COMPROMISED_DATA;
++    }
++    if (Record->Tag != CB_CMOS_OPTION) {
++      continue;
++    }
++    Entry = (CONST VOID *)Record;
++    if (Entry->Size < sizeof (*Entry)) {
++      return EFI_COMPROMISED_DATA;
++    }
++    NameBytes = Entry->Size - OFFSET_OF (CB_CMOS_ENTRY, Name);
++    if ((NameBytes > CB_CMOS_NAME_LENGTH) ||
++        (ScanMem8 (Entry->Name, NameBytes, 0) == NULL)) {
++      return EFI_COMPROMISED_DATA;
++    }
++    if (AsciiStrCmp (Entry->Name, AsciiName) == 0) {
++      if (Found != NULL) {
++        return EFI_COMPROMISED_DATA;
++      }
++      Found = Entry;
++    }
++  }
++  if (Found == NULL) {
++    return EFI_NOT_FOUND;
++  }
++  if ((Found->Config != 'e') && (Found->Config != 'h')) {
++    return EFI_UNSUPPORTED;
++  }
++
++  // Use only declared, checksummed, non-RTC storage in the legacy CMOS bank.
++  if ((Checksum->RangeStart % 8 != 0) || (Checksum->RangeEnd % 8 != 7) ||
++      (Checksum->Location % 8 != 0) ||
++      (Checksum->RangeStart < CMOS_RTC_BYTES * 8) ||
++      (Checksum->RangeStart > Checksum->RangeEnd) ||
++      (Checksum->RangeEnd >= CMOS_BANK_BYTES * 8) ||
++      (Checksum->Location < CMOS_RTC_BYTES * 8) ||
++      (Checksum->Location > (CMOS_BANK_BYTES - 2) * 8) ||
++      ((Checksum->Location <= Checksum->RangeEnd) &&
++       (Checksum->RangeStart <= Checksum->Location + 15))) {
++    return EFI_UNSUPPORTED;
++  }
++  if ((Found->Length == 0) || (Found->Length > 32) ||
++      (Found->Bit < Checksum->RangeStart) || (Found->Bit > Checksum->RangeEnd) ||
++      (Found->Length - 1 > Checksum->RangeEnd - Found->Bit) ||
++      ((Found->Length <= 8) && (Found->Bit % 8 + Found->Length > 8)) ||
++      ((Found->Length > 8) && ((Found->Bit % 8 != 0) || (Found->Length % 8 != 0)))) {
++    return EFI_UNSUPPORTED;
++  }
++
++  Option->Layout = Layout;
++  Option->Entry = Found;
++  Option->Checksum = Checksum;
++  return EFI_SUCCESS;
++}
++
++STATIC
++BOOLEAN
++CmosValueAllowed (
++  IN CONST CMOS_OPTION  *Option,
++  IN UINT64             Value
++  )
++{
++  CONST CB_CMOS_RECORD        *Record;
++  CONST CB_CMOS_ENUM_ENTRY    *Enum;
++  UINTN                       Offset;
++
++  if (Value >= LShiftU64 (1, Option->Entry->Length)) {
++    return FALSE;
++  }
++  if (Option->Entry->Config == 'h') {
++    return TRUE;
++  }
++  for (Offset = Option->Layout->HeaderLength; Offset < Option->Layout->Size; Offset += Record->Size) {
++    Record = (CONST VOID *)((CONST UINT8 *)Option->Layout + Offset);
++    if (Record->Tag == CB_CMOS_ENUM) {
++      if (Record->Size < sizeof (*Enum)) {
++        return FALSE;
++      }
++      Enum = (CONST VOID *)Record;
++      if ((Enum->ConfigId == Option->Entry->ConfigId) && (Enum->Value == Value)) {
++        return TRUE;
++      }
++    }
++  }
++  return FALSE;
++}
++
++STATIC
++UINT8
++CmosReadByte (
++  IN UINTN  Index,
++  IN UINT8  SavedIndex
++  )
++{
++  IoWrite8 (CMOS_INDEX_PORT, (UINT8)Index | (SavedIndex & 0x80));
++  return IoRead8 (CMOS_DATA_PORT);
++}
++
++STATIC
++VOID
++CmosWriteByte (
++  IN UINTN  Index,
++  IN UINT8  Value,
++  IN UINT8  SavedIndex
++  )
++{
++  IoWrite8 (CMOS_INDEX_PORT, (UINT8)Index | (SavedIndex & 0x80));
++  IoWrite8 (CMOS_DATA_PORT, Value);
++}
++
++STATIC
++UINT16
++CmosChecksum (
++  IN CONST CMOS_OPTION  *Option,
++  IN UINT8              SavedIndex
++  )
++{
++  UINTN     Index;
++  UINT16    Sum;
++
++  Sum = 0;
++  for (Index = Option->Checksum->RangeStart / 8; Index <= Option->Checksum->RangeEnd / 8; Index++) {
++    Sum = (UINT16)(Sum + CmosReadByte (Index, SavedIndex));
++  }
++  return Sum;
++}
++
++STATIC
++BOOLEAN
++CmosChecksumValid (
++  IN CONST CMOS_OPTION  *Option,
++  IN UINT8              SavedIndex
++  )
++{
++  UINTN     Location;
++  UINT16    Stored;
++
++  Location = Option->Checksum->Location / 8;
++  Stored = (UINT16)(CmosReadByte (Location, SavedIndex) << 8);
++  Stored |= CmosReadByte (Location + 1, SavedIndex);
++  return Stored == CmosChecksum (Option, SavedIndex);
++}
++
++STATIC
++UINT32
++CmosReadValue (
++  IN CONST CMOS_OPTION  *Option,
++  IN UINT8              SavedIndex
++  )
++{
++  UINTN     Index;
++  UINTN     Bytes;
++  UINT64    Value;
++
++  Value = 0;
++  Bytes = (Option->Entry->Bit % 8 + Option->Entry->Length + 7) / 8;
++  for (Index = 0; Index < Bytes; Index++) {
++    Value |= LShiftU64 (CmosReadByte (Option->Entry->Bit / 8 + Index, SavedIndex), Index * 8);
++  }
++  return (UINT32)(RShiftU64 (Value, Option->Entry->Bit % 8) &
++                  (LShiftU64 (1, Option->Entry->Length) - 1));
++}
++
++EFI_STATUS
++CfrCmosReadOption (
++  IN  CONST CHAR16  *Name,
++  OUT UINT32        *Value
++  )
++{
++  CMOS_OPTION    Option;
++  EFI_STATUS     Status;
++  BOOLEAN        InterruptState;
++  UINT8          SavedIndex;
++
++  if (Value == NULL) {
++    return EFI_INVALID_PARAMETER;
++  }
++  Status = FindCmosOption (Name, &Option);
++  if (EFI_ERROR (Status)) {
++    return Status;
++  }
++  InterruptState = SaveAndDisableInterrupts ();
++  SavedIndex = IoRead8 (CMOS_INDEX_PORT);
++  if (!CmosChecksumValid (&Option, SavedIndex)) {
++    Status = EFI_CRC_ERROR;
++  } else {
++    *Value = CmosReadValue (&Option, SavedIndex);
++    if (!CmosValueAllowed (&Option, *Value)) {
++      Status = EFI_INVALID_PARAMETER;
++    }
++  }
++  IoWrite8 (CMOS_INDEX_PORT, SavedIndex);
++  SetInterruptState (InterruptState);
++  return Status;
++}
++
++EFI_STATUS
++CfrCmosValidateOption (
++  IN CONST CHAR16  *Name,
++  IN CONST VOID    *Data,
++  IN UINTN         DataSize
++  )
++{
++  CMOS_OPTION    Option;
++  EFI_STATUS     Status;
++  UINT64         Value;
++
++  Status = FindCmosOption (Name, &Option);
++  if (EFI_ERROR (Status)) {
++    return Status;
++  }
++  if ((Data == NULL) || ((DataSize != 1) && (DataSize != 2) &&
++                         (DataSize != 4) && (DataSize != 8))) {
++    return EFI_INVALID_PARAMETER;
++  }
++  Value = 0;
++  CopyMem (&Value, Data, DataSize);
++  return CmosValueAllowed (&Option, Value) ? EFI_SUCCESS : EFI_INVALID_PARAMETER;
++}
++
++EFI_STATUS
++CfrCmosWriteOption (
++  IN CONST CHAR16  *Name,
++  IN CONST VOID    *Data,
++  IN UINTN         DataSize
++  )
++{
++  CMOS_OPTION    Option;
++  EFI_STATUS     Status;
++  BOOLEAN        InterruptState;
++  UINT8          SavedIndex;
++  UINT8          Byte;
++  UINT8          Updated;
++  UINTN          Index;
++  UINTN          Bytes;
++  UINTN          Shift;
++  UINT64         Value;
++  UINT64         Mask;
++  UINT16         Sum;
++
++  Status = CfrCmosValidateOption (Name, Data, DataSize);
++  if (EFI_ERROR (Status)) {
++    return Status;
++  }
++  Status = FindCmosOption (Name, &Option);
++  if (EFI_ERROR (Status)) {
++    return Status;
++  }
++  Value = 0;
++  CopyMem (&Value, Data, DataSize);
++  Shift = Option.Entry->Bit % 8;
++  Mask = LShiftU64 (LShiftU64 (1, Option.Entry->Length) - 1, Shift);
++  Value = LShiftU64 (Value, Shift);
++  Bytes = (Shift + Option.Entry->Length + 7) / 8;
++
++  InterruptState = SaveAndDisableInterrupts ();
++  SavedIndex = IoRead8 (CMOS_INDEX_PORT);
++  if (!CmosChecksumValid (&Option, SavedIndex)) {
++    Status = EFI_CRC_ERROR;
++    goto Done;
++  }
++  for (Index = 0; Index < Bytes; Index++) {
++    Byte = CmosReadByte (Option.Entry->Bit / 8 + Index, SavedIndex);
++    Updated = (UINT8)((Byte & ~(UINT8)RShiftU64 (Mask, Index * 8)) |
++                       (UINT8)RShiftU64 (Value, Index * 8));
++    if (Byte != Updated) {
++      CmosWriteByte (Option.Entry->Bit / 8 + Index, Updated, SavedIndex);
++    }
++  }
++  Sum = CmosChecksum (&Option, SavedIndex);
++  CmosWriteByte (Option.Checksum->Location / 8, (UINT8)(Sum >> 8), SavedIndex);
++  CmosWriteByte (Option.Checksum->Location / 8 + 1, (UINT8)Sum, SavedIndex);
++  if (!CmosChecksumValid (&Option, SavedIndex) ||
++      (CmosReadValue (&Option, SavedIndex) != RShiftU64 (Value, Shift))) {
++    Status = EFI_DEVICE_ERROR;
++  }
++
++Done:
++  IoWrite8 (CMOS_INDEX_PORT, SavedIndex);
++  SetInterruptState (InterruptState);
++  return Status;
++}
+diff --git a/UefiPayloadPkg/CfrSetupMenuDxe/CfrCmos.h b/UefiPayloadPkg/CfrSetupMenuDxe/CfrCmos.h
+new file mode 100644
+--- /dev/null
++++ b/UefiPayloadPkg/CfrSetupMenuDxe/CfrCmos.h
+@@ -0,0 +1,32 @@
++/** @file
++  Access numeric CFR options described by a coreboot CMOS option table.
++
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++**/
++
++#ifndef CFR_CMOS_H_
++#define CFR_CMOS_H_
++
++#include <Uefi.h>
++
++EFI_STATUS
++CfrCmosReadOption (
++  IN  CONST CHAR16  *Name,
++  OUT UINT32        *Value
++  );
++
++EFI_STATUS
++CfrCmosValidateOption (
++  IN CONST CHAR16  *Name,
++  IN CONST VOID    *Data,
++  IN UINTN         DataSize
++  );
++
++EFI_STATUS
++CfrCmosWriteOption (
++  IN CONST CHAR16  *Name,
++  IN CONST VOID    *Data,
++  IN UINTN         DataSize
++  );
++
++#endif
+diff --git a/UefiPayloadPkg/CfrSetupMenuDxe/CfrSetupMenuDxe.inf b/UefiPayloadPkg/CfrSetupMenuDxe/CfrSetupMenuDxe.inf
+--- a/UefiPayloadPkg/CfrSetupMenuDxe/CfrSetupMenuDxe.inf
++++ b/UefiPayloadPkg/CfrSetupMenuDxe/CfrSetupMenuDxe.inf
+@@ -16,6 +16,7 @@
+   UNLOAD_IMAGE                   = CfrSetupMenuUnload
+ 
+ [Sources]
++  CfrCmos.c
+   SetupMenu.c
+   SetupMenuCfr.c
+   SetupMenuHii.c
+@@ -35,6 +36,7 @@
+   DevicePathLib
+   HiiLib
+   HobLib
++  IoLib
+   MemoryAllocationLib
+   VariablePolicyHelperLib
+   UefiHiiServicesLib
+@@ -44,6 +46,7 @@
+   UefiDriverEntryPoint
+ 
+ [Guids]
++  gEfiCmosOptionTableHobGuid
+   gEfiCfrSetupMenuFormGuid
+   gEficorebootNvDataGuid
+   gEfiHiiPlatformSetupFormsetGuid               ## CONSUMES ## GUID (Indicate the formset class guid to be displayed)
+diff --git a/UefiPayloadPkg/CfrSetupMenuDxe/SetupMenuCfr.c b/UefiPayloadPkg/CfrSetupMenuDxe/SetupMenuCfr.c
+--- a/UefiPayloadPkg/CfrSetupMenuDxe/SetupMenuCfr.c
++++ b/UefiPayloadPkg/CfrSetupMenuDxe/SetupMenuCfr.c
+@@ -8,6 +8,7 @@
+ **/
+ 
+ #include "SetupMenu.h"
++#include "CfrCmos.h"
+ #include <Library/BaseLib.h>
+ #include <Library/BaseMemoryLib.h>
+ #include <Library/CfrHelpersLib.h>
+@@ -395,6 +396,8 @@
+   UINTN             OptionNameLength;
+   UINTN             VarStoreStructSize;
+   EFI_IFR_VARSTORE  *VarStore;
++  UINT32            CmosValue;
++  EFI_STATUS        CmosStatus;
+   UINT8             *TempHiiBuffer;
+ 
+   //
+@@ -413,6 +416,7 @@
+     VariableAttributes |= EFI_VARIABLE_RUNTIME_ACCESS;
+   }
+ 
++  CmosStatus = CfrCmosReadOption (VariableCfrName, &CmosValue);
+   DataSize = 0;
+   Status = gRT->GetVariable (
+                   VariableCfrName,
+@@ -421,7 +425,17 @@
+                   &DataSize,
+                   NULL
+                   );
+-  if (Status == EFI_NOT_FOUND) {
++  if ((CmosStatus == EFI_SUCCESS) && (CfrOptionLength == sizeof (CmosValue))) {
++    // CMOS is authoritative; the EFI variable is only this boot's HII buffer.
++    Status = gRT->SetVariable (
++                    VariableCfrName,
++                    &gEficorebootNvDataGuid,
++                    VariableAttributes,
++                    sizeof (CmosValue),
++                    &CmosValue
++                    );
++    ASSERT_EFI_ERROR (Status);
++  } else if (Status == EFI_NOT_FOUND) {
+     DataSize = CfrOptionLength;
+     Status = gRT->SetVariable (
+                     VariableCfrName,
+diff --git a/UefiPayloadPkg/CfrSetupMenuDxe/SetupMenuHii.c b/UefiPayloadPkg/CfrSetupMenuDxe/SetupMenuHii.c
+--- a/UefiPayloadPkg/CfrSetupMenuDxe/SetupMenuHii.c
++++ b/UefiPayloadPkg/CfrSetupMenuDxe/SetupMenuHii.c
+@@ -8,6 +8,7 @@
+ **/
+ 
+ #include "SetupMenu.h"
++#include "CfrCmos.h"
+ #include <Library/BaseLib.h>
+ #include <Library/DebugLib.h>
+ #include <Library/DevicePathLib.h>
+@@ -220,6 +221,7 @@
+   UINTN       DataSize;
+   UINT32      Attributes;
+   EFI_STATUS  Status;
++  EFI_STATUS  CmosStatus;
+   UINTN       TempDataSize;
+ 
+   if ((Configuration == NULL) || (Progress == NULL)) {
+@@ -238,6 +240,10 @@
+              &Attributes
+              );
+   ASSERT_EFI_ERROR (Status);
++  if (EFI_ERROR (Status)) {
++    FreePool (VariableName);
++    return Status;
++  }
+ 
+   // Use HII helper to convert updated config to variable data
+   TempDataSize = DataSize;
+@@ -249,6 +255,15 @@
+                                 Progress
+                                 );
+   ASSERT_EFI_ERROR (Status);
++  if (EFI_ERROR (Status)) {
++    goto Done;
++  }
++
++  CmosStatus = CfrCmosValidateOption (VariableName, VariableOption, DataSize);
++  if ((CmosStatus != EFI_NOT_FOUND) && EFI_ERROR (CmosStatus)) {
++    Status = CmosStatus;
++    goto Done;
++  }
+ 
+   // Set variable
+   Status = gRT->SetVariable (
+@@ -260,10 +275,14 @@
+                   );
+   if (Status == EFI_WRITE_PROTECTED) {
+     Status = EFI_SUCCESS;
+-  }
+-
+-  ASSERT_EFI_ERROR (Status);
+-
++  } else if (!EFI_ERROR (Status) && (CmosStatus == EFI_SUCCESS)) {
++    // Honor the existing variable policy before committing a CMOS option.
++    Status = CfrCmosWriteOption (VariableName, VariableOption, DataSize);
++  }
++
++  ASSERT_EFI_ERROR (Status);
++
++Done:
+   FreePool (VariableName);
+   if (VariableOption != NULL) {
+     FreePool (VariableOption);
+diff --git a/UefiPayloadPkg/Include/Guid/CmosOptionTableHob.h b/UefiPayloadPkg/Include/Guid/CmosOptionTableHob.h
+new file mode 100644
+--- /dev/null
++++ b/UefiPayloadPkg/Include/Guid/CmosOptionTableHob.h
+@@ -0,0 +1,65 @@
++/** @file
++  coreboot CMOS option layout and checksum information copied into a HOB.
++
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++**/
++
++#ifndef CMOS_OPTION_TABLE_HOB_H_
++#define CMOS_OPTION_TABLE_HOB_H_
++
++#include <Uefi.h>
++
++extern EFI_GUID  gEfiCmosOptionTableHobGuid;
++
++#define CB_CMOS_OPTION_TABLE  0x00c8
++#define CB_CMOS_OPTION        0x00c9
++#define CB_CMOS_ENUM          0x00ca
++#define CB_CMOS_CHECKSUM      0x00cc
++#define CB_CMOS_CHECKSUM_SUM  1
++#define CB_CMOS_NAME_LENGTH   32
++
++#pragma pack(1)
++
++typedef struct {
++  UINT32    Tag;
++  UINT32    Size;
++  UINT32    HeaderLength;
++} CB_CMOS_LAYOUT;
++
++typedef struct {
++  UINT32    Tag;
++  UINT32    Size;
++} CB_CMOS_RECORD;
++
++typedef struct {
++  UINT32    Tag;
++  UINT32    Size;
++  UINT32    Bit;
++  UINT32    Length;
++  UINT32    Config;
++  UINT32    ConfigId;
++  CHAR8     Name[1];
++} CB_CMOS_ENTRY;
++
++typedef struct {
++  UINT32    Tag;
++  UINT32    Size;
++  UINT32    ConfigId;
++  UINT32    Value;
++  CHAR8     Text[1];
++} CB_CMOS_ENUM_ENTRY;
++
++typedef struct {
++  UINT32    Tag;
++  UINT32    Size;
++  UINT32    RangeStart;
++  UINT32    RangeEnd;
++  UINT32    Location;
++  UINT32    Type;
++} CB_CMOS_CHECKSUM_ENTRY;
++
++#pragma pack()
++
++// The HOB contains the complete CB_CMOS_LAYOUT followed by its checksum record.
++
++#endif
+diff --git a/UefiPayloadPkg/Library/CbParseLib/CbParseLib.c b/UefiPayloadPkg/Library/CbParseLib/CbParseLib.c
+--- a/UefiPayloadPkg/Library/CbParseLib/CbParseLib.c
++++ b/UefiPayloadPkg/Library/CbParseLib/CbParseLib.c
+@@ -21,6 +21,7 @@
+ #include <IndustryStandard/Acpi.h>
+ #include <Coreboot.h>
+ #include <Guid/CfrSetupMenuGuid.h>
++#include <Guid/CmosOptionTableHob.h>
+ #include <Guid/SdhciNonPciInfoGuid.h>
+ #include <UniversalPayload/PciRootBridges.h>
+ 
+@@ -752,6 +753,36 @@
+   @retval RETURN_OUT_OF_RESOURCES      Insufficant memory space.
+ 
+ **/
++STATIC
++VOID
++ParseCmosOptionInfo (
++  VOID
++  )
++{
++  CONST CB_CMOS_LAYOUT            *Layout;
++  CONST CB_CMOS_CHECKSUM_ENTRY    *Checksum;
++  UINT8                          *Data;
++
++  Layout = FindCbTag (CB_CMOS_OPTION_TABLE);
++  Checksum = FindCbTag (CB_CMOS_CHECKSUM);
++  if ((Layout == NULL) || (Checksum == NULL)) {
++    return;
++  }
++  if ((Layout->Size < sizeof (*Layout)) || (Layout->Size > 0xf000) ||
++      (Layout->HeaderLength < sizeof (*Layout)) ||
++      (Layout->HeaderLength > Layout->Size) ||
++      (Checksum->Size != sizeof (*Checksum)) ||
++      (Checksum->Type != CB_CMOS_CHECKSUM_SUM)) {
++    DEBUG ((DEBUG_WARN, "CFR: Invalid coreboot CMOS option metadata\n"));
++    return;
++  }
++  Data = BuildGuidHob (&gEfiCmosOptionTableHobGuid, Layout->Size + sizeof (*Checksum));
++  if (Data != NULL) {
++    CopyMem (Data, Layout, Layout->Size);
++    CopyMem (Data + Layout->Size, Checksum, sizeof (*Checksum));
++  }
++}
++
+ RETURN_STATUS
+ EFIAPI
+ ParseMiscInfo (
+@@ -764,6 +795,8 @@
+   CFR_OPTION_FORM                       *CbCfrOuterFormOffset;
+   CFR_OPTION_FORM                       *CfrSetupMenuForm;
+   CFR_VARBINARY                         *CfrFormName;
++
++  ParseCmosOptionInfo ();
+ 
+   if (ParseRootBridgeInfo () != RETURN_SUCCESS) {
+     DEBUG ((DEBUG_INFO, "Failed to create PCI root bridge info guid hob\n"));
+diff --git a/UefiPayloadPkg/Library/CbParseLib/CbParseLib.inf b/UefiPayloadPkg/Library/CbParseLib/CbParseLib.inf
+--- a/UefiPayloadPkg/Library/CbParseLib/CbParseLib.inf
++++ b/UefiPayloadPkg/Library/CbParseLib/CbParseLib.inf
+@@ -38,6 +38,7 @@
+   HobLib
+ 
+ [Guids]
++  gEfiCmosOptionTableHobGuid
+   gEfiCfrSetupMenuFormGuid
+   gUniversalPayloadPciRootBridgeInfoGuid
+   gUefiSdhciNonPciInfoGuid
+diff --git a/UefiPayloadPkg/UefiPayloadPkg.dec b/UefiPayloadPkg/UefiPayloadPkg.dec
+--- a/UefiPayloadPkg/UefiPayloadPkg.dec
++++ b/UefiPayloadPkg/UefiPayloadPkg.dec
+@@ -23,6 +23,9 @@
+ [Guids]
+   # SMMSTORE for coreboot and EDK-2
+   gEficorebootNvDataGuid = { 0xceae4c1d, 0x335b, 0x4685, { 0xa4, 0xa0, 0xfc, 0x4a, 0x94, 0xee, 0xa0, 0x85 } }
++
++  ## Include/Guid/CmosOptionTableHob.h
++  gEfiCmosOptionTableHobGuid = { 0xd8ca7aa9, 0x3c49, 0x4dd3, { 0xbc, 0xb5, 0xf0, 0x4a, 0x8d, 0x27, 0xce, 0x9b } }
+ 
+   # Bootloader option menu
+   gEfiCfrSetupMenuFormGuid = { 0xfbc3b1de, 0xd17c, 0x44de, { 0x98, 0x47, 0x2b, 0xbf, 0x9e, 0xfd, 0xbd, 0x8e } }

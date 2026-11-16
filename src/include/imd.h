@@ -85,6 +85,40 @@ int imd_create_tiered_empty(struct imd *imd,
  */
 int imd_recover(struct imd *imd);
 
+/*
+ * Opt-in two-tier APIs for a caller-qualified stable [lower_limit, upper) arena.
+ * upper is the exact limit already established in the initialized handle.
+ * The nonzero span must be at most INT32_MAX; root/entry parameters retain
+ * the legacy power-of-two and LIMIT_ALIGN size restrictions. The lower bound
+ * need not be page-aligned. Each root address must meet its entry alignment.
+ * Both interval endpoints, including exclusive upper, must stay in the same
+ * intptr_t signed-address half while legacy relative-pointer APIs are used.
+ *
+ * Creation validates the complete two-tier footprint before any arena store,
+ * and fixes each tier's max_offset before exposing it for allocation.
+ * Recovery checks every pointer/header/table/entry before following it; a
+ * complete, uniquely backed small tier is required. No shallow recovery or
+ * unbounded max_offset is accepted. Both tiers publish together on success.
+ *
+ * Failure returns -1 and clears both handle roots and the small limit while
+ * retaining the original large limit. Creation does not roll back arena bytes
+ * if an unexpected internal allocation failure follows root initialization.
+ * The caller must refuse/fail closed, not fall back to empty/OEM recovery.
+ *
+ * These APIs do not establish mapping, permissions, exclusive ownership or
+ * retention. The valid writable caller-owned handle must be disjoint from
+ * the arena. There must be no concurrent metadata writer during recovery or
+ * later use. The caller must preserve these limits and the internal root and
+ * small-backing entries; legacy reinitialization, partial recovery or a wider
+ * imd_limit_size() is outside this contract. Existing callers do not
+ * automatically use these bounds.
+ */
+int imd_create_tiered_empty_bounded(struct imd *imd,
+				size_t lg_root_size, size_t lg_entry_align,
+				size_t sm_root_size, size_t sm_entry_align,
+				void *lower_limit);
+int imd_recover_bounded(struct imd *imd, void *lower_limit);
+
 /* Limit imd to provided max_size. */
 int imd_limit_size(struct imd *imd, size_t max_size);
 

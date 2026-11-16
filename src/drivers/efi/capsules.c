@@ -2,6 +2,7 @@
 
 #include <acpi/acpi.h>
 #include <boot/coreboot_tables.h>
+#include <boot_device.h>
 #include <bootmem.h>
 #include <bootmode.h>
 #include <bootstate.h>
@@ -16,6 +17,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <types.h>
+#if CONFIG(B565D4_EDK2_CAPSULE_FCH)
+#include <spi_flash.h>
+#include <spi-generic.h>
+#endif
 
 #include <Uefi/UefiSpec.h>
 #include <Guid/GlobalVariable.h>
@@ -109,19 +114,118 @@ struct memory_range coalesce_buffer;
 static struct memory_range uefi_capsules[MAX_CAPSULES];
 static int uefi_capsule_count;
 
+/* The 32-MiB W25Q256FV powers up in three-byte mode. Generic coreboot
+ * spi_flash_cmd_read() truncates addresses above 16 MiB unless the global
+ * four-byte mode is selected. That mode is unsuitable for this PSP-booted
+ * mirrored image. Read the allocated upper NVAR with the chip's independent
+ * four-byte-address READ DATA opcode 13h; do not alter addressing mode or
+ * expose a write/erase operation through this region device.
+ */
+#if CONFIG(B565D4_EDK2_CAPSULE_FCH)
+#define B565D4_CAPSULE_NVAR_OFFSET 0x01037000U
+#define B565D4_CAPSULE_NVAR_SIZE   0x00020000U
+#define B565D4_CAPSULE_SPI_SIZE    0x02000000U
+
+static uint8_t capsule_nvar_cache[B565D4_CAPSULE_NVAR_SIZE];
+static bool capsule_nvar_cache_ready;
+
+static ssize_t capsule_nvar_readat(const struct region_device *rd, void *buffer,
+                                   size_t offset, size_t size)
+{
+	(void)rd;
+	if (!buffer || !size || offset >= B565D4_CAPSULE_NVAR_SIZE ||
+	    size > B565D4_CAPSULE_NVAR_SIZE - offset)
+		return -1;
+	if (!capsule_nvar_cache_ready) {
+		const struct spi_flash *flash = boot_device_spi_flash();
+		size_t next_progress = 0x4000;
+
+		if (!flash || flash->vendor != 0xef || flash->model != 0x4019 ||
+		    flash->size != B565D4_CAPSULE_SPI_SIZE) {
+			printk(BIOS_NOTICE, "B565D4 CAPSULE NVAR4 cache flash mismatch\n");
+			return -1;
+		}
+		printk(BIOS_NOTICE, "B565D4 CAPSULE NVAR4 cache fill begin bytes=%u\n",
+		       B565D4_CAPSULE_NVAR_SIZE);
+		for (size_t pos = 0; pos < B565D4_CAPSULE_NVAR_SIZE;) {
+			size_t chunk = spi_crop_chunk(&flash->spi, 5,
+						 B565D4_CAPSULE_NVAR_SIZE - pos);
+			if (chunk > 60)
+				chunk = 60;
+			if (!chunk)
+				return -1;
+			uint32_t address = B565D4_CAPSULE_NVAR_OFFSET + pos;
+			uint8_t command[5] = { 0x13, address >> 24,
+				address >> 16, address >> 8, address };
+			struct spi_op vectors[2] = {
+				{ .dout = command, .bytesout = sizeof(command) },
+				{ .din = capsule_nvar_cache + pos, .bytesin = chunk },
+			};
+			if (spi_claim_bus(&flash->spi))
+				return -1;
+			int result = spi_xfer_vector(&flash->spi, vectors, 2);
+			spi_release_bus(&flash->spi);
+			if (result) {
+				printk(BIOS_NOTICE, "B565D4 CAPSULE NVAR4 cache xfer error at=%zu rc=%d\n",
+				       pos, result);
+				return -1;
+			}
+			pos += chunk;
+			if (pos >= next_progress) {
+				printk(BIOS_NOTICE, "B565D4 CAPSULE NVAR4 cache progress=%zu\n", pos);
+				next_progress += 0x4000;
+			}
+		}
+		capsule_nvar_cache_ready = true;
+		printk(BIOS_NOTICE, "B565D4 CAPSULE NVAR4 cache complete guid_prefix=%02x%02x%02x%02x\n",
+		       capsule_nvar_cache[16], capsule_nvar_cache[17],
+		       capsule_nvar_cache[18], capsule_nvar_cache[19]);
+	}
+	memcpy(buffer, capsule_nvar_cache + offset, size);
+	static bool first_return;
+	if (!first_return) {
+		first_return = true;
+		printk(BIOS_NOTICE, "B565D4 CAPSULE NVAR4 first read returned offset=%zu size=%zu\n", offset, size);
+	}
+	return size;
+}
+
+static const struct region_device_ops capsule_nvar_ops = {
+	.readat = capsule_nvar_readat,
+};
+static const struct region_device capsule_nvar_rdev =
+	REGION_DEV_INIT(&capsule_nvar_ops, 0, B565D4_CAPSULE_NVAR_SIZE);
+#endif
+
+static int capsule_lookup_variable_store(struct region_device *rdev)
+{
+#if CONFIG(B565D4_EDK2_CAPSULE_FCH)
+	/* Keep the static reader as root: efivars chains this child in place. */
+	if (rdev_chain(rdev, &capsule_nvar_rdev, 0, B565D4_CAPSULE_NVAR_SIZE))
+		return -1;
+	printk(BIOS_NOTICE, "B565D4 CAPSULE NVAR4 child region selected\n");
+	return 0;
+#else
+	return smmstore_lookup_region(rdev);
+#endif
+}
+
 static bool efi_is_disk_capsules_boot(void)
 {
 	struct region_device rdev;
 	uint64_t os_indications = 0;
 	uint32_t size = sizeof(os_indications);
 
-	if (smmstore_lookup_region(&rdev))
+	printk(BIOS_NOTICE, "B565D4 CAPSULE disk check enter\n");
+	if (capsule_lookup_variable_store(&rdev))
 		return false;
-
-	if (efi_fv_get_option(&rdev, &efi_global_variable_guid, "OsIndications",
-			      &os_indications, &size) != CB_SUCCESS)
+	printk(BIOS_NOTICE, "B565D4 CAPSULE disk check before option\n");
+	enum cb_err ret = efi_fv_get_option(&rdev, &efi_global_variable_guid,
+					"OsIndications", &os_indications, &size);
+	printk(BIOS_NOTICE, "B565D4 CAPSULE disk check option ret=%d size=%u value=%llx\n",
+	       ret, size, os_indications);
+	if (ret != CB_SUCCESS)
 		return false;
-
 	return size == sizeof(os_indications) &&
 	       (os_indications & EFI_OS_INDICATIONS_FILE_CAPSULE_DELIVERY_SUPPORTED);
 }
@@ -157,6 +261,18 @@ static void *map_range(uint64_t base, uint32_t len)
 	_Static_assert(IS_ALIGNED(CONFIG_ECAM_MMCONF_BASE_ADDRESS, 2 * MiB));
 	uintptr_t window_base = CONFIG_ECAM_MMCONF_BASE_ADDRESS;
 	size_t window_size = 2 * MiB;
+
+	/*
+	 * B565D4 uses a 32-bit payload-loader stage. Its PAE/CR3 transition is
+	 * not qualified yet. Accept only verified RAM addresses that are directly
+	 * reachable without mapping; the normal range checks reject high blocks.
+	 */
+	if (ENV_X86_32 && CONFIG(B565D4_EDK2_CAPSULE_FCH)) {
+		if (base >= 4ULL * GiB || len > 4ULL * GiB - base ||
+		    (base < window_base + window_size && base + len > window_base))
+			die("B565D4 capsules: unqualified physical range.\n");
+		return (void *)(uintptr_t)base;
+	}
 
 	printk(BIOS_SPEW, "capsules: mapping %#010x bytes at %#010llx.\n", len, base);
 
@@ -266,6 +382,11 @@ static bool is_in_unused_ram(uint64_t base, uint64_t len)
 		printk(BIOS_ERR,
 		       "capsules: %s() was passed an invalid range: %#010llx:%#010llx.\n",
 		       __func__, base, len);
+		return false;
+	}
+	if (ENV_X86_32 && CONFIG(B565D4_EDK2_CAPSULE_FCH) &&
+	    (base >= 4ULL * GiB || len > 4ULL * GiB - base)) {
+		printk(BIOS_WARNING, "B565D4 capsules: block above 4 GiB skipped.\n");
 		return false;
 	}
 
@@ -424,6 +545,11 @@ static struct block_descr check_capsule_block(struct block_descr first_block,
 				}
 			}
 		}
+	}
+
+	if (data_size == 0) {
+		printk(BIOS_ERR, "capsules: SG list contains no capsule data.\n");
+		goto error;
 	}
 
 	/* Increase the size only on successful parsing of the capsule block. */
@@ -695,6 +821,9 @@ static void coalesce_capsules(struct block_descr block_chain, uint8_t *target)
 
 void efi_parse_capsules(void)
 {
+#if CONFIG(B565D4_EDK2_CAPSULE_FCH)
+	printk(BIOS_NOTICE, "B565D4 CAPSULE SCAN enter\n");
+#endif
 	/* EDK2 starts with 20 items and then grows the list, but it's unlikely
 	   to be necessary in practice. */
 	enum { MAX_CAPSULE_BLOCKS = MAX_CAPSULES };
@@ -711,30 +840,44 @@ void efi_parse_capsules(void)
 		set_boot_mode(LB_BOOT_MODE_FLASH_UPDATE);
 		return;
 	}
+#if CONFIG(B565D4_EDK2_CAPSULE_FCH)
+	printk(BIOS_NOTICE, "B565D4 CAPSULE SCAN after_disk_check\n");
+#endif
 
 	struct region_device rdev;
-	if (smmstore_lookup_region(&rdev)) {
-		printk(BIOS_INFO, "capsules: no SMMSTORE region, no update capsules.\n");
+	if (capsule_lookup_variable_store(&rdev)) {
+		printk(BIOS_INFO, "capsules: no EFI variable store region, no update capsules.\n");
 		return;
 	}
 
+	/* Discover names in the SPI-backed variable store before allocating a
+	 * memory map or touching PAE. Neither is needed when there is no capsule.
+	 */
+	struct block_descr blocks[MAX_CAPSULE_BLOCKS];
+	int block_count = discover_capsule_blocks(&rdev, blocks, ARRAY_SIZE(blocks));
+#if CONFIG(B565D4_EDK2_CAPSULE_FCH)
+	printk(BIOS_NOTICE, "B565D4 CAPSULE SCAN discovered=%d\n", block_count);
+#endif
+	if (block_count <= 0) {
+		if (block_count == 0)
+			printk(BIOS_INFO, "capsules: no UEFI capsules were discovered.\n");
+		return;
+	}
+
+#if CONFIG(B565D4_EDK2_CAPSULE_FCH)
+	printk(BIOS_NOTICE, "B565D4 CAPSULE SCAN before_memranges\n");
+#endif
 	memranges_init(&memory_map, IORESOURCE_MEM | IORESOURCE_FIXED | IORESOURCE_STORED |
 		       IORESOURCE_ASSIGNED | IORESOURCE_CACHEABLE, IORESOURCE_MEM |
 		       IORESOURCE_FIXED | IORESOURCE_STORED | IORESOURCE_ASSIGNED |
 		       IORESOURCE_CACHEABLE, BM_MEM_RAM);
 
-	if (ENV_X86_32)
+	if (ENV_X86_32 && !CONFIG(B565D4_EDK2_CAPSULE_FCH))
 		init_pae_pagetables(&pae_page_tables);
 
-	/* Blocks are collected here when traversing CapsuleUpdateData*
-	   variables, duplicates are skipped. */
-	struct block_descr blocks[MAX_CAPSULE_BLOCKS];
-	int block_count = discover_capsule_blocks(&rdev, blocks, ARRAY_SIZE(blocks));
-	if (block_count <= 0) {
-		if (block_count == 0)
-			printk(BIOS_INFO, "capsules: no UEFI capsules were discovered.\n");
-		goto exit;
-	}
+#if CONFIG(B565D4_EDK2_CAPSULE_FCH)
+	printk(BIOS_NOTICE, "B565D4 CAPSULE SCAN after_memranges\n");
+#endif
 
 	printk(BIOS_INFO, "capsules: processing %d capsule block(s).\n", block_count);
 
@@ -748,6 +891,8 @@ void efi_parse_capsules(void)
 	uint64_t total_data_size;
 	struct block_descr block_chain =
 		verify_and_chain_blocks(blocks, block_count, &total_data_size);
+	printk(BIOS_NOTICE, "B565D4 CAPSULE V14 chain=%#llx data=%#llx\n",
+	       block_chain.self, total_data_size);
 	if (block_chain.self == 0) {
 		printk(BIOS_ERR, "capsules: no valid capsules to process.\n");
 		goto exit;
@@ -783,11 +928,14 @@ void efi_parse_capsules(void)
 		       coalesce_buffer.base);
 		coalesce_capsules(block_chain, (void *)(uintptr_t)coalesce_buffer.base);
 	}
+	printk(BIOS_NOTICE, "B565D4 CAPSULE V14 coalesced=%d buffer=%#llx len=%#llx\n",
+	       uefi_capsule_count, (unsigned long long)coalesce_buffer.base,
+	       (unsigned long long)coalesce_buffer.len);
 	if (uefi_capsule_count > 0)
 		set_boot_mode(LB_BOOT_MODE_FLASH_UPDATE);
 
 exit:
-	if (ENV_X86_32)
+	if (ENV_X86_32 && !CONFIG(B565D4_EDK2_CAPSULE_FCH))
 		paging_disable_pae();
 	memranges_teardown(&memory_map);
 }
@@ -795,6 +943,8 @@ exit:
 void lb_efi_capsules(struct lb_header *header)
 {
 	int i;
+	printk(BIOS_NOTICE, "B565D4 CAPSULE V14 publish count=%d\n",
+	       uefi_capsule_count);
 	for (i = 0; i < uefi_capsule_count; ++i) {
 		struct lb_range *capsule = (void *)lb_new_record(header);
 
@@ -839,6 +989,7 @@ BOOT_STATE_INIT_ENTRY(BS_DEV_INIT, BS_ON_EXIT, parse_capsules, NULL);
 
 #endif
 
+#if !CONFIG(B565D4_EDK2_CAPSULE_FCH)
 static void enable_capsule_smi(void *unused)
 {
 	uint32_t ret;
@@ -851,3 +1002,4 @@ static void enable_capsule_smi(void *unused)
 }
 
 BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_BOOT, BS_ON_ENTRY, enable_capsule_smi, NULL);
+#endif

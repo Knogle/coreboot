@@ -85,7 +85,7 @@ endif
 if PAYLOAD_SEAGRUB
 
 config PAYLOAD_FILE
-	default "payloads/external/SeaBIOS/seabios/out/bios.bin.elf"
+	default "$(obj)/seabios/bios.bin.elf"
 
 config SEABIOS_BOOTORDER_FILE
 	default "payloads/external/GRUB2/bootorder-seagrub"

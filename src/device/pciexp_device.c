@@ -26,7 +26,13 @@ static unsigned int find_ext_cap_offset(const struct device *dev, unsigned int c
 {
 	unsigned int this_cap_offset = offset;
 
-	while (this_cap_offset >= PCIE_EXT_CAP_OFFSET) {
+	/* Each capability needs at least one dword in the 4-KiB config space.
+	 * Bound malformed cyclic lists without requiring monotonically ordered
+	 * capabilities, which the linked-list format does not guarantee.
+	 */
+	for (unsigned int hops = 0; hops < (0x1000 - PCIE_EXT_CAP_OFFSET) / 4 &&
+	     this_cap_offset >= PCIE_EXT_CAP_OFFSET && this_cap_offset <= 0xffc &&
+	     !(this_cap_offset & 3); hops++) {
 		const unsigned int this_cap = pci_read_config32(dev, this_cap_offset);
 
 		/* Bail out when this request is unsupported */
@@ -84,15 +90,16 @@ unsigned int pciexp_find_ext_vendor_cap(const struct device *dev, unsigned int c
 	if (offset >= 4)
 		offset -= 4;
 
-	for (;;) {
+	for (unsigned int hops = 0; hops < (0x1000 - PCIE_EXT_CAP_OFFSET) / 4; hops++) {
 		offset = pciexp_find_extended_cap(dev, PCI_EXT_CAP_ID_VNDR, offset);
-		if (!offset)
+		if (!offset || offset > 0xff8)
 			return 0;
 
 		const unsigned int vndr_cap = pci_read_config32(dev, offset + 4);
 		if ((vndr_cap & 0xffff) == cap)
 			return offset + 4;
 	}
+	return 0;
 }
 
 /**
@@ -229,7 +236,7 @@ static int pciexp_wait_for_link_active(struct device *dev, unsigned int cap)
  * Re-train a PCIe link
  */
 #define PCIE_TRAIN_RETRY 10000
-static int pciexp_retrain_link(struct device *dev, unsigned int cap)
+int pciexp_retrain_link(struct device *dev, unsigned int cap)
 {
 	unsigned int try;
 	u16 lnk;
@@ -631,20 +638,17 @@ static void pciexp_enable_aspm_root_port_only(struct device *root, unsigned int 
 	}
 }
 
-/*
- * Enable ASPM on PCIe root port and endpoint.
- */
-static void pciexp_enable_aspm(struct device *root, unsigned int root_cap,
-					 struct device *endp, unsigned int endp_cap)
+/* Return states allowed by common support and exit-latency checks. */
+enum aspm_type pciexp_get_aspm_allowed(struct device *root, unsigned int root_cap,
+		struct device *endp, unsigned int endp_cap)
 {
-	static const char * const aspm_type_str[] = { "None", "L0s", "L1", "L0s and L1" };
 	enum aspm_type apmc = PCIE_ASPM_NONE;
 	int exit_latency, ok_latency;
-	u16 lnkctl;
+
 	u32 devcap;
 
-	if (endp->disable_pcie_aspm)
-		return;
+	if (!root_cap || !endp_cap || endp->disable_pcie_aspm)
+		return PCIE_ASPM_NONE;
 
 	/* Get endpoint device capabilities for acceptable limits */
 	devcap = pci_read_config32(endp, endp_cap + PCI_EXP_DEVCAP);
@@ -662,6 +666,17 @@ static void pciexp_enable_aspm(struct device *root, unsigned int root_cap,
 					   PCIE_ASPM_L1);
 	if (exit_latency >= 0 && exit_latency <= ok_latency)
 		apmc |= PCIE_ASPM_L1;
+
+	return apmc;
+}
+
+/* Enable ASPM on PCIe root port and endpoint. */
+static void pciexp_enable_aspm(struct device *root, unsigned int root_cap,
+					 struct device *endp, unsigned int endp_cap)
+{
+	static const char * const aspm_type_str[] = { "None", "L0s", "L1", "L0s and L1" };
+	enum aspm_type apmc = pciexp_get_aspm_allowed(root, root_cap, endp, endp_cap);
+	u16 lnkctl;
 
 	if (apmc != PCIE_ASPM_NONE) {
 		/* Set APMC in root port first */
@@ -840,7 +855,8 @@ static void pciexp_sync_max_payload_size(struct bus *bus, unsigned int max_paylo
 void pciexp_dev_read_resources(struct device *dev)
 {
 	unsigned long sriovpos;
-	u16 numvfs, i;
+	u16 numvfs;
+	u32 i;
 
 	sriovpos = pci_find_capability(dev, PCI_CAP_ID_PCIE);
 	if (!sriovpos)

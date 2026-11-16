@@ -69,6 +69,9 @@ const struct pci_routing_info *get_pci_routing_info(unsigned int devfn);
 
 unsigned int soc_get_gsi_base(const struct device *dev);
 
+/* Called after probing an external root port, before scanning its children. */
+void mainboard_pcie_gpp_pre_scan(struct device *dev);
+
 unsigned int pci_calculate_irq(const struct pci_routing_info *routing_info, unsigned int pin);
 
 void acpigen_write_pci_GNB_PRT(const struct device *dev);

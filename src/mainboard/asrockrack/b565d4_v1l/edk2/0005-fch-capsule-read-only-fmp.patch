@@ -1,0 +1,19 @@
+From: coreboot board integration
+Subject: [PATCH] UefiPayloadPkg: isolate the board read-only FMP SPI probe
+
+The FCH_SPI variable provider remains limited to upper NVAR. Give FmpDxe a
+separate component-scoped, read-only 32-MiB SPI provider. Whole-flash writes
+and erases intentionally return EFI_UNSUPPORTED at this stage.
+
+--- a/UefiPayloadPkg/UefiPayloadPkg.dsc
++++ b/UefiPayloadPkg/UefiPayloadPkg.dsc
+@@ -1263,6 +1263,9 @@
+     <LibraryClasses>
+ !if $(BOOTLOADER) == "COREBOOT"
+       FmpDeviceLib|UefiPayloadPkg/Library/FmpDeviceSmmLib/FmpDeviceSmmLib.inf
++!if $(VARIABLE_SUPPORT) == "FCH_SPI"
++      SmmStoreLib|UefiPayloadPkg/Library/FchCapsuleReadLib/FchCapsuleReadLib.inf
++!endif
+ !else
+       # TODO: provide platform-specific implementation of firmware flashing
+       FmpDeviceLib|FmpDevicePkg/Library/FmpDeviceLibNull/FmpDeviceLibNull.inf

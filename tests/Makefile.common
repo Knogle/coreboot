@@ -80,7 +80,8 @@ TEST_LDFLAGS += -no-pie
 #   mocks             - list of symbols to mock
 #   no_test_framework - set to `1` not to link test framework
 #   stage             - name of stage e.g. romstage, bootblock, etc.
-attributes := srcs syssrcs cflags config mocks no_test_framework stage
+#   run_cases         - `count` to run 1..99 numbered cases in separate processes
+attributes := srcs syssrcs cflags config mocks no_test_framework stage run_cases
 
 # Copy attributes of one test to another.
 # $1 - input test name

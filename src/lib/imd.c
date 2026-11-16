@@ -4,10 +4,10 @@
 #include <cbmem.h>
 #include <console/console.h>
 #include <imd.h>
+#include <limits.h>
 #include <string.h>
 #include <types.h>
 #include <imd_private.h>
-
 
 /* For more details on implementation and usage please see the imd.h header. */
 
@@ -696,4 +696,291 @@ const struct imd_entry *imd_cursor_next(struct imd_cursor *cursor)
 	cursor->current_entry++;
 
 	return e;
+}
+
+/*
+ * These opt-in APIs use an externally qualified, stable [lower, limit) arena.
+ * Address checks do not establish mapping, writability, ownership or lifetime.
+ * Do not use concurrent metadata writers while creating or recovering a tier.
+ */
+static bool imd_bounded_power_of_two(size_t value)
+{
+	return value && !(value & (value - 1));
+}
+
+/* Genuine coreboot intptr_t is signed long; preserve the pointer-sized bound. */
+#ifndef INTPTR_MAX
+#define INTPTR_MAX LONG_MAX
+_Static_assert(sizeof(intptr_t) == sizeof(long) && (intptr_t)-1 < 0,
+	"IMD pointer-sized signed long limit");
+#endif
+
+static bool imd_bounded_interval(uintptr_t lower, uintptr_t upper)
+{
+	return lower && upper > lower && upper - lower <= INT32_MAX &&
+		(lower > INTPTR_MAX) == (upper > INTPTR_MAX);
+}
+
+static bool imd_bounded_span(uintptr_t lower, uintptr_t upper,
+				uintptr_t address, size_t size)
+{
+	return address >= lower && address <= upper && size <= upper - address;
+}
+
+static bool imd_bounded_align_size(size_t size, size_t alignment, size_t *aligned)
+{
+	size_t mask;
+
+	if (!imd_bounded_power_of_two(alignment))
+		return false;
+
+	mask = alignment - 1;
+	if (size > SIZE_MAX - mask)
+		return false;
+
+	*aligned = (size + mask) & ~mask;
+	return true;
+}
+
+static bool imd_bounded_root_parameters(size_t root_size, size_t entry_align,
+					size_t *max_entries)
+{
+	size_t overhead = sizeof(struct imd_root_pointer) + sizeof(struct imd_root);
+
+	if (!imd_bounded_power_of_two(root_size) ||
+	    !imd_bounded_power_of_two(entry_align) ||
+	    root_size > LIMIT_ALIGN || entry_align > root_size ||
+	    root_size < overhead + sizeof(struct imd_entry))
+		return false;
+
+	*max_entries = (root_size - overhead) / sizeof(struct imd_entry);
+	return *max_entries && *max_entries <= UINT32_MAX;
+}
+
+/* Offset arithmetic is unsigned; widening also handles INT32_MIN safely. */
+static bool imd_bounded_offset_address(uintptr_t base, uintptr_t lower,
+					int32_t offset, uintptr_t *address)
+{
+	uint32_t distance;
+
+	if (base < lower || offset > 0)
+		return false;
+
+	distance = (uint32_t)(-(int64_t)offset);
+	if (distance > base - lower)
+		return false;
+
+	*address = base - distance;
+	return true;
+}
+
+/* Clear only the caller-owned handle, retaining its exact initialized limit. */
+static void imd_bounded_clear_handle(struct imd *imd, uintptr_t upper)
+{
+	memset(imd, 0, sizeof(*imd));
+	imd->lg.limit = upper;
+}
+
+/* All addresses, sizes and alignments have been checked before this store. */
+static void imd_bounded_initialize_root(struct imdr *imdr, uintptr_t lower,
+					size_t root_size, size_t entry_align,
+					size_t max_entries)
+{
+	uintptr_t root_address = imdr->limit - root_size;
+	uintptr_t pointer_address = imdr->limit - sizeof(struct imd_root_pointer);
+	struct imd_root *root = (void *)root_address;
+	struct imd_root_pointer *rp = (void *)pointer_address;
+
+	rp->magic = 0;
+	memset(root, 0, sizeof(*root));
+	root->max_entries = max_entries;
+	root->num_entries = 1;
+	root->entry_align = entry_align;
+	/* Install the bound before any allocation from this tier is possible. */
+	root->max_offset = -(int32_t)(root_address - lower);
+	imd_entry_assign(&root->entries[0], CBMEM_ID_IMD_ROOT, 0, root_size);
+	rp->root_offset = -(int32_t)(pointer_address - root_address);
+	rp->magic = IMD_ROOT_PTR_MAGIC;
+	imdr->r = root;
+}
+
+int imd_create_tiered_empty_bounded(struct imd *imd,
+				size_t lg_root_size, size_t lg_entry_align,
+				size_t sm_root_size, size_t sm_entry_align,
+				void *lower_limit)
+{
+	struct imd staged;
+	const struct imd_entry *entry;
+	uintptr_t lower = (uintptr_t)lower_limit;
+	uintptr_t upper, large_root, small_lower;
+	size_t lg_entries, sm_entries, sm_region_size;
+
+	if (imd == NULL)
+		return -1;
+
+	upper = imd->lg.limit;
+	imd_bounded_clear_handle(imd, upper);
+
+	if (!imd_bounded_interval(lower, upper) ||
+	    !imd_bounded_root_parameters(lg_root_size, lg_entry_align, &lg_entries) ||
+	    !imd_bounded_root_parameters(sm_root_size, sm_entry_align, &sm_entries) ||
+	    lg_entries < 2)
+		return -1;
+
+	/* Compute the complete small backing before writing either arena root. */
+	if (sm_entries > (SIZE_MAX - sm_root_size) / sm_entry_align)
+		return -1;
+	if (!imd_bounded_align_size(sm_root_size + sm_entries * sm_entry_align,
+					lg_entry_align, &sm_region_size))
+		return -1;
+	if (lg_root_size > upper - lower ||
+	    sm_region_size > upper - lower - lg_root_size)
+		return -1;
+
+	large_root = upper - lg_root_size;
+	small_lower = large_root - sm_region_size;
+	if (large_root % lg_entry_align ||
+	    (large_root - sm_root_size) % sm_entry_align ||
+	    sm_region_size <= sm_root_size)
+		return -1;
+
+	memset(&staged, 0, sizeof(staged));
+	staged.lg.limit = upper;
+	imd_bounded_initialize_root(&staged.lg, lower, lg_root_size,
+					lg_entry_align, lg_entries);
+
+	/* The literal legacy allocation kernel now sees the large-tier bound. */
+	entry = imdr_entry_add(&staged.lg, SMALL_REGION_ID, sm_region_size);
+	if (entry == NULL || entry->start_offset != -(int32_t)sm_region_size ||
+	    entry->size != sm_region_size)
+		return -1;
+
+	staged.sm.limit = large_root;
+	imd_bounded_initialize_root(&staged.sm, small_lower, sm_root_size,
+					sm_entry_align, sm_entries);
+	*imd = staged;
+	return 0;
+}
+
+/* No root/table/entry pointer is followed until its containing span is checked. */
+static int imd_bounded_recover_tier(struct imdr *imdr, uintptr_t lower)
+{
+	uintptr_t upper = imdr->limit;
+	uintptr_t pointer_address, root_address, bounded_lower, previous;
+	const struct imd_root_pointer *rp;
+	struct imd_root *root;
+	const struct imd_entry *entry;
+	size_t root_size, capacity, table_bytes, i;
+	uint32_t count, alignment;
+	int32_t offset;
+
+	if (!imd_bounded_interval(lower, upper) ||
+	    upper - lower < sizeof(*rp))
+		return -1;
+
+	pointer_address = upper - sizeof(*rp);
+	if (!imd_bounded_span(lower, upper, pointer_address, sizeof(*rp)))
+		return -1;
+	rp = (const void *)pointer_address;
+	if (rp->magic != IMD_ROOT_PTR_MAGIC)
+		return -1;
+
+	offset = rp->root_offset;
+	if (offset >= 0 ||
+	    !imd_bounded_offset_address(pointer_address, lower, offset, &root_address) ||
+	    !imd_bounded_span(lower, pointer_address, root_address, sizeof(*root)))
+		return -1;
+
+	root_size = upper - root_address;
+	if (!imd_bounded_power_of_two(root_size) || root_size > LIMIT_ALIGN)
+		return -1;
+	root = (void *)root_address;
+
+	alignment = root->entry_align;
+	if (!imd_bounded_root_parameters(root_size, alignment, &capacity) ||
+	    root_address % alignment || root->max_entries != capacity)
+		return -1;
+	count = root->num_entries;
+	if (!count || count > capacity || (root->flags & ~(uint32_t)IMD_FLAG_LOCKED))
+		return -1;
+
+	/* capacity derives from the checked root span, before any table pointer. */
+	table_bytes = capacity * sizeof(struct imd_entry);
+	if (table_bytes > pointer_address - root_address - sizeof(*root))
+		return -1;
+	if (root->max_offset >= 0 ||
+	    !imd_bounded_offset_address(root_address, lower, root->max_offset,
+					&bounded_lower) || bounded_lower != lower)
+		return -1;
+
+	entry = &root->entries[0];
+	if (entry->magic != IMD_ENTRY_MAGIC || entry->id != CBMEM_ID_IMD_ROOT ||
+	    entry->start_offset != 0 || entry->size != root_size)
+		return -1;
+
+	previous = root_address;
+	for (i = 1; i < count; i++) {
+		uintptr_t start;
+		size_t allocated;
+
+		entry = &root->entries[i];
+		if (entry->magic != IMD_ENTRY_MAGIC || entry->id == CBMEM_ID_IMD_ROOT ||
+		    entry->start_offset >= 0 || !entry->size ||
+		    !imd_bounded_offset_address(root_address, lower, entry->start_offset,
+						&start) || start >= previous || start % alignment ||
+		    !imd_bounded_align_size(entry->size, alignment, &allocated) ||
+		    !imd_bounded_span(lower, previous, start, allocated))
+			return -1;
+		previous = start;
+	}
+
+	imdr->r = root;
+	return 0;
+}
+
+int imd_recover_bounded(struct imd *imd, void *lower_limit)
+{
+	struct imd staged;
+	const struct imd_root *root;
+	const struct imd_entry *small = NULL;
+	uintptr_t upper, lower = (uintptr_t)lower_limit, small_lower;
+	size_t i;
+
+	if (imd == NULL)
+		return -1;
+
+	upper = imd->lg.limit;
+	imd_bounded_clear_handle(imd, upper);
+	memset(&staged, 0, sizeof(staged));
+	staged.lg.limit = upper;
+	if (imd_bounded_recover_tier(&staged.lg, lower) != 0)
+		return -1;
+
+	root = staged.lg.r;
+	for (i = 1; i < root->num_entries; i++) {
+		if (root->entries[i].id != SMALL_REGION_ID)
+			continue;
+		if (small != NULL)
+			return -1;
+		small = &root->entries[i];
+	}
+	if (small == NULL ||
+	    !imd_bounded_offset_address((uintptr_t)root, lower, small->start_offset,
+					&small_lower) ||
+	    !imd_bounded_span(lower, (uintptr_t)root, small_lower, small->size))
+		return -1;
+
+	staged.sm.limit = small_lower + small->size;
+	if (imd_bounded_recover_tier(&staged.sm, small_lower) != 0)
+		return -1;
+
+	/* Nested backing entries are not part of the two-tier disk format. */
+	root = staged.sm.r;
+	for (i = 1; i < root->num_entries; i++) {
+		if (root->entries[i].id == SMALL_REGION_ID)
+			return -1;
+	}
+
+	*imd = staged;
+	return 0;
 }

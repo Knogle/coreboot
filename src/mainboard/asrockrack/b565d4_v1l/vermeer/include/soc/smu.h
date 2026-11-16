@@ -1,0 +1,30 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+#ifndef AMD_MATISSE_SMU_H
+#define AMD_MATISSE_SMU_H
+
+/* Original B565 SmuV11Pei mailbox, for the common amdblocks SMU transport.
+ * Selected by the desktop backend; the Cezanne path keeps its own mailbox.
+ */
+#define SMN_SMU_MESG_ID		0x03b10530
+#define SMN_SMU_MESG_RESP	0x03b1057c
+#define SMN_SMU_MESG_ARGS_BASE	0x03b109c4
+#define SMU_NUM_ARGS		6
+
+enum smu_message_id {
+	SMC_MSG_TEST_MESSAGE = 0x01,
+	SMC_MSG_GET_SMU_VERSION = 0x02,
+	SMC_MSG_ENABLE_SMU_FEATURES = 0x03,
+	SMC_MSG_SET_POWERPLAY_ADDRESS = 0x05,
+	SMC_MSG_SET_PMTABLE_ADDRESS = 0x06,
+	SMC_MSG_IMPORT_POWERPLAY = 0x10,
+	SMC_MSG_DXIO = 0x08,
+	SMC_MSG_USB_BOOT = 0x0a,
+	SMC_MSG_GET_CPU_NAME = 0x0d,
+	SMC_MSG_USB_CONFIG_UPDATE = 0x13,
+	SMC_MSG_GET_CPPC_INFO = 0x17,
+	SMC_MSG_GET_CPPC_NOMINAL_FREQUENCY = 0x39,
+	SMC_MSG_GET_CPPC_LOWEST_FREQUENCY = 0x3a,
+	SMC_MSG_SET_TCTL_LIMIT = 0x3e,
+};
+
+#endif /* AMD_MATISSE_SMU_H */

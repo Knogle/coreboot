@@ -1,0 +1,66 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+entries
+
+0	768	r	0	reserved_memory
+768	8	e	1	pcie_slot_bifurcation
+776	8	h	0	setup_schema
+784	8	e	2	power_failure
+792	8	e	3	svm
+800	8	e	3	iommu
+808	8	e	3	pcie_acs
+816	8	e	4	pcie_cpu_speed
+824	8	e	4	pcie3_speed
+832	8	e	4	pcie4_speed
+840	8	e	4	pcie5_speed
+848	8	e	5	pcie_cpu_aspm
+856	8	e	5	pcie3_aspm
+864	8	e	5	pcie4_aspm
+872	8	e	5	pcie5_aspm
+880	8	e	3	above_4g
+888	8	e	3	pcie_ari
+896	8	e	3	serial_console
+904	8	h	0	debug_level
+912	8	e	3	pxe
+920	8	e	3	sas_option_rom
+928	8	e	6	boot_policy
+936	8	h	0	boot_timeout
+944	8	e	3	wake_on_lan
+952	8	e	3	rtc_wake
+960	8	e	7	watchdog
+968	8	e	3	restore_defaults
+976	8	e	8	cpu_performance_limit
+984	16	h	0	check_sum
+1000	24	r	0	amd_reserved
+
+enumerations
+
+1	0	Default
+1	1	x16
+1	2	x8/x4/x4
+1	3	x4/x4/x4/x4
+2	0	Off
+2	1	On
+2	2	Previous
+3	0	Disabled
+3	1	Enabled
+4	0	Auto
+4	1	Gen1
+4	2	Gen2
+4	3	Gen3
+5	0	OS controlled
+5	1	Disabled
+5	2	L1 when supported
+6	0	UEFI preferred
+6	1	UEFI only
+6	2	Legacy preferred
+7	0	Disabled
+7	1	OS owned
+7	2	coreboot guard 60 seconds
+8	0	Full OS control
+8	1	Limit to P1 and lower
+8	2	Limit to P2 and lower
+
+checksums
+
+checksum 768 983 984

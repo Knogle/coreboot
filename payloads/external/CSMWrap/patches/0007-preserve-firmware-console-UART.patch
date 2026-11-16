@@ -1,0 +1,26 @@
+Subject: [PATCH] Preserve the firmware console baud rate across DOS startup
+
+Use the existing SeaBIOS serial-advertisement policy while the firmware
+console owns its debug UART. FreeDOS initializes every advertised COM port
+to 2400 baud. Runtime serial_console=off leaves ordinary COM discovery.
+
+--- a/src/fw/csm.c
++++ b/src/fw/csm.c
+@@ -83,10 +83,17 @@
+                               (void *)csm_compat_table.ExtraPciRootListPointer,
+                               csm_compat_table.ExtraPciRootListCount);
+     }
+     if (CONFIG_CSM_SERCON_PORT)
+         const_romfile_add_int("etc/sercon-port", CONFIG_CSM_SERCON_PORT);
++    // DOS initializes advertised COM ports to its own baud rate. While this
++    // UART belongs to the firmware console, use the normal SeaBIOS policy
++    // to keep it out of the BIOS serial list. OS ACPI discovery is unchanged.
++    if (CONFIG_DEBUG_SERIAL && CONFIG_CSM_SERCON_PORT
++        && CONFIG_CSM_SERCON_PORT == CONFIG_DEBUG_SERIAL_PORT
++        && coreboot_cmos_option("serial_console", 1, 1))
++        const_romfile_add_int("etc/advertise-serial-debug-port", 0);
+     pci_probe_devices();
+ 
+     csm_compat_table.PnPInstallationCheckSegment = SEG_BIOS;
+     csm_compat_table.PnPInstallationCheckOffset = get_pnp_offset();
+ 

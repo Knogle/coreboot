@@ -19,6 +19,9 @@
 #include <symbols.h>
 #include <thread.h>
 #include <timestamp.h>
+#if CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) && ENV_BOOTBLOCK
+#include "native84_profile.h"
+#endif
 
 #if ENV_X86 && (ENV_POSTCAR || ENV_SMM)
 struct mem_pool cbfs_cache = MEM_POOL_INIT(NULL, 0, 0);
@@ -478,8 +481,15 @@ out:
 
 static void *do_alloc(union cbfs_mdata *mdata, struct region_device *rdev,
 		      cbfs_allocator_t allocator, void *arg, size_t *size_out,
-		      bool skip_verification)
+		      bool skip_verification, bool require_exact_size)
 {
+	if (require_exact_size) {
+		if (size_out)
+			*size_out = 0;
+		if (!allocator || !size_out || skip_verification)
+			return NULL;
+	}
+
 	size_t size = region_device_sz(rdev);
 	void *loc = NULL;
 
@@ -491,7 +501,11 @@ static void *do_alloc(union cbfs_mdata *mdata, struct region_device *rdev,
 		size = be32toh(cattr->decompressed_size);
 	}
 
-	if (size_out)
+	const size_t declared_size = size;
+	if (require_exact_size && !declared_size)
+		return NULL;
+
+	if (size_out && !require_exact_size)
 		*size_out = size;
 
 	/* allocator == NULL means do a cbfs_map() */
@@ -524,6 +538,12 @@ static void *do_alloc(union cbfs_mdata *mdata, struct region_device *rdev,
 	if (!size)
 		return NULL;
 
+	if (require_exact_size) {
+		if (size != declared_size)
+			return NULL;
+		*size_out = size;
+	}
+
 	return loc;
 }
 
@@ -545,15 +565,22 @@ static enum cb_err check_or_query_type(const union cbfs_mdata *mdata, enum cbfs_
 	return CB_ERR;
 }
 
-void *_cbfs_alloc(const char *name, cbfs_allocator_t allocator, void *arg,
-		  size_t *size_out, bool force_ro, enum cbfs_type *type)
+static void *cbfs_alloc_common(const char *name, cbfs_allocator_t allocator, void *arg,
+			       size_t *size_out, bool force_ro, enum cbfs_type *type,
+			       bool require_exact_size)
 {
 	struct region_device rdev;
 	bool preload_successful = false;
 	union cbfs_mdata mdata;
+	size_t exact_size = 0;
 
-	DEBUG("%s(name='%s', alloc=%p(%p), force_ro=%s, type=%d)\n", __func__, name, allocator,
-	      arg, force_ro ? "true" : "false", type ? *type : -1);
+	if (require_exact_size) {
+		if (!size_out)
+			return NULL;
+		*size_out = 0;
+		if (!allocator)
+			return NULL;
+	}
 
 	if (_cbfs_boot_lookup(name, force_ro, &mdata, &rdev))
 		return NULL;
@@ -565,14 +592,33 @@ void *_cbfs_alloc(const char *name, cbfs_allocator_t allocator, void *arg,
 	if (!force_ro && get_preload_rdev(&rdev, name) == CB_SUCCESS)
 		preload_successful = true;
 
-	void *ret = do_alloc(&mdata, &rdev, allocator, arg, size_out, false);
+	void *ret = do_alloc(&mdata, &rdev, allocator, arg,
+			     require_exact_size ? &exact_size : size_out, false,
+			     require_exact_size);
 
 	/* When using cbfs_preload we need to free the preload buffer after populating the
 	 * destination buffer. We know we must have a mem_rdev here, so extra mmap is fine. */
 	if (preload_successful)
 		cbfs_unmap(rdev_mmap_full(&rdev));
 
+	if (require_exact_size && ret)
+		*size_out = exact_size;
+
 	return ret;
+}
+
+void *_cbfs_alloc(const char *name, cbfs_allocator_t allocator, void *arg,
+		  size_t *size_out, bool force_ro, enum cbfs_type *type)
+{
+	DEBUG("%s(name='%s', alloc=%p(%p), force_ro=%s, type=%d)\n", __func__, name, allocator,
+	      arg, force_ro ? "true" : "false", type ? *type : -1);
+
+	return cbfs_alloc_common(name, allocator, arg, size_out, force_ro, type, false);
+}
+
+void *cbfs_alloc_exact(const char *name, cbfs_allocator_t allocator, void *arg, size_t *size_out)
+{
+	return cbfs_alloc_common(name, allocator, arg, size_out, false, NULL, true);
 }
 
 void *_cbfs_unverified_area_alloc(const char *area, const char *name,
@@ -599,7 +645,7 @@ void *_cbfs_unverified_area_alloc(const char *area, const char *name,
 	if (rdev_chain(&file_rdev, &area_rdev, data_offset, be32toh(mdata.h.len)))
 		return NULL;
 
-	return do_alloc(&mdata, &file_rdev, allocator, arg, size_out, true);
+	return do_alloc(&mdata, &file_rdev, allocator, arg, size_out, true, false);
 }
 
 void *_cbfs_default_allocator(void *arg, size_t size, const union cbfs_mdata *unused)
@@ -626,6 +672,10 @@ enum cb_err cbfs_prog_stage_load(struct prog *pstage)
 	if ((err = _cbfs_boot_lookup(prog_name(pstage), false, &mdata, &rdev)))
 		return err;
 
+#if CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) && ENV_BOOTBLOCK
+	if (!native84_romstage_file_ok(&mdata, region_device_sz(&rdev)))
+		return CB_ERR;
+#endif
 	assert(be32toh(mdata.h.type) == CBFS_TYPE_STAGE);
 	pstage->cbfs_type = CBFS_TYPE_STAGE;
 
@@ -671,6 +721,10 @@ enum cb_err cbfs_prog_stage_load(struct prog *pstage)
 	if (!fsize)
 		return CB_ERR;
 
+#if CONFIG(B565D4_RETAINED_PEI_LATE_ENTRY) && ENV_BOOTBLOCK
+	if (fsize != region_device_sz(&rdev) || fsize > prog_size(pstage))
+		return CB_ERR;
+#endif
 	/* Clear area not covered by file. */
 	memset(prog_start(pstage) + fsize, 0, prog_size(pstage) - fsize);
 

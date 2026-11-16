@@ -8,6 +8,9 @@
 #include <timer.h>
 #include <types.h>
 #include "psp_def.h"
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE) && ENV_RAMSTAGE
+#include <symbols.h>
+#endif
 
 #define PSP_MAILBOX_COMMAND_OFFSET	CONFIG_PSPV2_MBOX_CMD_OFFSET		/* 4 bytes */
 #define PSP_MAILBOX_BUFFER_OFFSET	(CONFIG_PSPV2_MBOX_CMD_OFFSET + 4)	/* 8 bytes */
@@ -145,23 +148,53 @@ out:
 enum cb_err psp_get_psp_capabilities(uint32_t *capabilities)
 {
 	int cmd_status;
-	struct mbox_cmd_capability_query_buffer buffer = {
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE) && ENV_RAMSTAGE
+	/* The genuine ABI is 32 bytes. Own the complete TOS default mapping
+	 * extent (0x110 rounded to one page), including across a timeout.
+	 */
+	static union {
+		struct mbox_cmd_capability_query_buffer response;
+		uint8_t mapping_backing[4096];
+	} storage __aligned(4096);
+	static bool attempted;
+	struct mbox_cmd_capability_query_buffer *const buffer = &storage.response;
+	const uintptr_t begin = (uintptr_t)&storage;
+
+	_Static_assert(sizeof(*buffer) == 32 && sizeof(storage) == 4096 &&
+		__alignof__(storage) == 4096, "Native214 CAPS ABI and owned mapping page");
+	if (attempted || (begin & 4095) || begin < (uintptr_t)_program ||
+	    begin + sizeof(storage) < begin ||
+	    begin + sizeof(storage) > (uintptr_t)_eprogram)
+		return CB_ERR;
+	attempted = true;
+	/* BSS was zeroed by the genuine RAMstage loader; never reuse this page. */
+	buffer->header.size = sizeof(*buffer);
+#else
+	struct mbox_cmd_capability_query_buffer local_buffer = {
 		.header = {
-			.size = sizeof(buffer)
+			.size = sizeof(local_buffer)
 		},
 	};
+	struct mbox_cmd_capability_query_buffer *const buffer = &local_buffer;
+#endif
 
 	printk(BIOS_DEBUG, "PSP: Querying PSP capabilities...");
 
-	cmd_status = send_psp_command(MBOX_BIOS_CMD_PSP_CAPS_QUERY, &buffer);
+	cmd_status = send_psp_command(MBOX_BIOS_CMD_PSP_CAPS_QUERY, buffer);
 
 	/* buffer's status shouldn't change but report it if it does */
-	psp_print_cmd_status(cmd_status, &buffer.header);
+	psp_print_cmd_status(cmd_status, &buffer->header);
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE) && ENV_RAMSTAGE
+	printk(BIOS_INFO, "NATIVE214 PSP_CAPS DELIVERY cmd_status=%d "
+	       "buffer_status=%08x buffer=%p size=%u mapping_owned=4096 "
+	       "timeout_is_not_cancellation=1\n", cmd_status,
+	       read32(&buffer->header.status), buffer, buffer->header.size);
+#endif
 
 	if (cmd_status)
 		return CB_ERR;
 
-	*capabilities = read32(&buffer.capabilities);
+	*capabilities = read32(&buffer->capabilities);
 	return CB_SUCCESS;
 }
 

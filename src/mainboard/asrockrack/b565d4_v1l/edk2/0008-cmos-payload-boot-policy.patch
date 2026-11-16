@@ -1,0 +1,404 @@
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/BootPolicy.c b/UefiPayloadPkg/Library/PlatformBootManagerLib/BootPolicy.c
+new file mode 100644
+--- /dev/null
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/BootPolicy.c
+@@ -0,0 +1,205 @@
++/** @file
++  Apply coreboot CMOS preferences without replacing OS-owned boot settings.
++
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++**/
++
++#include "PlatformBootManager.h"
++#include <Guid/GlobalVariable.h>
++#include <Library/CorebootCmosOptionLib.h>
++
++STATIC EFI_GUID  mPolicyGuid = {
++  0x29b2bc3d, 0x3af9, 0x4a9c, { 0xb4, 0x1f, 0x23, 0x51, 0xa5, 0x9a, 0x71, 0x88 }
++};
++
++UINT32
++PlatformCmosPreference (
++  IN CONST CHAR16  *Name,
++  IN UINT32        Default,
++  IN UINT32        Maximum
++  )
++{
++  UINT32  Value;
++
++  if (EFI_ERROR (CorebootCmosReadOption (Name, &Value)) || (Value > Maximum)) {
++    return Default;
++  }
++
++  return Value;
++}
++
++STATIC
++EFI_STATUS
++SavePreference (
++  IN CHAR16  *Name,
++  IN UINT8   Value
++  )
++{
++  return gRT->SetVariable (
++                Name,
++                &mPolicyGuid,
++                EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS |
++                EFI_VARIABLE_RUNTIME_ACCESS,
++                sizeof (Value),
++                &Value
++                );
++}
++
++VOID
++PlatformSyncBootTimeout (
++  VOID
++  )
++{
++  EFI_STATUS  Status;
++  UINT32      Cmos;
++  UINT16      Timeout;
++  UINT8       Previous;
++  UINTN       Size;
++  BOOLEAN     HavePrevious;
++  BOOLEAN     HaveTimeout;
++
++  Status = CorebootCmosReadOption (L"boot_timeout", &Cmos);
++  if (EFI_ERROR (Status) || (Cmos > 60)) {
++    return;
++  }
++
++  Size = sizeof (Previous);
++  Status = gRT->GetVariable (L"CorebootBootTimeout", &mPolicyGuid, NULL, &Size, &Previous);
++  HavePrevious = !EFI_ERROR (Status) && (Size == sizeof (Previous)) && (Previous <= 60);
++  Size = sizeof (Timeout);
++  Status = gRT->GetVariable (L"Timeout", &gEfiGlobalVariableGuid, NULL, &Size, &Timeout);
++  HaveTimeout = !EFI_ERROR (Status) && (Size == sizeof (Timeout));
++
++  // On first use or an OS change, the standard EFI variable stays authoritative.
++  // A changed CMOS preference is an explicit request from CFR or nvramcui.
++  if (HaveTimeout && (!HavePrevious || (Cmos == Previous))) {
++    if (Timeout > 60) {
++      // Do not silently clamp an OS-owned timeout, including the 0xffff sentinel.
++      return;
++    }
++
++    if (Cmos != Timeout) {
++      Cmos = Timeout;
++      Status = CorebootCmosWriteOption (L"boot_timeout", &Cmos, sizeof (Cmos));
++      if (EFI_ERROR (Status)) {
++        DEBUG ((DEBUG_WARN, "CMOS timeout synchronization failed: %r\n", Status));
++        return;
++      }
++    }
++  } else {
++    Timeout = (UINT16)Cmos;
++    Status = gRT->SetVariable (
++                    L"Timeout", &gEfiGlobalVariableGuid,
++                    EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS |
++                    EFI_VARIABLE_RUNTIME_ACCESS, sizeof (Timeout), &Timeout
++                    );
++    if (EFI_ERROR (Status)) {
++      DEBUG ((DEBUG_WARN, "EFI timeout update failed: %r\n", Status));
++      return;
++    }
++  }
++
++  Status = PcdSet16S (PcdPlatformBootTimeOut, Timeout);
++  if (!EFI_ERROR (Status) && (!HavePrevious || (Previous != Cmos))) {
++    Status = SavePreference (L"CorebootBootTimeout", (UINT8)Cmos);
++  }
++
++  DEBUG ((DEBUG_INFO, "Coreboot boot timeout=%u: %r\n", Timeout, Status));
++}
++
++VOID
++PlatformApplyLegacyBootPriority (
++  IN UINT16  LegacyOption
++  )
++{
++  EFI_STATUS  Status;
++  UINT8       Previous;
++  UINT32      Policy;
++  UINT16      *Order;
++  UINT16      *NewOrder;
++  UINTN       Size;
++  UINTN       Index;
++  UINTN       Count;
++  UINTN       Out;
++  BOOLEAN     HavePrevious;
++
++  if (EFI_ERROR (CorebootCmosReadOption (L"boot_policy", &Policy)) || (Policy > 2)) {
++    return;
++  }
++
++  Size = sizeof (Previous);
++  Status = gRT->GetVariable (L"CorebootBootPolicy", &mPolicyGuid, NULL, &Size, &Previous);
++  HavePrevious = !EFI_ERROR (Status) && (Size == sizeof (Previous)) && (Previous <= 2);
++  if (HavePrevious && (Previous == Policy)) {
++    return;
++  }
++
++  // Preserve an existing order when first adopting the default UEFI policy.
++  // The inactive legacy entry implements automatic UEFI-only policy.
++  if ((!HavePrevious && (Policy != 2)) || (Policy == 1)) {
++    SavePreference (L"CorebootBootPolicy", (UINT8)Policy);
++    return;
++  }
++
++  Size = 0;
++  Order = NULL;
++  Status = GetVariable2 (L"BootOrder", &gEfiGlobalVariableGuid, (VOID **)&Order, &Size);
++  if (EFI_ERROR (Status) || (Size == 0) || ((Size % sizeof (*Order)) != 0)) {
++    if (Order != NULL) {
++      FreePool (Order);
++    }
++    return;
++  }
++
++  Count = Size / sizeof (*Order);
++  for (Index = 0; Index < Count; Index++) {
++    if (Order[Index] == LegacyOption) {
++      break;
++    }
++  }
++
++  if (Index == Count) {
++    FreePool (Order);
++    return;
++  }
++
++  NewOrder = AllocatePool (Size);
++  if (NewOrder == NULL) {
++    FreePool (Order);
++    return;
++  }
++
++  Out = 0;
++  if (Policy == 2) {
++    NewOrder[Out++] = LegacyOption;
++  }
++
++  for (Index = 0; Index < Count; Index++) {
++    if (Order[Index] != LegacyOption) {
++      NewOrder[Out++] = Order[Index];
++    }
++  }
++
++  if (Policy != 2) {
++    NewOrder[Out++] = LegacyOption;
++  }
++
++  // Refuse malformed duplicate entries instead of changing the variable size.
++  if (Out == Count) {
++    Status = EFI_SUCCESS;
++    if (CompareMem (Order, NewOrder, Size) != 0) {
++      Status = gRT->SetVariable (
++                      L"BootOrder", &gEfiGlobalVariableGuid,
++                      EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS |
++                      EFI_VARIABLE_RUNTIME_ACCESS, Size, NewOrder
++                      );
++    }
++
++    if (!EFI_ERROR (Status)) {
++      SavePreference (L"CorebootBootPolicy", (UINT8)Policy);
++    }
++  }
++
++  FreePool (NewOrder);
++  FreePool (Order);
++}
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
+--- a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
+@@ -27,6 +27,7 @@
+   PlatformBootManager.c
+   PlatformBootManager.h
+   BootSplash.c
++  BootPolicy.c
+ 
+ [Packages]
+   MdePkg/MdePkg.dec
+@@ -37,6 +38,7 @@
+ 
+ [LibraryClasses]
+   BaseLib
++  CorebootCmosOptionLib
+   UefiBootServicesTableLib
+   UefiRuntimeServicesTableLib
+   UefiLib
+@@ -57,6 +59,7 @@
+   Tcg2PhysicalPresenceLib
+ 
+ [Guids]
++  gEfiGlobalVariableGuid
+   gEfiEndOfDxeEventGroupGuid
+   gUefiShellFileGuid
+   gUefiPayloadBootSplashGuid
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.h b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.h
+--- a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.h
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.h
+@@ -150,3 +150,16 @@
+   IN UINTN                          Progress,
+   IN UINTN                          PreviousValue
+   );
++
++UINT32
++PlatformCmosPreference (
++  IN CONST CHAR16  *Name,
++  IN UINT32        Default,
++  IN UINT32        Maximum
++  );
++
++VOID
++PlatformSyncBootTimeout (VOID);
++
++VOID
++PlatformApplyLegacyBootPriority (IN UINT16 LegacyOption);
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c
+--- a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformBootManager.c
+@@ -79,8 +79,9 @@
+ 
+   for (Index = 0; Index < Count; Index++) {
+     if ((Key->OptionType == Array[Index].OptionType) &&
+-        (Key->Attributes == Array[Index].Attributes) &&
++        ((Key->Attributes & ~LOAD_OPTION_ACTIVE) == (Array[Index].Attributes & ~LOAD_OPTION_ACTIVE)) &&
+         (StrCmp (Key->Description, Array[Index].Description) == 0) &&
++        (GetDevicePathSize (Key->FilePath) == GetDevicePathSize (Array[Index].FilePath)) &&
+         (CompareMem (Key->FilePath, Array[Index].FilePath, GetDevicePathSize (Key->FilePath)) == 0) &&
+         (Key->OptionalDataSize == Array[Index].OptionalDataSize) &&
+         (CompareMem (Key->OptionalData, Array[Index].OptionalData, Key->OptionalDataSize) == 0))
+@@ -222,6 +223,16 @@
+     if (OptionIndex == -1) {
+       Status = EfiBootManagerAddLoadOptionVariable (&NewOption, (UINTN)-1);
+       ASSERT_EFI_ERROR (Status);
++    } else {
++      NewOption.OptionNumber = BootOptions[OptionIndex].OptionNumber;
++      if (NewOption.Attributes != BootOptions[OptionIndex].Attributes) {
++        Status = EfiBootManagerLoadOptionToVariable (&NewOption);
++        DEBUG ((DEBUG_INFO, "FV boot option policy update: %r\n", Status));
++      }
++    }
++
++    if (!EFI_ERROR (Status) && CompareGuid (FileGuid, &mCsmWrapFileGuid)) {
++      PlatformApplyLegacyBootPriority ((UINT16)NewOption.OptionNumber);
+     }
+ 
+     EfiBootManagerFreeLoadOption (&NewOption);
+@@ -387,6 +398,8 @@
+   //
+   // Register ENTER as CONTINUE key
+   //
++  PlatformSyncBootTimeout ();
++
+   Enter.ScanCode    = SCAN_NULL;
+   Enter.UnicodeChar = CHAR_CARRIAGE_RETURN;
+   EfiBootManagerRegisterContinueKeyOption (0, &Enter, NULL);
+@@ -532,7 +545,10 @@
+   PlatformRegisterFvBootOption (&gUefiShellFileGuid, L"UEFI Shell", LOAD_OPTION_ACTIVE);
+ 
+   // A missing optional FV application does not create a boot option.
+-  PlatformRegisterFvBootOption (&mCsmWrapFileGuid, L"Legacy BIOS boot (SeaBIOS CSM)", LOAD_OPTION_ACTIVE);
++  PlatformRegisterFvBootOption (
++    &mCsmWrapFileGuid, L"Legacy BIOS boot (SeaBIOS CSM)",
++    PlatformCmosPreference (L"boot_policy", 0, 2) == 1 ? 0 : LOAD_OPTION_ACTIVE
++    );
+ 
+   //
+   // Register iPXE if the binary is present in the firmware volume.
+@@ -541,7 +557,7 @@
+     PlatformRegisterFvBootOption (
+       (EFI_GUID *)PcdGetPtr (PcdiPXEFile),
+       (CHAR16 *)PcdGetPtr (PcdiPXEOptionName),
+-      LOAD_OPTION_ACTIVE
++      PlatformCmosPreference (L"pxe", 1, 1) ? LOAD_OPTION_ACTIVE : 0
+       );
+   }
+ 
+diff --git a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformConsole.c b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformConsole.c
+--- a/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformConsole.c
++++ b/UefiPayloadPkg/Library/PlatformBootManagerLib/PlatformConsole.c
+@@ -386,12 +386,27 @@
+                       &gEfiDevicePathProtocolGuid,
+                       (VOID *)&DevicePath
+                       );
++  if (EFI_ERROR (Status)) {
++    return Status;
++  }
++
+   DevicePath = AppendDevicePathNode (DevicePath, (EFI_DEVICE_PATH_PROTOCOL *)&gTerminalTypeDeviceNode);
+-
+-  EfiBootManagerUpdateConsoleVariable (ConOut, DevicePath, NULL);
+-  EfiBootManagerUpdateConsoleVariable (ConIn, DevicePath, NULL);
+-  EfiBootManagerUpdateConsoleVariable (ErrOut, DevicePath, NULL);
+-  return Status;
++  if (DevicePath == NULL) {
++    return EFI_OUT_OF_RESOURCES;
++  }
++
++  if (PlatformCmosPreference (L"serial_console", 1, 1)) {
++    EfiBootManagerUpdateConsoleVariable (ConOut, DevicePath, NULL);
++    EfiBootManagerUpdateConsoleVariable (ConIn, DevicePath, NULL);
++    EfiBootManagerUpdateConsoleVariable (ErrOut, DevicePath, NULL);
++  } else {
++    EfiBootManagerUpdateConsoleVariable (ConOut, NULL, DevicePath);
++    EfiBootManagerUpdateConsoleVariable (ConIn, NULL, DevicePath);
++    EfiBootManagerUpdateConsoleVariable (ErrOut, NULL, DevicePath);
++  }
++
++  FreePool (DevicePath);
++  return EFI_SUCCESS;
+ }
+ 
+ /**
+diff --git a/UefiPayloadPkg/PciPlatformDxe/PciPlatformDxe.c b/UefiPayloadPkg/PciPlatformDxe/PciPlatformDxe.c
+--- a/UefiPayloadPkg/PciPlatformDxe/PciPlatformDxe.c
++++ b/UefiPayloadPkg/PciPlatformDxe/PciPlatformDxe.c
+@@ -9,6 +9,7 @@
+ **/
+ 
+ #include "PciPlatformDxe.h"
++#include <Library/CorebootCmosOptionLib.h>
+ #include <Bus/Pci/PciBusDxe/PciBus.h>
+ #include <Bus/Pci/PciBusDxe/PciOptionRomSupport.h>
+ 
+@@ -95,6 +96,7 @@
+   UINT32                    LegacyImageLength;
+   UINT8                     *RomInMemory;
+   UINT8                     CodeType;
++  UINT32                    Policy;
+   PCI_EXPANSION_ROM_HEADER  RomHeader;
+   PCI_DATA_STRUCTURE        RomPcir;
+ 
+@@ -127,6 +129,19 @@
+   }
+ 
+   PciIoDevice = PCI_IO_DEVICE_FROM_PCI_IO_THIS (PciIo);
++
++  // A successful empty platform override suppresses card ROM dispatch while
++  // retaining the PCI function and all normal operating-system drivers.
++  if (((PciIoDevice->Pci.Hdr.ClassCode[2] == PCI_CLASS_NETWORK) &&
++       !EFI_ERROR (CorebootCmosReadOption (L"pxe", &Policy)) && (Policy == 0)) ||
++      ((PciIoDevice->Pci.Hdr.VendorId == 0x1000) &&
++       (PciIoDevice->Pci.Hdr.ClassCode[2] == PCI_CLASS_MASS_STORAGE) &&
++       !EFI_ERROR (CorebootCmosReadOption (L"sas_option_rom", &Policy)) && (Policy == 0)))
++  {
++    DEBUG ((DEBUG_INFO, "CMOS policy suppresses PCI option ROM for %04x:%04x\n",
++            PciIoDevice->Pci.Hdr.VendorId, PciIoDevice->Pci.Hdr.DeviceId));
++    return EFI_SUCCESS;
++  }
+ 
+   //
+   // Get the location of the PCI device
+diff --git a/UefiPayloadPkg/PciPlatformDxe/PciPlatformDxe.inf b/UefiPayloadPkg/PciPlatformDxe/PciPlatformDxe.inf
+--- a/UefiPayloadPkg/PciPlatformDxe/PciPlatformDxe.inf
++++ b/UefiPayloadPkg/PciPlatformDxe/PciPlatformDxe.inf
+@@ -26,6 +26,7 @@
+   UefiPayloadPkg/UefiPayloadPkg.dec
+ 
+ [LibraryClasses]
++  CorebootCmosOptionLib
+   UefiDriverEntryPoint
+   DxeServicesTableLib
+   DebugLib

@@ -52,7 +52,7 @@ static int setup_calloc_test(void **state)
 static void test_malloc_out_of_memory(void **state)
 {
 	void *ptr = cb_malloc(TEST_HEAP_SZ);
-	assert_ptr_equal(ptr, NULL);
+	assert_null(ptr);
 }
 
 static void test_malloc_zero(void **state)
@@ -97,7 +97,7 @@ static void test_memalign_different_alignments(void **state)
 static void test_memalign_out_of_memory(void **state)
 {
 	void *ptr = cb_memalign(16, TEST_HEAP_SZ);
-	assert_ptr_equal(ptr, NULL);
+	assert_null(ptr);
 }
 
 static void test_memalign_zero(void **state)

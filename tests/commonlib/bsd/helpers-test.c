@@ -35,7 +35,7 @@ static void test_retry(void **state)
 
 	/* 3-argument form */
 	expect_function_calls(func, 9);
-	assert_null(retry(10, NULL, func()));
+	assert_null(retry(10, (void *)NULL, func()));
 
 	assert_int_equal(retry(10, 999, func()), 999);
 

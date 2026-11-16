@@ -36,7 +36,7 @@ static int setup_device_tree_test_group(void **state)
 	assert_int_not_equal(file_size, -1);
 
 	void *big_fat_dtb = test_malloc(file_size);
-	assert_int_not_equal(big_fat_dtb, NULL);
+	assert_non_null(big_fat_dtb);
 	assert_int_equal(test_read_file(dtb_path, big_fat_dtb, file_size), file_size);
 	*state = big_fat_dtb;
 

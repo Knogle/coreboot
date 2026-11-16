@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Cezanne DRAM-first native board initialization.
+chip soc/amd/cezanne
+	device domain 0 on
+		device ref iommu on end
+		# Enumerate all external roots; preserve every trained link at handoff.
+		device ref gpp_gfx_bridge_0 on end
+		device ref gpp_gfx_bridge_1 on end
+		device ref gpp_gfx_bridge_2 on end
+		device ref gpp_bridge_0 on end
+		device ref gpp_bridge_1 on end
+		device ref gpp_bridge_2 on end
+		device ref gpp_bridge_3 on end
+		device ref gpp_bridge_4 on end
+		device ref gpp_bridge_5 on end
+		device ref gpp_bridge_6 on end
+		device ref gpp_bridge_a on
+			device ref xhci_0 on end
+			device ref xhci_1 on end
+		end
+		device ref lpc_bridge on
+			chip superio/nuvoton/nct6796d
+				device pnp 2e.2 off end
+				device pnp 2e.3 off end
+			end
+			chip superio/aspeed/ast2400
+				device pnp 4e.3 on
+					io 0x60 = 0x2f8
+					irq 0x70 = 3
+				end
+			end
+		end
+	end
+end
