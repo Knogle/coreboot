@@ -32,6 +32,17 @@ EDK2_SUBMODULE_PATHSPEC += LvglPkg
 endif
 endif
 
+# The pinned mrchromebox 26.09.1 UEFI payload needs two selected nested
+# submodules. Keep the default recursive update for other revisions.
+EDK2_SUBMODULE_RECURSE := --recursive
+EDK2_SELECTED_NESTED_SUBMODULES :=
+ifeq ($(CONFIG_EDK2_UEFIPAYLOAD)$(CONFIG_EDK2_REPO_MRCHROMEBOX),yy)
+ifeq ($(call strip_quotes,$(CONFIG_EDK2_TAG_OR_REV)),26.09.1)
+EDK2_SUBMODULE_RECURSE :=
+EDK2_SELECTED_NESTED_SUBMODULES := y
+endif
+endif
+
 define edk2_abspath
 $(if $(filter /%,$(1)),$(1),$(EDK2_PATH)/$(1))
 endef
@@ -354,11 +365,17 @@ $(EDK2_PATH): $(WORKSPACE)
 		if git status --ignore-submodules=dirty | grep -q -e clean -e "nothing added"; then \
 			echo "    Checking out $(project_name) revision $(CONFIG_EDK2_TAG_OR_REV)"; \
 			git checkout --detach $(CONFIG_EDK2_TAG_OR_REV) -f; \
-			git submodule update --checkout --recursive -- $(EDK2_SUBMODULE_PATHSPEC); \
+			git submodule update --checkout $(EDK2_SUBMODULE_RECURSE) -- $(EDK2_SUBMODULE_PATHSPEC); \
 		else \
 			echo "    Working directory not clean; will not overwrite"; \
 		fi; \
-		git submodule update --init --checkout --recursive -- $(EDK2_SUBMODULE_PATHSPEC) && \
+		git submodule update --init --checkout $(EDK2_SUBMODULE_RECURSE) -- $(EDK2_SUBMODULE_PATHSPEC) && \
+		if [ "$(EDK2_SELECTED_NESTED_SUBMODULES)" = y ]; then \
+			git -C CryptoPkg/Library/MbedTlsLib/mbedtls submodule update --init --checkout -- framework && \
+			if [ "$(CONFIG_EDK2_USE_LVGL_RENDERER)" = y ]; then \
+				git -C LvglPkg submodule update --init --checkout -- Library/LvglLib/lvgl; \
+			fi; \
+		fi && \
 		if [ "$(CONFIG_EDK2_UEFIPAYLOAD)" = y ] && \
 			git config -f .gitmodules --get submodule.$(EDK2_SPDM_PATH).path >/dev/null; then \
 			git submodule update --init --checkout -- $(EDK2_SPDM_PATH); \
@@ -481,6 +498,7 @@ patches: $(EDK2_PATH)
 		$(foreach patch,$(EDK2_PATCHES),--patch "$(patch)")
 
 prep: $(EDK2_PATH) $(EDK2_PLATFORMS_PATH) clean checktools logo gop_driver ipxe_rom patches
+	mkdir -p "$(WORKSPACE)/Conf"
 	cd $(WORKSPACE); \
 		source $(EDK2_PATH)/edksetup.sh; \
 		unset CC; $(MAKE) -C $(EDK2_PATH)/BaseTools 2>&1; \
