@@ -356,7 +356,7 @@ config SEABIOS_BOOTORDER_FILE
 	default "src/mainboard/asrockrack/b565d4_v1l/bootorder" if PAYLOAD_BUILD_SEABIOS
 
 config PAYLOAD_CONFIGFILE
-	default "$(top)/src/mainboard/asrockrack/b565d4_v1l/config_seabios" if PAYLOAD_BUILD_SEABIOS
+	default "\$(top)/src/mainboard/asrockrack/b565d4_v1l/config_seabios" if PAYLOAD_BUILD_SEABIOS
 
 config ON_DEVICE_ROM_LOAD
 	default n
