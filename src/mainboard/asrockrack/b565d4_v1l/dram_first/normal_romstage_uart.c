@@ -9,8 +9,6 @@
 
 asmlinkage void __real_car_stage_entry(void);
 asmlinkage void __wrap_car_stage_entry(void);
-void __noreturn __wrap_romstage_main(void);
-void __noreturn __real_romstage_main(void);
 
 asmlinkage void __wrap_car_stage_entry(void)
 {
@@ -21,11 +19,10 @@ asmlinkage void __wrap_car_stage_entry(void)
 	halt();
 }
 
-#if CONFIG(SOC_AMD_CEZANNE_NATIVE)
-void __noreturn romstage_main(void)
-#else
-void __noreturn __wrap_romstage_main(void)
+#if !CONFIG(SOC_AMD_CEZANNE_NATIVE)
+#error "B565 ROMstage requires the native Cezanne entry path"
 #endif
+void __noreturn romstage_main(void)
 {
 	/* Genuine assembly_entry/car_stage_entry already returned from console
 	 * initialization and its unsupported-S3 check. The default remains terminal before FSP/CBMEM. */
