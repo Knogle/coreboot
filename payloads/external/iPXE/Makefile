@@ -53,10 +53,9 @@ fetch: $(project_dir)
 			git fetch; \
 		fi
 
-# Shared patch-state helper currently lives in ../edk2/patches.py.
-# Keep that public helper present until iPXE owns a generic replacement.
+# Shared patch-state helper retains the historical on-disk owner marker.
 checkout: fetch
-	python3 ../edk2/patches.py undo --source "$(abspath $(project_dir))" --state "$(ipxe_patch_state)"
+	python3 ../patches.py undo --source "$(abspath $(project_dir))" --state "$(ipxe_patch_state)"
 	echo "    Checking out $(project_name) revision $(TAG-y)"
 	set -e; cd $(project_dir); \
 		git checkout master; \
@@ -67,7 +66,7 @@ patches: checkout
 	@test -z "$$(git -C $(project_dir) status --porcelain --untracked-files=no)"
 ifeq ($(CONFIG_IPXE_STABLE)$(CONFIG_IPXE_BUILD_EFI),yy)
 	@test "$$(git -C $(project_dir) rev-parse HEAD)" = "$(ipxe_gcc16_base)"
-	python3 ../edk2/patches.py apply --source "$(abspath $(project_dir))" --state "$(ipxe_patch_state)" --patch "$(ipxe_gcc16_patch)"
+	python3 ../patches.py apply --source "$(abspath $(project_dir))" --state "$(ipxe_patch_state)" --patch "$(ipxe_gcc16_patch)"
 endif
 	@git -C $(project_dir) diff --check
 

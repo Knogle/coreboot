@@ -77,7 +77,7 @@ $(SEABIOS_TARGET_PATH): $(DOTCONFIG) payloads/external/SeaBIOS/Makefile \
 		$(call strip_quotes,$(CONFIG_PAYLOAD_CONFIGFILE)) \
 		$(if $(call strip_quotes,$(CONFIG_SEABIOS_PATCHES_DIR)),\
 		$(wildcard $(call strip_quotes,$(CONFIG_SEABIOS_PATCHES_DIR))/*.patch)) \
-		payloads/external/edk2/patches.py
+		payloads/external/patches.py
 	$(MAKE) -C payloads/external/SeaBIOS \
 			top=$(top) \
 			HOSTCC="$(HOSTCC)" \
@@ -301,7 +301,7 @@ EDK2_PAYLOAD_ARGS = \
 	CONFIG_EDK2_IPXE_OPTION_NAME=$(CONFIG_EDK2_IPXE_OPTION_NAME) \
 	CONFIG_EDK2_USE_LVGL_RENDERER=$(CONFIG_EDK2_USE_LVGL_RENDERER)
 
-edk2-payload-inputs := payloads/external/edk2/Makefile payloads/external/edk2/patches.py \
+edk2-payload-inputs := payloads/external/edk2/Makefile payloads/external/patches.py \
 	$(wildcard $(call strip_quotes,$(CONFIG_EDK2_PATCHES_DIR))/*.patch)
 ifeq ($(CONFIG_EDK2_INTEL_GIG_UNDI),y)
 edk2-payload-inputs += payloads/external/edk2/prepare_network_driver.py \
@@ -474,7 +474,11 @@ endif
 ifeq ($(wildcard $(obj)/ipxe.rom),)
 PHONY += $(obj)/ipxe.rom
 endif
-$(obj)/ipxe.rom ipxe: $(DOTCONFIG) $(IPXE_CONFIG_SCRIPT) payloads/external/iPXE/Makefile
+ipxe-payload-inputs := payloads/external/iPXE/Makefile payloads/external/patches.py
+ifeq ($(CONFIG_IPXE_STABLE)$(CONFIG_EDK2_ENABLE_IPXE),yy)
+ipxe-payload-inputs += payloads/external/iPXE/patches/0001-ipxe-gcc16-upstream-backport.patch
+endif
+$(obj)/ipxe.rom ipxe: $(DOTCONFIG) $(IPXE_CONFIG_SCRIPT) $(ipxe-payload-inputs)
 	$(MAKE) -C payloads/external/iPXE all \
 	CROSS_COMPILE=$(IPXE_CROSS_COMPILE) \
 	PXE_ROM_PCI_ID=$(PXE_ROM_PCI_ID) \

@@ -40,10 +40,10 @@ endif
 		git fetch; fi
 
 checkout: fetch
-	python3 ../edk2/patches.py undo --source "$(abspath seabios)" --state "$(abspath patches-seabios)"
+	python3 ../patches.py undo --source "$(abspath seabios)" --state "$(abspath patches-seabios)"
 	echo "    Checking out SeaBIOS revision $(TAG-y)"
 	cd seabios; git checkout master; git branch -D coreboot 2>/dev/null; git checkout -b coreboot $(TAG-y)
-	python3 ../edk2/patches.py apply --source "$(abspath seabios)" --state "$(abspath patches-seabios)" \
+	python3 ../patches.py apply --source "$(abspath seabios)" --state "$(abspath patches-seabios)" \
 		$(foreach patch,$(seabios_patches),--patch "$(patch)")
 
 config: checkout

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-only
-"""Apply owned patches and remove them before the next source checkout."""
+"""Manage owned patches for external payload source checkouts."""
+
+# The historical owner token and log prefix remain unchanged so existing
+# EDK2, SeaBIOS, CSMWrap and iPXE patch states can be removed safely.
 
 import argparse
 import hashlib
@@ -9,6 +12,10 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+
+
+if not __debug__:
+    raise SystemExit("Patch lifecycle requires Python assertions; do not use -O")
 
 
 def git(source, patch, reverse=False, check=False):

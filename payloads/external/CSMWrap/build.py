@@ -26,7 +26,7 @@ def revision(source):
 
 
 def patch_series(here, action, source, state, patches=()):
-    tool = here.parent / "edk2/patches.py"
+    tool = here.parent / "patches.py"
     argv = ["python3", str(tool), action, "--source", str(source), "--state", str(state)]
     for patch in patches:
         argv.extend(["--patch", str(patch)])

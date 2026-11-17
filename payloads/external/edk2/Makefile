@@ -350,7 +350,7 @@ $(EDK2_PLATFORMS_PATH): $(WORKSPACE)
 		git submodule update --init --checkout
 
 $(EDK2_PATH): $(WORKSPACE)
-	python3 patches.py undo --source "$(EDK2_PATH)" --state "$(EDK2_PATCH_STATE)"
+	python3 ../patches.py undo --source "$(EDK2_PATH)" --state "$(EDK2_PATCH_STATE)"
 	if [ ! -d "$(EDK2_PATH)" ]; then \
 		git clone $(CONFIG_EDK2_REPOSITORY) $(EDK2_PATH); \
 	fi
@@ -494,7 +494,7 @@ print:
 		-e 's/t /Toolchain:      /'
 
 patches: $(EDK2_PATH)
-	python3 patches.py apply --source "$(EDK2_PATH)" --state "$(EDK2_PATCH_STATE)" \
+	python3 ../patches.py apply --source "$(EDK2_PATH)" --state "$(EDK2_PATCH_STATE)" \
 		$(foreach patch,$(EDK2_PATCHES),--patch "$(patch)")
 
 prep: $(EDK2_PATH) $(EDK2_PLATFORMS_PATH) clean checktools logo gop_driver ipxe_rom patches
