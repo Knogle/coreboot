@@ -162,31 +162,3 @@ const struct native84_handoff *native84_descriptor(void)
 	return &stage_descriptor;
 }
 
-/* Retain the all-256 terminal IDT through every genuine stage GDT switch.
- * No debug-register, breakpoint, AP, SMI or platform exception setup is replayed.
- */
-void __wrap_exception_init(void);
-void __wrap_exception_init(void)
-{
-	const struct native84_context_image *image =
-		(const void *)(uintptr_t)NATIVE84_CONTEXT_BEGIN;
-	const uint8_t *idt = image->idt_08;
-	uint32_t target = native84_profile_policy.fault_entry;
-	unsigned int i;
-
-	/* assembly_entry may call this before its C car_stage_entry wrapper. */
-	if (!stage_admitted)
-		native84_stage_admit((const void *)(uintptr_t)NATIVE84_A);
-	native84_stage_check();
-	if (image->idtr_08.limit != 2047 ||
-	    image->idtr_08.base != (uintptr_t)idt)
-		native84_terminal();
-	for (i = 0; i < 256; i++, idt += 8) {
-		if (idt[0] != (uint8_t)target || idt[1] != (uint8_t)(target >> 8) ||
-		    idt[2] != 8 || idt[3] || idt[4] || idt[5] != 0x8e ||
-		    idt[6] != (uint8_t)(target >> 16) ||
-		    idt[7] != (uint8_t)(target >> 24))
-			native84_terminal();
-	}
-	asm volatile ("lidt %0" : : "m" (image->idtr_08) : "memory");
-}
