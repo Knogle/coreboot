@@ -4,6 +4,7 @@ edk2/workspace
 FILO/filo/
 GRUB2/grub2/
 iPXE/ipxe/
+iPXE/patches-ipxe/
 LinuxBoot/linuxboot/
 Memtest86Plus/memtest86plus_v*/
 SeaBIOS/seabios/

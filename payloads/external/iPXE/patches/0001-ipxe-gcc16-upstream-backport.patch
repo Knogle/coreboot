@@ -1,0 +1,58 @@
+diff --git a/src/arch/x86/transitions/librm_mgmt.c b/src/arch/x86/transitions/librm_mgmt.c
+index 89feec96a..6c8d55f90 100644
+--- a/src/arch/x86/transitions/librm_mgmt.c
++++ b/src/arch/x86/transitions/librm_mgmt.c
+@@ -21,6 +21,13 @@ FILE_LICENCE ( GPL2_OR_LATER_OR_UBDL );
+  *
+  */
+ 
++/* Calling convention used by interrupt wrapper */
++#ifdef __x86_64__
++#define __intrcall
++#else
++#define __intrcall __attribute__ (( regparm ( 3 ) ))
++#endif
++
+ /** The interrupt wrapper */
+ extern char interrupt_wrapper[];
+ 
+@@ -247,9 +254,8 @@ interrupt_dump ( int intr, struct interrupt_frame32 *frame32,
+  * @v frame64		64-bit interrupt wrapper stack frame (or NULL)
+  * @v frame		Interrupt wrapper stack frame
+  */
+-void __attribute__ (( regparm ( 3 ) ))
+-interrupt ( int intr, struct interrupt_frame32 *frame32,
+-	    struct interrupt_frame64 *frame64 ) {
++__intrcall void interrupt ( int intr, struct interrupt_frame32 *frame32,
++			    struct interrupt_frame64 *frame64 ) {
+ 	struct profiler *profiler = interrupt_profiler ( intr );
+ 	uint32_t discard_eax;
+ 
+diff --git a/src/arch/x86_64/include/bits/compiler.h b/src/arch/x86_64/include/bits/compiler.h
+index 1c04a7b30..fe5667f9e 100644
+--- a/src/arch/x86_64/include/bits/compiler.h
++++ b/src/arch/x86_64/include/bits/compiler.h
+@@ -12,7 +12,7 @@ FILE_LICENCE ( GPL2_OR_LATER_OR_UBDL );
+ #define ASM_NO_PREFIX "c"
+ 
+ /** Declare a function with standard calling conventions */
+-#define __asmcall __attribute__ (( regparm(0) ))
++#define __asmcall
+ 
+ /** Declare a function with libgcc implicit linkage */
+ #define __libgcc
+diff --git a/src/drivers/net/w89c840.c b/src/drivers/net/w89c840.c
+index 33a6658d2..a2b4800d2 100644
+--- a/src/drivers/net/w89c840.c
++++ b/src/drivers/net/w89c840.c
+@@ -682,9 +682,7 @@ static int w89c840_probe ( struct nic *nic, struct pci_device *p ) {
+ 
+     DBG ( "Ethernet addr: %s\n", eth_ntoa ( nic->node_addr ) );
+ 
+-#if defined(W89C840_DEBUG)
+-    printf("winbond-840: EEPROM checksum %hX, got eeprom", sum);
+-#endif
++    DBG ( "winbond-840: EEPROM checksum %hX, got eeprom", sum );
+ 
+     /* Reset the chip to erase previous misconfiguration.
+        No hold time required! */

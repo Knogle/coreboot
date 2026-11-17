@@ -11,6 +11,12 @@ project_name=iPXE
 project_dir=ipxe
 project_git_repo=https://git.ipxe.org/ipxe.git
 
+# GCC 16 fixes from upstream iPXE commits 2d28657, c18d0a2, be35d67.
+# Apply only to the pinned 2025.12 EFI donor.
+override ipxe_gcc16_base := 7c39c04a537ce29dccc6f2bae9749d1d371429c1
+ipxe_gcc16_patch=$(abspath patches/0001-ipxe-gcc16-upstream-backport.patch)
+ipxe_patch_state=$(abspath patches-ipxe)
+
 ifeq ($(CONFIG_IPXE_BUILD_EFI),y)
 ifeq ($(CONFIG_IPXE_EFI_DEVICE_SPECIFIC),y)
 IPXE_BUILD_TARGET := bin-x86_64-efi-sb/$(PXE_ROM_PCI_ID).efi
@@ -47,14 +53,25 @@ fetch: $(project_dir)
 			git fetch; \
 		fi
 
+# Shared patch-state helper currently lives in ../edk2/patches.py.
+# Keep that public helper present until iPXE owns a generic replacement.
 checkout: fetch
+	python3 ../edk2/patches.py undo --source "$(abspath $(project_dir))" --state "$(ipxe_patch_state)"
 	echo "    Checking out $(project_name) revision $(TAG-y)"
 	set -e; cd $(project_dir); \
 		git checkout master; \
 		git branch -D coreboot 2>/dev/null || true; \
 		git checkout -b coreboot $(TAG-y)
 
-config: checkout
+patches: checkout
+	@test -z "$$(git -C $(project_dir) status --porcelain --untracked-files=no)"
+ifeq ($(CONFIG_IPXE_STABLE)$(CONFIG_IPXE_BUILD_EFI),yy)
+	@test "$$(git -C $(project_dir) rev-parse HEAD)" = "$(ipxe_gcc16_base)"
+	python3 ../edk2/patches.py apply --source "$(abspath $(project_dir))" --state "$(ipxe_patch_state)" --patch "$(ipxe_gcc16_patch)"
+endif
+	@git -C $(project_dir) diff --check
+
+config: patches
 ifeq ($(CONSOLE_SERIAL),yy)
 	sed -i'' 's|//#define\s*CONSOLE_SERIAL.*|#define CONSOLE_SERIAL|' "$(project_dir)/src/config/console.h"
 	sed -i'' 's|#define\s*COMCONSOLE.*|#define COMCONSOLE $(IPXE_UART)|' "$(project_dir)/src/config/serial.h"
@@ -89,6 +106,6 @@ clean:
 	rm -f $(project_dir)/ipxe.rom
 
 distclean:
-	rm -rf $(project_dir)
+	rm -rf $(project_dir) patches-ipxe
 
-.PHONY: all fetch config build clean distclean
+.PHONY: all fetch checkout patches config build clean distclean
