@@ -12,7 +12,7 @@
 #include <halt.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "normal_uart2.h"
+#include "../normal_uart2.h"
 
 uint32_t b565d4_normal_reset_eax;
 
