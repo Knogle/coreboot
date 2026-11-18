@@ -9,6 +9,12 @@ config COMMON_CBFS_SPI_WRAPPER
 	help
 	 Use common wrapper to interface CBFS to SPI bootrom.
 
+config SPI_FLASH_OMIT_LB_RECORD
+	bool
+	help
+	  Omit the optional physical-flash record in the coreboot table and
+	  avoid probing the physical SPI flash while building that record.
+
 config SPI_FLASH
 	bool
 	default y if BOOT_DEVICE_SPI_FLASH && BOOT_DEVICE_SUPPORTS_WRITES
