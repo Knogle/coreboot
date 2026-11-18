@@ -1,5 +1,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
+ifeq ($(CONFIG_SOC_AMD_CEZANNE_NATIVE),y)
+ifneq ($(CONFIG_SOC_AMD_CEZANNE_BASE),y)
+$(error SOC_AMD_CEZANNE_NATIVE requires SOC_AMD_CEZANNE_BASE)
+endif
+ifeq ($(CONFIG_PLATFORM_USES_FSP2_0),y)
+$(error SOC_AMD_CEZANNE_NATIVE cannot use PLATFORM_USES_FSP2_0)
+endif
+ifneq ($(filter y,$(CONFIG_SOC_AMD_RENOIR) $(CONFIG_SOC_AMD_V2000A)),)
+$(error SOC_AMD_CEZANNE_NATIVE excludes Renoir and V2000A)
+endif
+endif
+
 ifeq ($(CONFIG_SOC_AMD_CEZANNE_BASE),y)
 
 cezanne-concrete-soc := $(filter y, \
