@@ -40,9 +40,7 @@ romstage-$(CONFIG_SOC_AMD_V2000A)  += fsp_m_params_renoir.c
 endif
 
 ramstage-y	+= acpi.c
-ifneq ($(CONFIG_SOC_AMD_CEZANNE_NATIVE),y)
-ramstage-y	+= chip.c
-endif
+ramstage-$(CONFIG_PLATFORM_USES_FSP2_0) += chip.c
 ramstage-y	+= cpu.c
 ramstage-y	+= fch.c
 ramstage-$(CONFIG_PLATFORM_USES_FSP2_0) += fsp_s_params.c
