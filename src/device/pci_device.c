@@ -27,11 +27,6 @@
 #include <timestamp.h>
 #include <types.h>
 
-#if ENV_RAMSTAGE && CONFIG(SOC_AMD_CEZANNE_NATIVE)
-#include <console/uart.h>
-extern struct device_operations amd_external_pcie_gpp_ops;
-#endif
-
 u8 pci_moving_config8(struct device *dev, unsigned int reg)
 {
 	u8 value, ones, zeroes;
@@ -1118,26 +1113,6 @@ static struct device *pci_scan_get_dev(struct bus *bus, unsigned int devfn)
 	return dev;
 }
 
-#if ENV_RAMSTAGE && CONFIG(SOC_AMD_CEZANNE_NATIVE)
-static u32 native104_probe_vendor_id(const struct device *dev)
-{
-	const struct device *parent = dev->upstream->dev;
-	const bool trace = PCI_FUNC(dev->path.pci.devfn) == 0 && parent &&
-		parent->ops == &amd_external_pcie_gpp_ops;
-
-	if (trace) {
-		printk(BIOS_INFO, "NATIVE104 CHILD ID BEGIN %s ECAM=%08x\n",
-		       dev_path(dev), CONFIG_ECAM_MMCONF_BASE_ADDRESS + PCI_BDF(dev));
-		uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
-	}
-	u32 id = pci_read_config32(dev, PCI_VENDOR_ID);
-	if (trace) {
-		printk(BIOS_INFO, "NATIVE104 CHILD ID END %s id=%08x\n", dev_path(dev), id);
-		uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
-	}
-	return id;
-}
-#endif
 
 /**
  * Scan a PCI bus.
@@ -1164,8 +1139,8 @@ struct device *pci_probe_dev(struct device *dev, struct bus *bus,
 		dummy.path.type = DEVICE_PATH_PCI;
 		dummy.path.pci.devfn = devfn;
 
-#if ENV_RAMSTAGE && CONFIG(SOC_AMD_CEZANNE_NATIVE)
-		id = native104_probe_vendor_id(&dummy);
+#if ENV_RAMSTAGE && CONFIG(PCI_SCAN_VENDOR_ID_HOOK)
+		id = pci_scan_vendor_id_hook(&dummy);
 #else
 		id = pci_read_config32(&dummy, PCI_VENDOR_ID);
 #endif
@@ -1200,8 +1175,8 @@ struct device *pci_probe_dev(struct device *dev, struct bus *bus,
 			dev->chip_ops->enable_dev(dev);
 
 		/* Now read the vendor and device ID. */
-#if ENV_RAMSTAGE && CONFIG(SOC_AMD_CEZANNE_NATIVE)
-		id = native104_probe_vendor_id(dev);
+#if ENV_RAMSTAGE && CONFIG(PCI_SCAN_VENDOR_ID_HOOK)
+		id = pci_scan_vendor_id_hook(dev);
 #else
 		id = pci_read_config32(dev, PCI_VENDOR_ID);
 #endif
@@ -1497,37 +1472,8 @@ void pci_scan_bus(struct bus *bus, unsigned int min_devfn,
 	 * scan the bus behind that child.
 	 */
 
-#if ENV_RAMSTAGE && CONFIG(SOC_AMD_CEZANNE_NATIVE)
-	/* Vendor firmware left sibling bus routes live. The normal scan assigns
-	 * fresh bus numbers; close ALL old Type1 routes on this bus first, even
-	 * on statically disabled ports, before walking any one child. Otherwise
-	 * a newly assigned secondary can still match an old sibling window.
-	 * This is the genuine PCI_ROUTE_CLOSE value, without reset/BAR/COMMAND
-	 * changes. Repeat at every bus depth to cover nested chipset switches.
-	 */
-	for (dev = bus->children; dev; dev = dev->sibling) {
-		u32 id, before, after, expected;
-
-		if (dev->path.type != DEVICE_PATH_PCI || !dev->vendor ||
-		    dev->vendor == 0xffff || (dev->hdr_type & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
-			continue;
-		id = pci_read_config32(dev, PCI_VENDOR_ID);
-		if (id != (dev->vendor | (u32)dev->device << 16) ||
-		    (pci_read_config8(dev, PCI_HEADER_TYPE) & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
-			die("NATIVE90 bridge identity changed before route close: %s\n",
-			    dev_path(dev));
-		before = pci_read_config32(dev, PCI_PRIMARY_BUS);
-		expected = (before & 0xff000000U) | 0x00feff00U;
-		pci_write_config8(dev, PCI_PRIMARY_BUS, 0);
-		pci_write_config8(dev, PCI_SECONDARY_BUS, 0xff);
-		pci_write_config8(dev, PCI_SUBORDINATE_BUS, 0xfe);
-		after = pci_read_config32(dev, PCI_PRIMARY_BUS);
-		printk(BIOS_INFO, "NATIVE90 ROUTE CLOSE %s id=%08x enabled=%u "
-		       "old=%08x new=%08x expected=%08x\n", dev_path(dev), id,
-		       dev->enabled, before, after, expected);
-		if (after != expected)
-			die("NATIVE90 bridge route close readback failed: %s\n", dev_path(dev));
-	}
+#if ENV_RAMSTAGE && CONFIG(PCI_SCAN_PRE_BRIDGE_HOOK)
+	pci_scan_pre_bridge_hook(bus);
 #endif
 	scan_bridges(bus);
 

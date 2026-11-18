@@ -88,6 +88,8 @@ void do_pci_scan_bridge(struct device *dev,
 void pci_scan_bridge(struct device *bus);
 void pci_scan_bus(struct bus *bus, unsigned int min_devfn,
 	unsigned int max_devfn);
+void pci_scan_pre_bridge_hook(struct bus *bus);
+u32 pci_scan_vendor_id_hook(const struct device *dev);
 
 uint8_t pci_moving_config8(struct device *dev, unsigned int reg);
 uint16_t pci_moving_config16(struct device *dev, unsigned int reg);

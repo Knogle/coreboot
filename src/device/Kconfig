@@ -558,6 +558,20 @@ config PCI
 
 if PCI
 
+config PCI_SCAN_PRE_BRIDGE_HOOK
+	bool
+	help
+	  Select this when the mainboard or SoC provides
+	  pci_scan_pre_bridge_hook(). It runs after probing every device on a
+	  bus and before scanning any bridge below that bus.
+
+config PCI_SCAN_VENDOR_ID_HOOK
+	bool
+	help
+	  Select this when the mainboard or SoC provides
+	  pci_scan_vendor_id_hook() to read and optionally trace a PCI vendor
+	  and device ID during ramstage enumeration.
+
 config DOMAIN_RESOURCE_32BIT_LIMIT
 	hex
 	default 0xfe000000

@@ -71,6 +71,8 @@ else
 ramstage-y += platform.c
 endif
 ramstage-y += ramstage/profile.c ramstage/stages.c ramstage/media.c ramstage/uart.c
+ramstage-$(CONFIG_PCI_SCAN_PRE_BRIDGE_HOOK) += ramstage/pci_route_close.c
+ramstage-$(CONFIG_PCI_SCAN_VENDOR_ID_HOOK) += ramstage/pci_vendor_probe.c
 ramstage-y += ramstage/terminal_providers.c
 ramstage-$(CONFIG_B565D4_MATISSE_IRQ_DIAGNOSTIC) += ramstage/matisse_irq_probe.c
 ramstage-$(CONFIG_B565D4_MATISSE_IRQ_DIAGNOSTIC) += ramstage/matisse_irq_stubs.S
