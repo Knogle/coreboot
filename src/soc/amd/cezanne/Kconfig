@@ -556,6 +556,7 @@ config SOC_AMD_CEZANNE_NATIVE
 	bool
 	depends on SOC_AMD_CEZANNE_BASE
 	depends on !SOC_AMD_RENOIR && !SOC_AMD_V2000A
+	select SKIP_UNSUPPORTED_S3_RESUME_CHECK
 	help
 	  Native x86 board initialization after the PSP/ABL DRAM-first path.
 	  The board provides the memory contract, device setup and AP startup.

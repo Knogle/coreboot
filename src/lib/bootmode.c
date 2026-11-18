@@ -79,7 +79,7 @@ __weak int platform_is_resuming(void)
  */
 void prevent_unsupported_s3_resume(void)
 {
-	if (CONFIG(SOC_AMD_CEZANNE_NATIVE))
+	if (CONFIG(SKIP_UNSUPPORTED_S3_RESUME_CHECK))
 		return;
 
 	if (CONFIG(HAVE_ACPI_RESUME))

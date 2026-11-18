@@ -1,5 +1,11 @@
 ## SPDX-License-Identifier: GPL-2.0-only
 
+config SKIP_UNSUPPORTED_S3_RESUME_CHECK
+	bool
+	help
+	  Skip the generic reset on an unsupported S3 wake. This does not
+	  enable S3 resume; the platform must handle that wake itself.
+
 config MISSING_BOARD_RESET
 	bool
 	help
