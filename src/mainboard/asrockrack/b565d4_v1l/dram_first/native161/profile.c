@@ -161,4 +161,3 @@ const struct native84_handoff *native84_descriptor(void)
 	native84_stage_check();
 	return &stage_descriptor;
 }
-

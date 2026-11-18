@@ -14,8 +14,12 @@ import subprocess
 import tempfile
 
 
-if not __debug__:
-    raise SystemExit("Patch lifecycle requires Python assertions; do not use -O")
+def require(condition, message=None):
+    """Keep source and patch-state checks active under Python -O."""
+    if not condition:
+        if message is None:
+            raise AssertionError
+        raise AssertionError(message)
 
 
 def git(source, patch, reverse=False, check=False):
@@ -37,19 +41,20 @@ def undo(source, state):
     if not state.exists():
         return
     manifest = json.loads((state / "manifest.json").read_text())
-    assert manifest["owner"] == "coreboot-edk2-patches-v1"
-    assert manifest["source"] == str(source)
+    require(manifest["owner"] == "coreboot-edk2-patches-v1")
+    require(manifest["source"] == str(source))
     while manifest["patches"]:
         row = manifest["patches"][-1]
-        assert Path(row["snapshot"]).name == row["snapshot"]
+        require(Path(row["snapshot"]).name == row["snapshot"])
         patch = state / row["snapshot"]
-        assert hashlib.sha256(patch.read_bytes()).hexdigest() == row["sha256"]
+        require(hashlib.sha256(patch.read_bytes()).hexdigest() == row["sha256"])
         if git(source, patch, reverse=True, check=True).returncode == 0:
             result = git(source, patch, reverse=True)
-            assert result.returncode == 0, result.stderr.decode()
+            if result.returncode != 0:
+                raise AssertionError(result.stderr.decode())
         else:
             result = git(source, patch, check=True)
-            assert result.returncode == 0, "Owned edk2 patch conflicts with source changes"
+            require(result.returncode == 0, "Owned edk2 patch conflicts with source changes")
         manifest["patches"].pop()
         save(state, manifest)
         patch.unlink()
@@ -59,7 +64,7 @@ def undo(source, state):
 def apply(source, state, patches):
     if not patches:
         return
-    assert not state.exists(), "Remove the preceding owned patches before checkout"
+    require(not state.exists(), "Remove the preceding owned patches before checkout")
     state.mkdir(parents=True)
     manifest = dict(owner="coreboot-edk2-patches-v1", source=str(source), patches=[])
     save(state, manifest)
@@ -67,7 +72,8 @@ def apply(source, state, patches):
         already_applied = git(source, patch, reverse=True, check=True).returncode == 0
         if not already_applied:
             result = git(source, patch, check=True)
-            assert result.returncode == 0, result.stderr.decode()
+            if result.returncode != 0:
+                raise AssertionError(result.stderr.decode())
         snapshot = "%04d.patch" % index
         data = patch.read_bytes()
         (state / snapshot).write_bytes(data)
@@ -75,7 +81,8 @@ def apply(source, state, patches):
         save(state, manifest)
         if not already_applied:
             result = git(source, patch)
-            assert result.returncode == 0, result.stderr.decode()
+            if result.returncode != 0:
+                raise AssertionError(result.stderr.decode())
         print("edk2 source patch: " + str(patch), flush=True)
 
 
@@ -86,7 +93,7 @@ def adopt(source, state, patches):
     the entire series against HEAD in a temporary tree, preserving unrelated
     source edits, before recording snapshots for reverse-order removal.
     """
-    assert patches and not state.exists()
+    require(patches and not state.exists())
     paths = set()
     for patch in patches:
         result = subprocess.run(["git", "apply", "--numstat", "-z", str(patch)],
@@ -95,9 +102,9 @@ def adopt(source, state, patches):
             if not row:
                 continue
             fields = row.split(b"\t", 2)
-            assert len(fields) == 3 and fields[2], "Renames are not adopted"
+            require(len(fields) == 3 and fields[2], "Renames are not adopted")
             name = Path(fields[2].decode())
-            assert not name.is_absolute() and ".." not in name.parts
+            require(not name.is_absolute() and ".." not in name.parts)
             paths.add(name)
     with tempfile.TemporaryDirectory(prefix=".patch-adopt-", dir=state.parent) as tmp:
         tree = Path(tmp)
@@ -112,15 +119,17 @@ def adopt(source, state, patches):
                 target.write_bytes(result.stdout)
         for patch in patches:
             result = git(tree, patch, check=True)
-            assert result.returncode == 0, result.stderr.decode()
+            if result.returncode != 0:
+                raise AssertionError(result.stderr.decode())
             result = git(tree, patch)
-            assert result.returncode == 0, result.stderr.decode()
+            if result.returncode != 0:
+                raise AssertionError(result.stderr.decode())
         for name in paths:
             expected, actual = tree / name, source / name
-            assert not expected.is_symlink() and not actual.is_symlink()
-            assert expected.exists() == actual.exists(), str(name)
+            require(not expected.is_symlink() and not actual.is_symlink())
+            require(expected.exists() == actual.exists(), str(name))
             if expected.exists():
-                assert expected.read_bytes() == actual.read_bytes(), str(name)
+                require(expected.read_bytes() == actual.read_bytes(), str(name))
     state.mkdir(parents=True)
     manifest = dict(owner="coreboot-edk2-patches-v1", source=str(source), patches=[])
     save(state, manifest)
@@ -141,9 +150,9 @@ def main():
     parser.add_argument("--patch", dest="patches", type=Path, action="append", default=[])
     args = parser.parse_args()
     source, state = args.source.resolve(), args.state.resolve()
-    assert source != state and source not in state.parents and state not in source.parents
+    require(source != state and source not in state.parents and state not in source.parents)
     if args.action == "undo":
-        assert not args.patches
+        require(not args.patches)
         undo(source, state)
     elif args.action == "apply":
         apply(source, state, [p.resolve() for p in args.patches])

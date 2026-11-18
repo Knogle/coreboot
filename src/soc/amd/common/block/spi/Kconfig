@@ -11,12 +11,13 @@ config SOC_AMD_COMMON_BLOCK_SPI
 config SOC_AMD_COMMON_BLOCK_SPI_PRESERVE_BOOTBLOCK_MODE
 	bool
 	depends on SOC_AMD_COMMON_BLOCK_SPI
-	default n
 	help
-	  Preserve the PSP-established SPI read mode and clock settings in
-	  bootblock. This is for a terminal board UART diagnostic that does
-	  not access CBFS or start another stage. Qualify the vendor EFS and
-	  flash mapping before using the normal flash-backed stage workflow.
+	  Keep the PSP-established SPI read mode and clock settings when
+	  initializing FCH SPI in bootblock. This skips only the generic
+	  mode configuration there; ROM decode, prefetch and 4-DWORD burst
+	  setup still run. The option does not validate the inherited
+	  controller settings or flash data. Boards selecting it must
+	  qualify their flash access before loading a later stage from it.
 
 config SOC_AMD_COMMON_BLOCK_SPI_DWORD_ACCESS
 	bool
