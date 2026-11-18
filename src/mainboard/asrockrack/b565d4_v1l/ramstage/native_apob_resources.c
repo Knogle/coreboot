@@ -3,6 +3,9 @@
 #include "native84_profile.h"
 #include "native99_apob_packet.h"
 #include "native99_apob_select.h"
+#include <console/console.h>
+#include <console/uart.h>
+#include <soc/native_memmap.h>
 #include <commonlib/helpers.h>
 #include <arch/cpu.h>
 #include <cbmem.h>
@@ -10,6 +13,24 @@
 #include <device/resource.h>
 #include <limits.h>
 #include <memrange.h>
+
+void mainboard_native_memmap_preflight(struct device *dev, unsigned long index)
+{
+	native84_stage_check();
+	if (probe_resource(dev, index))
+		native84_terminal();
+}
+
+void mainboard_native_memmap_publish(struct device *dev, unsigned long *idx)
+{
+	enum native_apob_status status;
+
+	status = native_apob_publish_resources(dev, *idx, idx);
+	printk(BIOS_INFO, "NATIVE99 APOB RESOURCE MAP status=%u next=%lu\n", status, *idx);
+	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
+	if (status != NATIVE_APOB_OK)
+		native84_terminal();
+}
 
 enum {
 	MAX_PACKET_BYTES = NATIVE99_PACKET_HEADER_BYTES + NATIVE99_APOB_MAX_BYTES,

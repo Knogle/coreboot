@@ -9,10 +9,7 @@
 #include <stdint.h>
 
 #if CONFIG(SOC_AMD_CEZANNE_NATIVE)
-#include "native84_profile.h"
-#include "native_apob_resources.h"
-#include <console/console.h>
-#include <console/uart.h>
+#include <soc/native_memmap.h>
 #endif
 
 /*
@@ -70,21 +67,13 @@
 void read_soc_memmap_resources(struct device *dev, unsigned long *idx)
 {
 #if CONFIG(SOC_AMD_CEZANNE_NATIVE)
-	enum native_apob_status status;
-
-	native84_stage_check();
+	mainboard_native_memmap_preflight(dev, *idx);
 	/* Preserve the genuine fixed IOMMU reservation independently of APOB RAM.
 	 * The DF/IOHC prefix and LPC read_resources provide their actual fixed
 	 * registers; do not turn the entire PCI hole into fixed occupied MMIO.
 	 */
-	if (probe_resource(dev, *idx))
-		native84_terminal();
 	mmio_range(dev, (*idx)++, IOMMU_RESERVED_MMIO_BASE, IOMMU_RESERVED_MMIO_SIZE);
-	status = native_apob_publish_resources(dev, *idx, idx);
-	printk(BIOS_INFO, "NATIVE99 APOB RESOURCE MAP status=%u next=%lu\n", status, *idx);
-	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
-	if (status != NATIVE_APOB_OK)
-		native84_terminal();
+	mainboard_native_memmap_publish(dev, idx);
 #else
 	read_lower_soc_memmap_resources(dev, idx);
 
