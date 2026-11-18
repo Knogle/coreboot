@@ -72,6 +72,11 @@ unsigned int soc_get_gsi_base(const struct device *dev);
 /* Called after probing an external root port, before scanning its children. */
 void mainboard_pcie_gpp_pre_scan(struct device *dev);
 
+/* Board policy for native external GPP links; weak defaults preserve generic handling. */
+bool mainboard_pcie_gpp_allow_zero_max_width(const struct device *dev);
+/* Called only when the native external link is down and has no static children. */
+bool mainboard_pcie_gpp_close_empty_route(struct device *dev);
+
 unsigned int pci_calculate_irq(const struct pci_routing_info *routing_info, unsigned int pin);
 
 void acpigen_write_pci_GNB_PRT(const struct device *dev);

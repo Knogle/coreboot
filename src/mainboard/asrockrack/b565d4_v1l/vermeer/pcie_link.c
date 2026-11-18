@@ -13,6 +13,7 @@
 #include <device/pci.h>
 #include <device/pci_ops.h>
 #include <device/pciexp.h>
+#include <halt.h>
 #include <static.h>
 
 static void log_config_access(struct device *dev, unsigned int cap, const char *phase)
@@ -176,4 +177,38 @@ void mainboard_pcie_gpp_pre_scan(struct device *dev)
 			prepared[i] = limit_port(dev, speed);
 		return;
 	}
+}
+
+/* B565 desktop policy for the common external GPP scan. */
+bool mainboard_pcie_gpp_allow_zero_max_width(const struct device *dev)
+{
+	(void)dev;
+	return true;
+}
+
+bool mainboard_pcie_gpp_close_empty_route(struct device *dev)
+{
+	if (!CONFIG(PCIEXP_HOTPLUG) && !dev->hotplug_buses) {
+		struct bus *link = dev->downstream ? dev->downstream : alloc_bus(dev);
+		const u32 before = pci_read_config32(dev, PCI_PRIMARY_BUS);
+		const u32 closed = (before & 0xff000000U) | dev->upstream->secondary;
+
+		/* Do not route a payload's config requests into an inactive
+		 * desktop link. Reserve no bus number when hotplug is disabled;
+		 * the existing empty-link predicate also excludes static children.
+		 * Keep the bridge visible and preserve its latency byte.
+		 */
+		pci_write_config32(dev, PCI_PRIMARY_BUS, closed);
+		if (pci_read_config32(dev, PCI_PRIMARY_BUS) != closed)
+			die("Desktop empty PCIe route did not close: %s\n", dev_path(dev));
+		link->secondary = 0;
+		link->subordinate = 0;
+		link->max_subordinate = dev->upstream->max_subordinate;
+		link->segment_group = dev->upstream->segment_group;
+		printk(BIOS_INFO, "Desktop empty PCIe route closed: %s "
+		       "buses=%08x no bus allocation\n", dev_path(dev), closed);
+		return true;
+	}
+
+	return false;
 }

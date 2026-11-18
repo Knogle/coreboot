@@ -9,7 +9,6 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pciexp.h>
-#include <halt.h>
 #include <soc/pci_devs.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -347,7 +346,8 @@ static bool native104_external_link_down(struct device *dev)
 		valid = (flags & PCI_EXP_FLAGS_VERS) && flags != 0xffff &&
 			((flags & PCI_EXP_FLAGS_TYPE) >> 4) == PCI_EXP_TYPE_ROOT_PORT &&
 			link_cap != 0xffffffff &&
-			((link_cap & PCI_EXP_LNKCAP_MLW) || CONFIG(B565D4_DESKTOP_NATIVE)) &&
+			((link_cap & PCI_EXP_LNKCAP_MLW) ||
+			 mainboard_pcie_gpp_allow_zero_max_width(dev)) &&
 			(link_cap & PCI_EXP_LNKCAP_MLS) && status != 0xffff;
 		if (valid)
 			down = !width || (status & PCI_EXP_LNKSTA_LT) ||
@@ -371,33 +371,25 @@ __weak void mainboard_pcie_gpp_pre_scan(struct device *dev)
 	(void)dev;
 }
 
+__weak bool mainboard_pcie_gpp_allow_zero_max_width(const struct device *dev)
+{
+	(void)dev;
+	return false;
+}
+
+__weak bool mainboard_pcie_gpp_close_empty_route(struct device *dev)
+{
+	(void)dev;
+	return false;
+}
+
 static void pcie_gpp_scan_bridge(struct device *dev)
 {
 	mainboard_pcie_gpp_pre_scan(dev);
 #if ENV_RAMSTAGE && CONFIG(SOC_AMD_CEZANNE_NATIVE)
 	if (native104_external_link_down(dev)) {
-		if (CONFIG(B565D4_DESKTOP_NATIVE) && !CONFIG(PCIEXP_HOTPLUG) &&
-		    !dev->hotplug_buses) {
-			struct bus *link = dev->downstream ? dev->downstream : alloc_bus(dev);
-			const u32 before = pci_read_config32(dev, PCI_PRIMARY_BUS);
-			const u32 closed = (before & 0xff000000U) | dev->upstream->secondary;
-
-			/* Do not route a payload's config requests into an inactive
-			 * desktop link. Reserve no bus number when hotplug is disabled;
-			 * the existing empty-link predicate also excludes static children.
-			 * Keep the bridge visible and preserve its latency byte.
-			 */
-			pci_write_config32(dev, PCI_PRIMARY_BUS, closed);
-			if (pci_read_config32(dev, PCI_PRIMARY_BUS) != closed)
-				die("Desktop empty PCIe route did not close: %s\n", dev_path(dev));
-			link->secondary = 0;
-			link->subordinate = 0;
-			link->max_subordinate = dev->upstream->max_subordinate;
-			link->segment_group = dev->upstream->segment_group;
-			printk(BIOS_INFO, "Desktop empty PCIe route closed: %s "
-			       "buses=%08x no bus allocation\n", dev_path(dev), closed);
+		if (mainboard_pcie_gpp_close_empty_route(dev))
 			return;
-		}
 		/* Keep genuine bridge allocation and SCAN/FINAL route bookkeeping,
 		 * but issue no downstream config request for this down-link snapshot.
 		 * No reset, retraining, GPIO, SMU, or permanent port disable follows.
