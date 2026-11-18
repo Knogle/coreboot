@@ -15,9 +15,9 @@ static const struct {
 	uint8_t fallback;
 	uint8_t maximum;
 } options[] = {
-#define OPTION_ENTRY(id, name, byte, def, max) { name, byte, def, max },
-	B565D4_SETUP_OPTIONS(OPTION_ENTRY)
-#undef OPTION_ENTRY
+#define B565D4_SETUP_OPTION(id, name, byte, def, max) { name, byte, def, max },
+#include "setup_options.inc"
+#undef B565D4_SETUP_OPTION
 };
 
 static unsigned int values[B565D4_OPT_COUNT];
