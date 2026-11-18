@@ -10,6 +10,10 @@ bootblock-y += vermeer/early_fch.c
 LDFLAGS_bootblock += --wrap=write_resume_eip
 endif
 
+bootblock-$(CONFIG_SOC_AMD_CEZANNE_NATIVE_CPU_IDENTITY_PROVIDER) += vermeer/cpu_identity.c
+romstage-$(CONFIG_SOC_AMD_CEZANNE_NATIVE_CPU_IDENTITY_PROVIDER) += vermeer/cpu_identity.c
+ramstage-$(CONFIG_SOC_AMD_CEZANNE_NATIVE_CPU_IDENTITY_PROVIDER) += vermeer/cpu_identity.c
+
 bootblock-y += dram_first/bootblock.c dram_first/cpu_guard.S
 bootblock-y += normal_uart2.c
 bootblock-y += dram_first/normal_reset_eax.S dram_first/normal_pre_soc_uart.c

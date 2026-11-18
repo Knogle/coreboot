@@ -21,9 +21,6 @@
 
 #if CONFIG(SOC_AMD_CEZANNE_NATIVE)
 #include <soc/cpu.h>
-#if CONFIG(B565D4_DESKTOP_NATIVE)
-#include <b565d4_cpu.h>
-#endif
 #endif
 
 /* Diagnostic output only: use the already-established GS CPU context, not another MSR read. */
@@ -247,8 +244,8 @@ void amd_cpu_init(struct device *dev)
 	NATIVE174_BSP_TRACE("CPUID1 BEFORE");
 	cpuid_signature = cpuid_eax(1);
 	NATIVE174_BSP_TRACE("CPUID1 AFTER eax=%08x", cpuid_signature);
-#if CONFIG(B565D4_DESKTOP_NATIVE)
-	if (!b565d4_is_selected_cpu(cpuid_signature))
+#if CONFIG(SOC_AMD_CEZANNE_NATIVE_CPU_IDENTITY_PROVIDER)
+	if (!mainboard_amd_native_cpu_identity_valid(cpuid_signature))
 #else
 	if (!cpuid_match(cpuid_signature, CEZANNE_A0_CPUID, CPUID_ALL_STEPPINGS_MASK))
 #endif

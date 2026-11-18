@@ -552,6 +552,14 @@ config SERIRQ_CONTINUOUS_MODE
 
 endif # SOC_AMD_CEZANNE_BASE
 
+config SOC_AMD_CEZANNE_NATIVE_CPU_IDENTITY_PROVIDER
+	bool
+	depends on SOC_AMD_CEZANNE_NATIVE
+	help
+	  A mainboard supplies the CPU identity predicate used before
+	  native per-CPU microcode setup. The provider must be linked
+	  into every x86 stage that builds AMD non-CAR cpu.c.
+
 config SOC_AMD_CEZANNE_NATIVE
 	bool
 	depends on SOC_AMD_CEZANNE_BASE
