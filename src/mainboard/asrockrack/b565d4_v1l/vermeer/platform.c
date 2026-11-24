@@ -11,7 +11,6 @@
 #include "native87_devices.h"
 #include "native_apob_resources.h"
 #include "native_promontory.h"
-#include "promontory_uplink.h"
 #include "legacy_shadow_fallback.h"
 #include "board_config.h"
 #include "setup_options.h"

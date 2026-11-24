@@ -26,7 +26,7 @@
 #include "czn_dxio.h"
 #include "native_usb_boot.h"
 #include "native_promontory.h"
-#include "promontory_uplink.h"
+#include <amdblocks/promontory.h>
 #include "pcie_acs.h"
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/amd_pci_util.h>
@@ -1667,7 +1667,7 @@ static void native89_init_exit(void *unused)
 	if (native84_profile_policy.entry_path == 2) {
 		native123_enable_irq_input();
 		native42_promontory_init();
-		b565d4_promontory_uplink_init();
+		amd_promontory_init_uplink(DEV_PTR(gpp_bridge_0), 0);
 		native124_hide_unused_ports();
 		native125_soc_function_policy();
 		native139_acp_class_policy();

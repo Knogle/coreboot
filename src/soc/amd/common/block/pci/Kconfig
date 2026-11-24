@@ -13,6 +13,13 @@ config SOC_AMD_COMMON_BLOCK_PCI_MMCONF
 	  Selecting this option adds the AMD-common enable_pci_mmconf function
 	  to the build.
 
+config SOC_AMD_COMMON_BLOCK_PROMONTORY
+	bool
+	select SOC_AMD_COMMON_BLOCK_PCI
+	help
+	  Configure the PCIe uplink between an AMD root port and a
+	  Promontory chipset after its firmware is ready.
+
 config SOC_AMD_COMMON_BLOCK_PCIE_GPP_DRIVER
 	bool
 	depends on SOC_AMD_COMMON_BLOCK_PCI

@@ -6,7 +6,7 @@
 #include "native_promontory.h"
 #include "native84_profile.h"
 #include "native_apob_resources.h"
-#include "promontory_uplink.h"
+#include <amdblocks/promontory.h>
 #include <amdblocks/data_fabric.h>
 #include <arch/cpuid.h>
 #include <cbfs.h>
@@ -726,7 +726,7 @@ void b565d4_matisse_promontory_early(void *unused)
 	       pci_read_config16(root, root_cap + PCI_EXP_LNKCTL),
 	       pci_read_config16(root, root_cap + PCI_EXP_LNKSTA),
 	       pci_read_config16(root, root_cap + PCI_EXP_LNKCTL2));
-	b565d4_promontory_uplink_init();
+	amd_promontory_init_uplink(root, CONFIG_B565D4_DESKTOP_PCH_MAX_SPEED);
 	if (!CONFIG_B565D4_DESKTOP_PCH_MAX_SPEED)
 		matisse_promontory_common_clock(root);
 

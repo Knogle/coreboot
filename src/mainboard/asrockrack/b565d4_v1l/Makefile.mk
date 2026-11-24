@@ -105,7 +105,6 @@ ifneq ($(CONFIG_B565D4_DESKTOP_NATIVE),y)
 ramstage-y += ramstage/czn_dxio.c
 endif
 ramstage-y += ramstage/czn_dxio_reset.c
-ramstage-y += ramstage/promontory_uplink.c
 ramstage-$(CONFIG_SOC_AMD_CEZANNE) += ramstage/czn_pcie_topology.c
 ramstage-y += ramstage/pcie_options.c
 ramstage-y += ramstage/setup_options.c

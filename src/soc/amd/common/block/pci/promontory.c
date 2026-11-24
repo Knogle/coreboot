@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-#include "promontory_uplink.h"
+#include <amdblocks/promontory.h>
 #include <commonlib/helpers.h>
 #include <console/console.h>
 #include <delay.h>
@@ -8,7 +8,6 @@
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
 #include <device/pciexp.h>
-#include <static.h>
 
 static struct device *promontory_upstream(struct device *root)
 {
@@ -38,9 +37,8 @@ static unsigned int link_capability(const struct device *dev, unsigned int type)
 	return cap;
 }
 
-void b565d4_promontory_uplink_init(void)
+void amd_promontory_init_uplink(struct device *root, unsigned int max_speed)
 {
-	struct device *root = DEV_PTR(gpp_bridge_0);
 	struct device *upstream = promontory_upstream(root);
 	unsigned int root_cap, upstream_cap, speed;
 	uint32_t root_link_cap, upstream_link_cap;
@@ -60,11 +58,9 @@ void b565d4_promontory_uplink_init(void)
 		return;
 	speed = MIN(root_link_cap & PCI_EXP_LNKCAP_MLS,
 		    upstream_link_cap & PCI_EXP_LNKCAP_MLS);
-#if CONFIG(B565D4_DESKTOP_NATIVE)
-	/* Preserve an explicit board limit across the ordinary uplink setup. */
-	if (CONFIG_B565D4_DESKTOP_PCH_MAX_SPEED)
-		speed = MIN(speed, CONFIG_B565D4_DESKTOP_PCH_MAX_SPEED);
-#endif
+	/* Preserve an explicit platform limit across the ordinary uplink setup. */
+	if (max_speed)
+		speed = MIN(speed, max_speed);
 	before = pci_read_config16(root, root_cap + PCI_EXP_LNKSTA);
 	control = pci_read_config16(root, root_cap + PCI_EXP_LNKCTL);
 	if (!speed || before == 0xffff || control == 0xffff ||
