@@ -106,7 +106,6 @@ ramstage-y += ramstage/czn_dxio.c
 endif
 ramstage-y += ramstage/czn_dxio_reset.c
 ramstage-y += ramstage/promontory_uplink.c
-ramstage-y += ramstage/asmedia1142.c
 ramstage-$(CONFIG_SOC_AMD_CEZANNE) += ramstage/czn_pcie_topology.c
 ramstage-y += ramstage/pcie_options.c
 ramstage-y += ramstage/setup_options.c

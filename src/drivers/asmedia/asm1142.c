@@ -56,7 +56,7 @@ static void prepare_scratchpads(struct device *dev)
 	}
 	pci_write_config16(dev, ASM_XDATA_INDEX, selector);
 	printk(after == ASM_RESTORE_HCSPARAMS2 ? BIOS_NOTICE : BIOS_WARNING,
-	       "Board ASM1142 %s: HCSPARAMS2 %08x -> %08x, selector restored=%u\n",
+	       "ASM1142 %s: HCSPARAMS2 %08x -> %08x, selector restored=%u\n",
 	       dev_path(dev), before, after,
 	       pci_read_config16(dev, ASM_XDATA_INDEX) == selector);
 }
