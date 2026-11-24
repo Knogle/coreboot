@@ -3,7 +3,7 @@
 #ifndef AMD_MATISSE_NBIF_PORT_H
 #define AMD_MATISSE_NBIF_PORT_H
 
-#include "nbif_map.h"
+#include <amdblocks/matisse_nbif_map.h>
 
 struct matisse_nbif_port_assignment {
 	uint8_t slot;

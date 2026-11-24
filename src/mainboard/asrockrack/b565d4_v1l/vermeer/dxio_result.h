@@ -3,8 +3,8 @@
 #ifndef AMD_MATISSE_DXIO_RESULT_H
 #define AMD_MATISSE_DXIO_RESULT_H
 
-#include "dxio_engines.h"
-#include "nbif_port.h"
+#include <amdblocks/matisse_dxio_engines.h>
+#include <amdblocks/matisse_nbif_port.h>
 
 /* Caller-qualified topology fields, without packed vendor descriptors. */
 struct matisse_dxio_result_slot {

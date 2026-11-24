@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <limits.h>
-#include "nbif_map.h"
+#include <amdblocks/matisse_nbif_map.h>
 
 static const uint8_t devfn_pool[MATISSE_NBIF_MAP_SLOTS] = {
 	9, 10, 11, 12, 13, 14, 15, 17, 25, 26, 27, 28, 29, 30, 31, 33, 41, 42,

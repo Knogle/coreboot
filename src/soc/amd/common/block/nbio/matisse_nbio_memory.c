@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "nbio_memory.h"
+#include <amdblocks/matisse_nbio_memory.h>
 
 bool matisse_plan_nbio_memory(const struct matisse_nbio_memory *before,
 			      uint64_t top_mem, uint64_t top_mem2, uint64_t syscfg,

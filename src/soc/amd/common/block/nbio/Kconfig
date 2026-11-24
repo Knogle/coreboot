@@ -1,0 +1,6 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config SOC_AMD_COMMON_BLOCK_MATISSE_NBIO
+	bool
+	help
+	  Build the native Matisse NBIO and DXIO planning helpers.

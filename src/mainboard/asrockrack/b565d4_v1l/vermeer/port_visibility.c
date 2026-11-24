@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include "platform.h"
-#include "nbif_map.h"
-#include "nbio_memory.h"
+#include <amdblocks/matisse_nbif_map.h>
+#include <amdblocks/matisse_nbio_memory.h>
 #include <amdblocks/smn.h>
 #include <console/console.h>
 #include <device/device.h>

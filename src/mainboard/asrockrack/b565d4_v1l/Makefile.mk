@@ -60,16 +60,16 @@ ifeq ($(CONFIG_B565D4_DESKTOP_NATIVE),y)
 ramstage-y += vermeer/platform.c vermeer/iohc.c vermeer/desktop_topology.c
 ramstage-y += vermeer/cpu.c
 ramstage-$(CONFIG_B565D4_MATISSE_PCI_ACCESS_DIAGNOSTIC) += vermeer/pci_diagnostics.c
-ramstage-y += vermeer/nbio_base_plan.c vermeer/nbio_memory.c
+ramstage-y += vermeer/nbio_base_plan.c
 ramstage-y += vermeer/b565d4_policy.c vermeer/b565d4_link_policy.c
 ramstage-y += vermeer/b565d4_init_policy.c vermeer/b565d4_dxio.c
 ramstage-y += vermeer/dxio_service.c vermeer/dxio_init.c vermeer/dxio_init_plan.c
-ramstage-y += vermeer/dxio_lanes.c vermeer/dxio_engines.c vermeer/dxio_ancillary.c
+ramstage-y += vermeer/dxio_ancillary.c
 ramstage-y += vermeer/dxio_frame.c vermeer/dxio_result.c vermeer/dxio_poll.c
 ramstage-y += vermeer/dxio_events.c vermeer/dxio_dma.c vermeer/dxio_mapped.c
 ramstage-y += vermeer/dxio_reconfigure.c vermeer/dxio_link_controls.c
 ramstage-y += vermeer/dxio_configured.c vermeer/dxio_configured_run.c
-ramstage-y += vermeer/nbif_map.c vermeer/nbif_port.c vermeer/dxio_early_link.c
+ramstage-y += vermeer/dxio_early_link.c
 ramstage-y += vermeer/usb_init.c vermeer/usb_policy.c vermeer/usb_service.c
 else
 ramstage-y += platform.c

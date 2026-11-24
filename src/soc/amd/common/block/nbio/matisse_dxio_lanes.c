@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "dxio_lanes.h"
+#include <amdblocks/matisse_dxio_lanes.h>
 
 bool matisse_map_dxio_lanes(const struct matisse_dxio_lane_group *group,
 			   uint8_t first, uint8_t last,

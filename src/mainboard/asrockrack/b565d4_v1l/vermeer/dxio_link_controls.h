@@ -3,7 +3,7 @@
 #ifndef AMD_MATISSE_DXIO_LINK_CONTROLS_H
 #define AMD_MATISSE_DXIO_LINK_CONTROLS_H
 
-#include "dxio_engines.h"
+#include <amdblocks/matisse_dxio_engines.h>
 
 /* Explicit inputs additionally consumed by original09c7a76b. Original policy
  * offsets are30,38..39,40, respectively; no packed vendor policy is retained.

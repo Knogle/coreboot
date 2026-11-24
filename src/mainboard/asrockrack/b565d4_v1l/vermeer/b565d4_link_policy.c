@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include "b565d4_link_policy.h"
-#include "nbio_memory.h"
+#include <amdblocks/matisse_nbio_memory.h>
 #include <string.h>
 
 static const struct matisse_dxio_link_controls initial_control = {

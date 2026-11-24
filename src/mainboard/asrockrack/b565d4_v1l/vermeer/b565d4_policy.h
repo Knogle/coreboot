@@ -3,7 +3,7 @@
 #ifndef B565D4_MATISSE_POLICY_H
 #define B565D4_MATISSE_POLICY_H
 
-#include "dxio_engines.h"
+#include <amdblocks/matisse_dxio_engines.h>
 
 enum b565d4_matisse_slot_mode {
 	B565D4_MATISSE_PCIE_X16,

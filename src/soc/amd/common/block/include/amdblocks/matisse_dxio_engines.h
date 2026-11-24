@@ -3,7 +3,7 @@
 #ifndef AMD_MATISSE_DXIO_ENGINES_H
 #define AMD_MATISSE_DXIO_ENGINES_H
 
-#include "dxio_lanes.h"
+#include <amdblocks/matisse_dxio_lanes.h>
 
 #define MATISSE_DXIO_PLATFORM_HEADER_BYTES 16
 #define MATISSE_DXIO_ENGINE_BYTES 40

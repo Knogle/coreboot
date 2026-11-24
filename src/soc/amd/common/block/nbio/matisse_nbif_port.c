@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <limits.h>
-#include "nbif_port.h"
+#include <amdblocks/matisse_nbif_port.h>
 
 bool matisse_decode_nbif_port(uint8_t port_encoding, uint8_t devfn, uint8_t fallback,
 			      const uint8_t assigned[MATISSE_NBIF_MAP_SLOTS],

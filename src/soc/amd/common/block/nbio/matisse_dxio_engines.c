@@ -3,7 +3,7 @@
 #include <commonlib/endian.h>
 #include <limits.h>
 #include <string.h>
-#include "dxio_engines.h"
+#include <amdblocks/matisse_dxio_engines.h>
 
 static void build_engine(const struct matisse_dxio_port *port,
 			const struct matisse_dxio_lane_assignment *lanes,
