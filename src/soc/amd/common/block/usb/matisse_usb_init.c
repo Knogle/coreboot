@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "usb_init.h"
-#include "usb_service.h"
+#include <amdblocks/matisse_usb_init.h>
+#include <amdblocks/matisse_usb_service.h>
 #include <timer.h>
 
 #define USB_POLICY_BUDGET_MS 120000

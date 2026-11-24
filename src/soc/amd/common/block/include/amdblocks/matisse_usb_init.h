@@ -3,7 +3,7 @@
 #ifndef AMD_MATISSE_USB_INIT_H
 #define AMD_MATISSE_USB_INIT_H
 
-#include "usb_policy.h"
+#include <amdblocks/matisse_usb_policy.h>
 #include <types.h>
 
 enum matisse_usb_phase {

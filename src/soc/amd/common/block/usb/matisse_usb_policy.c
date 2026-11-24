@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "usb_policy.h"
+#include <amdblocks/matisse_usb_policy.h>
 
 #define USB_CONFIG 0x13U
 #define USB_BOOT 0x0aU

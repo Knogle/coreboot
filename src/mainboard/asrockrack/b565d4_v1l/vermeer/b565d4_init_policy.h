@@ -4,7 +4,7 @@
 #define B565D4_MATISSE_INIT_POLICY_H
 
 #include <amdblocks/matisse_dxio_init_plan.h>
-#include "usb_policy.h"
+#include <amdblocks/matisse_usb_policy.h>
 
 /* Original compiled PCD/CBS settings expressed as native consumed fields.
  * Outside active Makefiles. The native caller explicitly admits an initial

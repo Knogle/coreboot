@@ -6,7 +6,7 @@
 #include <amdblocks/matisse_dxio_service.h>
 #include "nbio_base_plan.h"
 #include <amdblocks/matisse_nbio_memory.h>
-#include "usb_init.h"
+#include <amdblocks/matisse_usb_init.h>
 #include "native84_profile.h"
 #include "native87_devices.h"
 #include "native_apob_resources.h"

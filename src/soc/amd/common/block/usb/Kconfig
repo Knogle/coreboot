@@ -1,0 +1,7 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config SOC_AMD_COMMON_BLOCK_MATISSE_USB
+	bool
+	select SOC_AMD_COMMON_BLOCK_SMU
+	help
+	  Build the native Matisse USB policy and SMU request service.

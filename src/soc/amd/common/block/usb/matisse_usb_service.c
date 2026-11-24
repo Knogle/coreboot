@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "usb_service.h"
+#include <amdblocks/matisse_usb_service.h>
 
 enum cb_err matisse_usb_config_update(uint32_t target, uint32_t mask,
 				      uint32_t value, uint32_t attributes)
