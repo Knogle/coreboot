@@ -3,4 +3,10 @@
 config SOC_AMD_COMMON_BLOCK_MATISSE_NBIO
 	bool
 	help
-	  Build the native Matisse NBIO and DXIO planning helpers.
+	  Build the native Matisse NBIO planning helpers.
+
+config SOC_AMD_COMMON_BLOCK_MATISSE_DXIO
+	bool
+	select SOC_AMD_COMMON_BLOCK_MATISSE_NBIO
+	help
+	  Build the native Matisse DXIO protocol and state machines.

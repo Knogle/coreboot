@@ -3,7 +3,7 @@
 #include <amdblocks/smn.h>
 #include <limits.h>
 #include <timer.h>
-#include "dxio_configured_run.h"
+#include <amdblocks/matisse_dxio_configured_run.h>
 
 #define CONFIGURED_BUDGET_MS 120000
 

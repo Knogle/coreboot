@@ -3,7 +3,7 @@
 #ifndef B565D4_MATISSE_INIT_POLICY_H
 #define B565D4_MATISSE_INIT_POLICY_H
 
-#include "dxio_init_plan.h"
+#include <amdblocks/matisse_dxio_init_plan.h>
 #include "usb_policy.h"
 
 /* Original compiled PCD/CBS settings expressed as native consumed fields.

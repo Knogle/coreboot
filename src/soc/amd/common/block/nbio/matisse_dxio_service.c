@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "dxio_service.h"
+#include <amdblocks/matisse_dxio_service.h>
 
 enum cb_err matisse_dxio_request(uint32_t opcode, struct smu_payload *arguments)
 {

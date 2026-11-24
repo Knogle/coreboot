@@ -2,7 +2,7 @@
 
 #include <limits.h>
 #include <string.h>
-#include "dxio_configured.h"
+#include <amdblocks/matisse_dxio_configured.h>
 
 struct plan_writer {
 	struct matisse_dxio_configured_step *output;

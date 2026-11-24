@@ -5,8 +5,8 @@
 
 #include "b565d4_policy.h"
 #include "b565d4_link_policy.h"
-#include "dxio_dma.h"
-#include "dxio_events.h"
+#include <amdblocks/matisse_dxio_dma.h>
+#include <amdblocks/matisse_dxio_events.h>
 
 struct b565d4_matisse_dxio_input {
 	enum b565d4_matisse_slot_mode slot_mode;

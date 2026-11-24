@@ -3,7 +3,7 @@
 #ifndef AMD_MATISSE_DXIO_CONFIGURED_H
 #define AMD_MATISSE_DXIO_CONFIGURED_H
 
-#include "dxio_result.h"
+#include <amdblocks/matisse_dxio_result.h>
 
 enum matisse_dxio_configured_kind {
 	MATISSE_DXIO_CONFIGURED_RMW,

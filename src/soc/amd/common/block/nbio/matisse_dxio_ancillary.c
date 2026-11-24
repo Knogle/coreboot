@@ -2,7 +2,7 @@
 
 #include <commonlib/endian.h>
 #include <limits.h>
-#include "dxio_ancillary.h"
+#include <amdblocks/matisse_dxio_ancillary.h>
 
 static bool decode_parameter(uint8_t key, uint8_t *opcode, bool *per_lane)
 {

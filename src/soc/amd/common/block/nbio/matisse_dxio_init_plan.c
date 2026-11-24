@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <limits.h>
-#include "dxio_init_plan.h"
+#include <amdblocks/matisse_dxio_init_plan.h>
 
 #define FEATURE_MASK ((1U << 3) | (1U << 4) | (1U << 5) | \
 		      (1U << 7) | (1U << 8) | (1U << 9))

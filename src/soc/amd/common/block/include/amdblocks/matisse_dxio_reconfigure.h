@@ -3,8 +3,8 @@
 #ifndef AMD_MATISSE_DXIO_RECONFIGURE_H
 #define AMD_MATISSE_DXIO_RECONFIGURE_H
 
-#include "dxio_link_controls.h"
-#include "dxio_result.h"
+#include <amdblocks/matisse_dxio_link_controls.h>
+#include <amdblocks/matisse_dxio_result.h>
 
 /* Explicit consumed scalar policy, including byte sentinels. Values must
  * represent the intended native board policy, not arbitrary zero defaults.

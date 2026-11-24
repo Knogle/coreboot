@@ -2,7 +2,7 @@
 
 #include <limits.h>
 #include <string.h>
-#include "dxio_events.h"
+#include <amdblocks/matisse_dxio_events.h>
 
 struct event_session {
 	const struct matisse_dxio_events_input *input;

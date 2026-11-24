@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "dxio_init.h"
-#include "dxio_service.h"
+#include <amdblocks/matisse_dxio_init.h>
+#include <amdblocks/matisse_dxio_service.h>
 #include <timer.h>
 
 #define DXIO_BUDGET_MS 120000

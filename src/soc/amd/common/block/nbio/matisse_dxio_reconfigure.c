@@ -2,7 +2,7 @@
 
 #include <limits.h>
 #include <timer.h>
-#include "dxio_reconfigure.h"
+#include <amdblocks/matisse_dxio_reconfigure.h>
 
 struct reconfigure_session {
 	const struct matisse_dxio_reconfigure_input *input;

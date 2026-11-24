@@ -3,8 +3,8 @@
 #ifndef AMD_MATISSE_DXIO_INIT_H
 #define AMD_MATISSE_DXIO_INIT_H
 
-#include "dxio_init_plan.h"
-#include "dxio_poll.h"
+#include <amdblocks/matisse_dxio_init_plan.h>
+#include <amdblocks/matisse_dxio_poll.h>
 #include <amdblocks/smu.h>
 
 enum matisse_dxio_phase {

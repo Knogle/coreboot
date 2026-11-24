@@ -3,9 +3,9 @@
 #ifndef AMD_MATISSE_DXIO_EVENTS_H
 #define AMD_MATISSE_DXIO_EVENTS_H
 
-#include "dxio_mapped.h"
-#include "dxio_early_link.h"
-#include "dxio_configured_run.h"
+#include <amdblocks/matisse_dxio_mapped.h>
+#include <amdblocks/matisse_dxio_early_link.h>
+#include <amdblocks/matisse_dxio_configured_run.h>
 
 struct matisse_dxio_events_input {
 	const struct matisse_dxio_mapped_input *mapping;

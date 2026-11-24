@@ -3,7 +3,7 @@
 #include "platform.h"
 #include "b565d4_dxio.h"
 #include "b565d4_init_policy.h"
-#include "dxio_service.h"
+#include <amdblocks/matisse_dxio_service.h>
 #include "nbio_base_plan.h"
 #include <amdblocks/matisse_nbio_memory.h>
 #include "usb_init.h"

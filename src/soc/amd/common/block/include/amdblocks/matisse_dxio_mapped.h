@@ -3,8 +3,8 @@
 #ifndef AMD_MATISSE_DXIO_MAPPED_H
 #define AMD_MATISSE_DXIO_MAPPED_H
 
-#include "dxio_init.h"
-#include "dxio_reconfigure.h"
+#include <amdblocks/matisse_dxio_init.h>
+#include <amdblocks/matisse_dxio_reconfigure.h>
 
 struct matisse_dxio_mapped_input {
 	uint8_t root_index, bus;

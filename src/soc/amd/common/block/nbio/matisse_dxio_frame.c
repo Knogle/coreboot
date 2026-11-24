@@ -3,7 +3,7 @@
 #include <commonlib/endian.h>
 #include <limits.h>
 #include <string.h>
-#include "dxio_frame.h"
+#include <amdblocks/matisse_dxio_frame.h>
 
 #define MAX_FRAME_BYTES (256 * sizeof(uint32_t))
 #define MAX_BLOCK_BYTES (255 * sizeof(uint32_t))

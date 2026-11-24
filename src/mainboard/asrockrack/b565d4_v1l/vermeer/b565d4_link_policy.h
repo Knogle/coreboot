@@ -3,8 +3,8 @@
 #ifndef B565D4_MATISSE_LINK_POLICY_H
 #define B565D4_MATISSE_LINK_POLICY_H
 
-#include "dxio_configured.h"
-#include "dxio_reconfigure.h"
+#include <amdblocks/matisse_dxio_configured.h>
+#include <amdblocks/matisse_dxio_reconfigure.h>
 
 #define B565D4_MATISSE_WRAPPERS 2
 #define B565D4_MATISSE_TOPOLOGY_PORTS 16

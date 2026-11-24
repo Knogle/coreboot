@@ -4,8 +4,8 @@
 #define AMD_MATISSE_DXIO_EARLY_LINK_H
 
 #include <timer.h>
-#include "dxio_init.h"
-#include "dxio_result.h"
+#include <amdblocks/matisse_dxio_init.h>
+#include <amdblocks/matisse_dxio_result.h>
 
 struct matisse_dxio_early_input {
 	uint8_t *platform;

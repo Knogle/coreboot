@@ -3,7 +3,7 @@
 #ifndef AMD_MATISSE_DXIO_CONFIGURED_RUN_H
 #define AMD_MATISSE_DXIO_CONFIGURED_RUN_H
 
-#include "dxio_configured.h"
+#include <amdblocks/matisse_dxio_configured.h>
 
 #define MATISSE_DXIO_CONFIGURED_MAX_STEPS 512
 #define MATISSE_DXIO_CONFIGURED_MAX_RECORDS 128

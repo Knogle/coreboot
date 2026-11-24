@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <limits.h>
-#include "dxio_poll.h"
+#include <amdblocks/matisse_dxio_poll.h>
 
 bool matisse_decode_dxio_poll(const uint32_t reply[6],
 			     struct matisse_dxio_poll_result *result)

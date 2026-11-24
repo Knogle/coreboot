@@ -2,7 +2,7 @@
 
 #include <limits.h>
 #include <string.h>
-#include "dxio_result.h"
+#include <amdblocks/matisse_dxio_result.h>
 
 static bool valid_range(const void *pointer, size_t bytes)
 {

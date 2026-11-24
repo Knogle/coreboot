@@ -2,8 +2,8 @@
 
 #include <limits.h>
 #include <timer.h>
-#include "dxio_mapped.h"
-#include "dxio_service.h"
+#include <amdblocks/matisse_dxio_mapped.h>
+#include <amdblocks/matisse_dxio_service.h>
 
 struct mapped_session {
 	const struct matisse_dxio_mapped_input *input;

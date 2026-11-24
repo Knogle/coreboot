@@ -2,7 +2,7 @@
 
 #include <cpu/x86/cache.h>
 #include <limits.h>
-#include "dxio_dma.h"
+#include <amdblocks/matisse_dxio_dma.h>
 
 static bool valid_range(const void *pointer, size_t bytes)
 {

@@ -3,7 +3,7 @@
 #ifndef AMD_MATISSE_NBIO_BASE_PLAN_H
 #define AMD_MATISSE_NBIO_BASE_PLAN_H
 
-#include "dxio_configured.h"
+#include <amdblocks/matisse_dxio_configured.h>
 
 #define MATISSE_NBIO_BASE_MAX_STEPS 311
 

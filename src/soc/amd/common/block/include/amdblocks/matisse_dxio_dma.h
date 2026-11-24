@@ -3,7 +3,7 @@
 #ifndef AMD_MATISSE_DXIO_DMA_H
 #define AMD_MATISSE_DXIO_DMA_H
 
-#include "dxio_init_plan.h"
+#include <amdblocks/matisse_dxio_init_plan.h>
 
 struct matisse_dxio_dma_input {
 	struct matisse_dxio_init_buffers wire;

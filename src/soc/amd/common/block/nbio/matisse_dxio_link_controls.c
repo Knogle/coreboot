@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <limits.h>
-#include "dxio_link_controls.h"
+#include <amdblocks/matisse_dxio_link_controls.h>
 
 static bool valid_range(const void *pointer, size_t bytes)
 {

@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <limits.h>
-#include "dxio_early_link.h"
-#include "dxio_service.h"
+#include <amdblocks/matisse_dxio_early_link.h>
+#include <amdblocks/matisse_dxio_service.h>
 
 static bool valid_range(const void *pointer, size_t bytes)
 {
