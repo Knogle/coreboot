@@ -22,8 +22,8 @@
 #include <types.h>
 #include "setup_options.h"
 #include "vermeer_cpu.h"
-#include "vermeer/cpu_power.h"
 #include <amdblocks/vermeer_smu_cc6.h>
+#include <amdblocks/vermeer_smu_power.h>
 
 #if !CONFIG(SOC_AMD_CEZANNE_NATIVE) || !CONFIG(NO_SMM)
 #error "This ACPI draft is only for the retained NO_SMM profile"
@@ -305,7 +305,7 @@ static bool prepare_cppc_acpi(void)
 	if (cppc_acpi.checked)
 		return cppc_acpi.eligible;
 	cppc_acpi.checked = true;
-	if (!CONFIG(B565D4_VERMEER) || !b565d4_vermeer_cpu_power_ready() ||
+	if (!CONFIG(B565D4_VERMEER) || !vermeer_smu_power_ready() ||
 	    (CONFIG(B565D4_DESKTOP_SETUP) && b565d4_setup_get(B565D4_OPT_PSTATE_LIMIT)) ||
 	    !vermeer_pcc_get_state(&state))
 		return false;
@@ -441,7 +441,7 @@ void __wrap_generate_cpu_entries(const struct device *device)
 	const bool desktop_topology_valid = CONFIG(B565D4_VERMEER) &&
 		pstate_topology_indices(cpus, enabled, pstate_indices);
 	const bool desktop_pstates = desktop_topology_valid &&
-		b565d4_vermeer_cpu_power_ready();
+		vermeer_smu_power_ready();
 
 	const bool desktop_cc6 = CONFIG(B565D4_VERMEER_CORE_C6) &&
 		desktop_topology_valid && vermeer_smu_cc6_ready();

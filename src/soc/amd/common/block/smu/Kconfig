@@ -6,6 +6,13 @@ config SOC_AMD_COMMON_BLOCK_SMU
 	help
 	  Select this option to add functions to communicate with the SMU to the build.
 
+config SOC_AMD_COMMON_BLOCK_VERMEER_SMU_POWER
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_SMU
+	help
+	  Qualify the Vermeer SMU and request board-selected CPU power
+	  features and thermal ceiling.
+
 config SOC_AMD_COMMON_BLOCK_VERMEER_SMU_POWERPLAY
 	bool
 	depends on SOC_AMD_COMMON_BLOCK_SMU
