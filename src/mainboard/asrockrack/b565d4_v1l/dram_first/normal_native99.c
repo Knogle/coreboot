@@ -22,6 +22,7 @@
 #include <option.h>
 #include <program_loading.h>
 #include <device/pci_ops.h>
+#include <delay.h>
 #include <spi-generic.h>
 #include <timer.h>
 #include <symbols.h>
@@ -39,6 +40,7 @@
 #define N99_CBMEM (N99_A + 0x150000U)
 #define NATIVE156_SPI_MEDIA_OFFSET 0x01d61000U
 #define N99_MEDIA_BYTES 0x80000U
+#define NATIVE156_SPI_READY_TIMEOUT_MS 3000
 
 asmlinkage void native95_context_prepare(
 	const struct native84_context_image *image);
@@ -162,16 +164,25 @@ static void native156_spi13_load_medium(void)
 	spi_init();
 	if (spi_get_bar() != 0xfec10000U)
 		refuse("SPI13 discovered base");
-	cs = spi_read8(0x1d);
-	enable = spi_read16(SPI100_ENABLE);
+	/* Warm reset can leave this read-only admission state transiently busy.
+	 * Wait for the same predicate; never clear or acquire an owner. */
+	stopwatch_init_msecs_expire(&bound, NATIVE156_SPI_READY_TIMEOUT_MS);
+	do {
+		cs = spi_read8(0x1d);
+		enable = spi_read16(SPI100_ENABLE);
+		misc = spi_read16(SPI_MISC_CNTRL);
+		status = spi_read32(SPI_STATUS);
+		if (status != UINT32_MAX && !(status & SPI_BUSY) && !(cs & 3) &&
+		    (enable & SPI_USE_SPI100) && !(misc & owner_mask))
+			break;
+		udelay(1000);
+	} while (!stopwatch_expired(&bound));
 	speed = spi_read16(SPI100_SPEED_CONFIG);
 	override = spi_read8(SPI_ROM2_OVERRIDE);
 	addr32 = spi_read8(SPI_ROM_ADDR32_CTRL0);
 	page = spi_read8(SPI_ROM_PAGE);
-	misc = spi_read16(SPI_MISC_CNTRL);
 	restricted[0] = spi_read32(0x04);
 	restricted[1] = spi_read32(0x08);
-	status = spi_read32(SPI_STATUS);
 	printk(BIOS_INFO, "NATIVE156 SPI13 PREFLIGHT ctrl=%08x status=%08x "
 		"CS=%02x enable=%04x speed=%04x override=%02x addr32=%02x page=%02x "
 		"misc=%04x restricted=%08x/%08x\n", spi_read32(SPI_CNTRL0), status,
