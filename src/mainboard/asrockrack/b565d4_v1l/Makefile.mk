@@ -17,7 +17,6 @@ ramstage-$(CONFIG_SOC_AMD_CEZANNE_NATIVE_CPU_IDENTITY_PROVIDER) += vermeer/cpu_i
 bootblock-y += dram_first/bootblock.c dram_first/cpu_guard.S
 bootblock-y += normal_uart2.c
 bootblock-y += dram_first/normal_reset_eax.S dram_first/normal_pre_soc_uart.c
-bootblock-$(CONFIG_B565D4_MATISSE_PRE_SOC_IRQ_DIAGNOSTIC) += dram_first/matisse_early_irq.S
 bootblock-y += dram_first/normal_ram_cbfs.c
 bootblock-$(CONFIG_B565D4_PCIE_RUNTIME_OPTIONS) += dram_first/setup_cmos.c
 ifeq ($(CONFIG_B565D4_PCIE_RUNTIME_OPTIONS),y)
@@ -59,7 +58,6 @@ ramstage-$(CONFIG_B565D4_DESKTOP_NATIVE) += dram_first/plain_memory.c
 ifeq ($(CONFIG_B565D4_DESKTOP_NATIVE),y)
 ramstage-y += vermeer/platform.c vermeer/iohc.c vermeer/desktop_topology.c
 ramstage-y += vermeer/cpu.c
-ramstage-$(CONFIG_B565D4_MATISSE_PCI_ACCESS_DIAGNOSTIC) += vermeer/pci_diagnostics.c
 ramstage-y += vermeer/nbio_base_plan.c
 ramstage-y += vermeer/b565d4_policy.c
 ramstage-y += vermeer/b565d4_dxio.c
@@ -70,8 +68,6 @@ ramstage-y += ramstage/profile.c ramstage/stages.c ramstage/media.c ramstage/uar
 ramstage-$(CONFIG_PCI_SCAN_PRE_BRIDGE_HOOK) += ramstage/pci_route_close.c
 ramstage-$(CONFIG_PCI_SCAN_VENDOR_ID_HOOK) += ramstage/pci_vendor_probe.c
 ramstage-y += ramstage/terminal_providers.c
-ramstage-$(CONFIG_B565D4_MATISSE_IRQ_DIAGNOSTIC) += ramstage/matisse_irq_probe.c
-ramstage-$(CONFIG_B565D4_MATISSE_IRQ_DIAGNOSTIC) += ramstage/matisse_irq_stubs.S
 ramstage-$(CONFIG_B565D4_DESKTOP_NATIVE) += vermeer/matisse_cpu.c
 ramstage-$(CONFIG_B565D4_VERMEER) += vermeer/vermeer_cpu.c
 ramstage-$(CONFIG_B565D4_VERMEER) += vermeer/cpu_power.c

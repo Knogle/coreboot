@@ -7,9 +7,6 @@
 #include "b565d4_cpu.h"
 #include "matisse_cpu.h"
 #include "vermeer_cpu.h"
-#if CONFIG(B565D4_MATISSE_IRQ_DIAGNOSTIC)
-#include "matisse_irq_probe.h"
-#endif
 #include <amdblocks/amd_pci_util.h>
 #include <amdblocks/cpu.h>
 #include <amdblocks/cppc.h>
@@ -233,26 +230,18 @@ void mp_init_cpus(DEVTREE_CONST struct bus *cpu_bus)
 			printk(BIOS_WARNING, "B565D4: no matching CBFS microcode; retain the PSP patch\n");
 
 		native129_publish_ap_idt();
-		if (CONFIG(B565D4_MATISSE) && !CONFIG(B565D4_MATISSE_IRQ_DIAGNOSTIC))
+		if (CONFIG(B565D4_MATISSE))
 			b565d4_matisse_init_msrs();
 		else if (CONFIG(B565D4_VERMEER)) {
 			vermeer_cpu_name_prepare();
 			b565d4_vermeer_init_msrs();
 		}
-#if CONFIG(B565D4_MATISSE_IRQ_DIAGNOSTIC)
-		if (!CONFIG(B565D4_MATISSE_SINGLE_MSR_IRQ_TRIAL))
-			b565d4_matisse_irq_probe(0);
-		b565d4_matisse_vendor_msr_trial(0);
-		if (!CONFIG(B565D4_MATISSE_SINGLE_MSR_IRQ_TRIAL))
-			b565d4_matisse_irq_probe(2);
-#endif
 		printk(BIOS_INFO, "NATIVE136 SMP BEGIN genuine INIT/SIPI; no SMM; "
 		       "inherited BSP MTRRs; selected per-CPU microcode\n");
 		uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
 		result = mp_init_with_smm(cpu_bus, &native129_smp_trial_ops);
 		if (result == CB_SUCCESS) {
 			if (CONFIG(B565D4_DESKTOP_NATIVE) &&
-			    !CONFIG(B565D4_MATISSE_IRQ_DIAGNOSTIC) &&
 			    b565d4_desktop_finalize_mp() != CB_SUCCESS)
 				bsp_refusal(__LINE__);
 			native132_validate_mp_devices(cpu_bus);
@@ -264,19 +253,6 @@ void mp_init_cpus(DEVTREE_CONST struct bus *cpu_bus)
 		uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
 		if (result != CB_SUCCESS)
 			bsp_refusal(__LINE__);
-#if CONFIG(B565D4_MATISSE_IRQ_DIAGNOSTIC)
-		b565d4_matisse_irq_probe(1);
-		if (CONFIG(B565D4_MATISSE_SINGLE_MSR_IRQ_TRIAL)) {
-			printk(BIOS_NOTICE, "Matisse IRQ61 single complete; stop before payload\n");
-			uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
-			native84_terminal();
-		}
-		b565d4_matisse_vendor_msr_trial(1);
-		b565d4_matisse_irq_probe(3);
-		printk(BIOS_NOTICE, "Matisse IRQ43 complete; diagnostic stops before payload\n");
-		uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
-		native84_terminal();
-#endif
 		/* Genuine MP registered every CPU; validation and reset restoration
 		 * above completed before returning to device init/tables/payload.
 		 */

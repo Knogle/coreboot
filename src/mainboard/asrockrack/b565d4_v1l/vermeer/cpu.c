@@ -2,7 +2,6 @@
 
 #include "platform.h"
 #include "native_smm_memory.h"
-#include "matisse_irq_probe.h"
 #include "matisse_cpu.h"
 #include "setup_options.h"
 #include "vermeer_cpu.h"
@@ -40,9 +39,7 @@ void b565d4_desktop_cpu_init(struct device *dev)
 	struct b565d4_smm_state state;
 	struct b565d4_smm_regions ranges;
 
-	if (CONFIG(B565D4_MATISSE_ALL_CPU_MSR_TRIAL))
-		b565d4_matisse_vendor_msr_cpu_trial();
-	else if (CONFIG(B565D4_MATISSE) && !CONFIG(B565D4_MATISSE_IRQ_DIAGNOSTIC))
+	if (CONFIG(B565D4_MATISSE))
 		b565d4_matisse_init_msrs();
 	else if (CONFIG(B565D4_VERMEER)) {
 		b565d4_vermeer_init_msrs();
