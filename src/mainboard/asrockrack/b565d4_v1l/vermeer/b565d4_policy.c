@@ -56,19 +56,6 @@ size_t b565d4_matisse_build_ports(enum b565d4_matisse_slot_mode mode,
 	return count;
 }
 
-void b565d4_matisse_set_cpu_speed(struct matisse_dxio_port *ports, size_t count,
-				unsigned int speed)
-{
-	if (!ports || (count != 3 && count != 6) || !speed || speed > 4)
-		return;
-	for (size_t i = 0; i < count; i++) {
-		/* The third OEM descriptor is the PCH uplink, in both slot modes. */
-		if (i == 2)
-			continue;
-		ports[i].policy.link[0] = (uint8_t)((ports[i].policy.link[0] & 0xf0) | speed);
-	}
-}
-
 /* The OEM policy indices are independent of enumerated bus numbers:
  * 0 and split policies3..5 are PCIE6, 1 is PCIE4, 2 is the PCH uplink.
  */

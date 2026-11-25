@@ -25,12 +25,6 @@ enum b565d4_matisse_slot_mode {
 size_t b565d4_matisse_build_ports(enum b565d4_matisse_slot_mode mode,
 				struct matisse_dxio_port *ports, size_t capacity);
 
-/* Apply the explicit CPU-port generation before serializing the DXIO frame.
- * Zero preserves the OEM auto policy; the PCH descriptor remains unchanged.
- */
-void b565d4_matisse_set_cpu_speed(struct matisse_dxio_port *ports, size_t count,
-				unsigned int speed);
-
 /* Independent CPU-slot limits, Gen1..3 or zero for the build policy. The
  * build ceiling remains authoritative; zero ceiling retains OEM Auto.
  * PCH and unknown indices return zero. Invalid setter inputs make no stores.

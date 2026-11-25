@@ -25,7 +25,6 @@ enum b565d4_setup_option {
 /* Capture once on the BSP before PCI enumeration/AP initialization. */
 void b565d4_setup_init(void);
 unsigned int b565d4_setup_get(enum b565d4_setup_option option);
-bool b565d4_setup_ready(void);
 bool b565d4_setup_core_c6_enabled(void);
 void b565d4_setup_power_failure(void);
 void b565d4_setup_wake(void);

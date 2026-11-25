@@ -28,11 +28,6 @@ static bool setup_enabled(void)
 	return CONFIG(B565D4_BOARD_SETUP) || CONFIG(B565D4_DESKTOP_SETUP);
 }
 
-bool b565d4_setup_ready(void)
-{
-	return ready;
-}
-
 unsigned int b565d4_setup_get(enum b565d4_setup_option option)
 {
 	if ((unsigned int)option >= B565D4_OPT_COUNT)
