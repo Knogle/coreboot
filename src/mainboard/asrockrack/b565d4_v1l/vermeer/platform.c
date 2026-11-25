@@ -2,7 +2,6 @@
 
 #include "platform.h"
 #include "b565d4_dxio.h"
-#include "b565d4_init_policy.h"
 #include <amdblocks/matisse_dxio_service.h>
 #include "nbio_base_plan.h"
 #include <amdblocks/matisse_nbio_memory.h>
@@ -43,6 +42,15 @@
 #define DESKTOP_IOHC 0x13e10000U
 #define DXIO_BUFFER_ID 0x56445849U
 #define DXIO_BUFFER_BYTES 4096U
+
+/* Original compiled PCD/CBS defaults, expressed as native consumed fields. */
+static const struct matisse_usb_policy usb_policy = {
+	.overcurrent_map = 0xffffffffU,
+	.overcurrent_map_ext = 0xff,
+	.force_gen1 = 0xff,
+	.enabled = true,
+	.ras = true,
+};
 
 static bool session_active;
 static bool reset_preflight_done;
@@ -390,7 +398,7 @@ static void enumeration_entry(void *unused)
 	/* USB's desktop mailbox and PHY targets are separate from Cezanne's
 	 * 49-message program. Both programs retain their original ordering.
 	 */
-	if (matisse_usb_run_policy(&b565d4_matisse_usb_policy, &usb_state) != CB_SUCCESS)
+	if (matisse_usb_run_policy(&usb_policy, &usb_state) != CB_SUCCESS)
 		die(B565D4_DESKTOP_NAME " USB firmware requests failed");
 	dxio_buffer = cbmem_add(DXIO_BUFFER_ID, DXIO_BUFFER_BYTES);
 	if (!dxio_buffer || ((uintptr_t)dxio_buffer & 3))

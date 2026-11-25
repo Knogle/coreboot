@@ -2,7 +2,20 @@
 
 #include <limits.h>
 #include "b565d4_dxio.h"
-#include "b565d4_init_policy.h"
+#include <amdblocks/matisse_dxio_init_plan.h>
+
+/* Original compiled PCD/CBS defaults, expressed as native consumed fields. */
+static const struct matisse_dxio_init_policy dxio_init_policy = {
+	.select_enabled = true,
+	.property1f = 1,
+	.property14 = 1,
+	.property0d = true,
+	.property13 = 0xff,
+	.tuning_enabled = true,
+	.tuning = { 200000, 200000, 600000 },
+	.features = 1U << 9,
+	.property23 = true,
+};
 
 struct board_session {
 	struct b565d4_matisse_dxio_state *state;
@@ -301,7 +314,7 @@ enum cb_err b565d4_matisse_run_dxio(const struct b565d4_matisse_dxio_input *inpu
 	};
 
 	state->phase = B565D4_MATISSE_DXIO_RUNNING;
-	if (matisse_dxio_run(&b565d4_matisse_dxio_init_policy, &state->backing.wire,
+	if (matisse_dxio_run(&dxio_init_policy, &state->backing.wire,
 			     &state->controller, &hooks) != CB_SUCCESS || !available(&session))
 		goto failed;
 	state->phase = B565D4_MATISSE_DXIO_FINISHED;

@@ -62,7 +62,7 @@ ramstage-y += vermeer/cpu.c
 ramstage-$(CONFIG_B565D4_MATISSE_PCI_ACCESS_DIAGNOSTIC) += vermeer/pci_diagnostics.c
 ramstage-y += vermeer/nbio_base_plan.c
 ramstage-y += vermeer/b565d4_policy.c vermeer/b565d4_link_policy.c
-ramstage-y += vermeer/b565d4_init_policy.c vermeer/b565d4_dxio.c
+ramstage-y += vermeer/b565d4_dxio.c
 else
 ramstage-y += platform.c
 endif
