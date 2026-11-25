@@ -42,6 +42,7 @@ config B565D4_VERMEER
 	depends on !B565D4_MATISSE
 	select B565D4_DESKTOP_NATIVE
 	select SOC_AMD_COMMON_BLOCK_VERMEER_CPU_NAME
+	select SOC_AMD_COMMON_BLOCK_VERMEER_APOB_SPD
 	help
 	  Build the separate desktop CPU path for Ryzen 5000 Vermeer. The
 	  retained board PSP/ABL/APCB cohort still owns DRAM training. This

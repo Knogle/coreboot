@@ -20,3 +20,10 @@ config SOC_AMD_COMMON_BLOCK_APOB_HASH
 	help
 	  Select this to use a hash of the APOB data to determine when to update
 	  the non-volatile APOB store.
+
+config SOC_AMD_COMMON_BLOCK_VERMEER_APOB_SPD
+	bool
+	help
+	  Decode the bounded Vermeer APOB cached-SPD record. The decoder only
+	  validates the record structure and copies raw SPD bytes; mainboards
+	  remain responsible for board-specific normalization and validation.

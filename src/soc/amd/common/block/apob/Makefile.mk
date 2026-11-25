@@ -4,3 +4,5 @@ romstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_APOB) += apob_cache.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_APOB) += apob_cache.c
 
 endif # !CONFIG_SOC_AMD_COMMON_BLOCK_APOB_NV_DISABLE
+
+ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_VERMEER_APOB_SPD) += vermeer_apob_spd.c

@@ -124,7 +124,7 @@ ramstage-y += ramstage/native253_spi_payload.c ramstage/legacy_shadow_fallback.c
 ramstage-y += native84_handoff.c ramstage/native84_parameters.c
 ramstage-$(CONFIG_GENERATE_SMBIOS_TABLES) += ramstage/smbios_board.c
 ifeq ($(CONFIG_B565D4_VERMEER),y)
-ramstage-$(CONFIG_GENERATE_SMBIOS_TABLES) += vermeer/dimm_spd.c vermeer/smbios_memory.c
+ramstage-$(CONFIG_GENERATE_SMBIOS_TABLES) += vermeer/smbios_memory.c
 endif
 ramstage-c-ccopts += -I$(board-obj)
 ramstage-c-ccopts += -I$(src)/soc/amd/common/block/psp
