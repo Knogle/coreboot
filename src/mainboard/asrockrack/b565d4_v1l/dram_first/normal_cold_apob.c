@@ -385,19 +385,15 @@ static int cold_data_snapshot_current(void)
 
 /* Native95/Source26: diagnostic bus0 only. No BAR sizing, enumeration,
  * resource publication, CFC data write, bridge routing or supplier callback.
- * Preserve the proven read sequence in linker-owned BSS and report its result.
+ * Preserve the proven read sequence and report its result.
  */
-struct native95_pci_row {
-	uint32_t id, class_revision, header, buses;
-};
 struct native95_pci_snapshot {
 	uint32_t status, saved_cf8, restored_cf8;
 	uint32_t requested, observed, complete, present;
-	struct native95_pci_row row[256];
 };
 static struct native95_pci_snapshot native95_pci;
-_Static_assert(sizeof(struct native95_pci_snapshot) == 4124,
-	"Bounded Native95 own-stage BSS roster");
+_Static_assert(sizeof(struct native95_pci_snapshot) == 28,
+	"Bounded Native95 own-stage BSS state");
 
 static int native95_pci_read(uint32_t selector, uint32_t *value)
 {
@@ -410,7 +406,7 @@ static int native95_pci_read(uint32_t selector, uint32_t *value)
 	return 1;
 }
 
-static void native95_pci0_roster(void)
+static void native95_pci0_scan(void)
 {
 	uint64_t tom;
 	uintptr_t p = (uintptr_t)&native95_pci;
@@ -429,18 +425,17 @@ static void native95_pci0_roster(void)
 	native95_pci.saved_cf8 = inl(0xcf8);
 	for (unsigned int i = 0; i < 256; i++) {
 		const uint32_t selector = 0x80000000U | (i << 8);
-		struct native95_pci_row *row = &native95_pci.row[i];
+		uint32_t id, value;
 
-		row->class_revision = row->header = row->buses = 0;
-		if (!native95_pci_read(selector, &row->id))
+		if (!native95_pci_read(selector, &id))
 			goto restore;
 		/* Preserve raw absent/invalid IDs in the report. Do not follow them. */
-		if (row->id != 0xffffffffU && row->id != 0) {
-			if (!native95_pci_read(selector | 8, &row->class_revision) ||
-			    !native95_pci_read(selector | 12, &row->header))
+		if (id != 0xffffffffU && id != 0) {
+			if (!native95_pci_read(selector | 8, &value) ||
+			    !native95_pci_read(selector | 12, &value))
 				goto restore;
-			if (((row->header >> 16) & 0x7f) == 1 &&
-			    !native95_pci_read(selector | 24, &row->buses))
+			if (((value >> 16) & 0x7f) == 1 &&
+			    !native95_pci_read(selector | 24, &value))
 				goto restore;
 			native95_pci.present++;
 		}
@@ -465,7 +460,6 @@ restore:
 	text("B565D4 NATIVE95 END status="); hex(native95_pci.status, 4);
 	text(" fsp_calls=0 cbmem_write=0 owner_release=0 native_release=0000\r\n");
 }
-
 
 void __noreturn b565d4_cold_apob_header_witness(void)
 {
@@ -556,7 +550,7 @@ done:
 	report();
 	enum cold_apob_data_status data_status = cold_data_capture();
 	cold_data_report(data_status);
-	native95_pci0_roster();
+	native95_pci0_scan();
 #if CONFIG(SOC_AMD_CEZANNE_NATIVE)
 	if (data_status != COLD_DATA_COMPLETE || !cold_data_snapshot_current())
 		halt();
