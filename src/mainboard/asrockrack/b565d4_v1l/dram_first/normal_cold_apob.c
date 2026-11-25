@@ -13,8 +13,6 @@
 #if CONFIG(SOC_AMD_CEZANNE_NATIVE)
 #include "normal_native99.h"
 #endif
-#include <cpu/amd/msr.h>
-#include "normal_apob_geometry_policy.h"
 
 DECLARE_REGION(bss)
 
@@ -372,73 +370,8 @@ static void cold_data_report(enum cold_apob_data_status status)
 	text(" crc="); hex(check, 4);
 	text(" complete=00000001 source_repeat_equal=00000001 owner_release=0\r\n");
 }
-/* Separate terminal observation only. No value is a compatibility predicate
- * or an FSP read-owner grant, and no existing data result is changed. */
-static void cold_extended_entry_report(unsigned int phase)
-{
-	uint64_t tom;
-	if (!cold_data_context_current(&tom)) {
-		text("B565D4 COLD_APOB_EXT STATUS phase="); hex(phase, 4);
-		text(" status=00000001 owner_release=0\r\n");
-		return;
-	}
-	/* The existing current-context guard proves AMD/A50F00, CPL0 selectors,
-	 * PE/PG0, exact own GDT, SYSCFG/TOM and original IFDF0 before new reads.
-	 * Check the named leaf and MSR capability before the exact EFER read. */
-	if (cpuid(0x80000000).eax < 0x80000001 || !(cpuid(1).edx & (1U << 5))) {
-		text("B565D4 COLD_APOB_EXT STATUS phase="); hex(phase, 4);
-		text(" status=00000002 owner_release=0\r\n");
-		return;
-	}
-	struct cpuid_result package = cpuid(0x80000001);
-	if (!(package.edx & (1U << 29))) {
-		text("B565D4 COLD_APOB_EXT STATUS phase="); hex(phase, 4);
-		text(" status=00000002 owner_release=0\r\n");
-		return;
-	}
-	uint32_t cr3, cr4;
-	uint16_t fs, gs;
-	__asm__ volatile("mov %%cr3,%0; mov %%cr4,%1"
-		: "=r" (cr3), "=r" (cr4));
-	__asm__ volatile("mov %%fs,%0; mov %%gs,%1" : "=r" (fs), "=r" (gs));
-	msr_t efer = rdmsr(IA32_EFER);
-	text("B565D4 COLD_APOB_EXT CONTEXT phase="); hex(phase, 4);
-	text(" status=00000000 cr3="); hex(cr3, 4);
-	text(" cr4="); hex(cr4, 4);
-	text(" fs="); hex(fs, 2);
-	text(" gs="); hex(gs, 2);
-	text(" efer="); hex(efer.raw, 8);
-	text(" package_ebx="); hex(package.ebx, 4);
-	text(" owner_release=0\r\n");
-}
 
-#define COLD_GEOMETRY_MAP_BYTES 0x1f0U
-#define COLD_GEOMETRY_HOLES 18U
-
-enum cold_geometry_status {
-	COLD_GEOMETRY_COMPLETE,
-	COLD_GEOMETRY_SNAPSHOT,
-	COLD_GEOMETRY_ENTRY_BOUND,
-	COLD_GEOMETRY_ENTRY_COUNT,
-	COLD_GEOMETRY_MAP,
-	COLD_GEOMETRY_HOLE,
-	COLD_GEOMETRY_OVERLAP,
-	COLD_GEOMETRY_CONTEXT,
-	COLD_GEOMETRY_READ_POLICY,
-};
-
-struct cold_geometry_result {
-	uint32_t status, entries, bad_offset, count;
-	uint64_t top;
-};
-
-static uint64_t cold_geometry_le64(const uint8_t *p)
-{
-	return (uint64_t)cold_data_le32(p) |
-		(uint64_t)cold_data_le32(p + 4) << 32;
-}
-
-static int cold_geometry_snapshot_current(void)
+static int cold_data_snapshot_current(void)
 {
 	/* Whole BSS admission precedes every metadata/payload read. This is
 	 * the existing owned copy, not permission to follow foreign pointers. */
@@ -449,88 +382,6 @@ static int cold_geometry_snapshot_current(void)
 		cold_data_header_matches(cold_data.raw) &&
 		cold_data_crc(cold_data.raw, cold_data.bytes) == cold_data.crc32;
 }
-
-static void cold_geometry_validate(struct cold_geometry_result *r, uint64_t tom)
-{
-	const uint8_t *raw = cold_data.raw;
-
-	r->status = COLD_GEOMETRY_SNAPSHOT;
-	r->entries = r->bad_offset = r->count = 0;
-	r->top = 0;
-	if (!cold_geometry_snapshot_current())
-		return;
-	const uint32_t first = cold_data_le32(raw + 12);
-	uint32_t offset = first;
-	/* Header equality binds the selected version and record start. Each fixed48B
-	 * header and entire declared extent must fit before any payload read. */
-	for (unsigned int i = 0; offset < cold_data.bytes; i++) {
-		r->bad_offset = offset;
-		r->status = COLD_GEOMETRY_ENTRY_BOUND;
-		if (offset > cold_data.bytes ||
-		    48U > cold_data.bytes - offset)
-			return;
-		uint32_t bytes = cold_data_le32(raw + offset + 12);
-		if (bytes < 48U || bytes > cold_data.bytes - offset)
-			return;
-		uint32_t group = cold_data_le32(raw + offset);
-		uint32_t type = cold_data_le32(raw + offset + 4);
-		uint32_t instance = cold_data_le32(raw + offset + 8);
-		if (!i) {
-			r->status = COLD_GEOMETRY_MAP;
-			if (group != 9 || type != 9 || instance ||
-			    bytes != COLD_GEOMETRY_MAP_BYTES)
-				return;
-		} else if (group == 9 && type == 9 && !instance) {
-			r->status = COLD_GEOMETRY_MAP;
-			return;
-		}
-		offset += bytes;
-		r->entries++;
-	}
-	r->bad_offset = offset;
-	r->status = COLD_GEOMETRY_ENTRY_COUNT;
-	if (offset != cold_data.bytes)
-		return;
-
-	/* The exact496B map contains16 scalar bytes and18 descriptor slots.
-	 * Only count selects active slots; unused capacity is never a map. */
-	const uint8_t *map = raw + first;
-	r->status = COLD_GEOMETRY_MAP;
-	r->top = cold_geometry_le64(map + 48);
-	r->count = cold_data_le32(map + 56);
-	if (!r->top || r->top < tom || r->count > COLD_GEOMETRY_HOLES ||
-	    r->count > (COLD_GEOMETRY_MAP_BYTES - 64U) / 24U)
-		return;
-	for (uint32_t i = 0; i < r->count; i++) {
-		const uint8_t *hole = map + 64U + i * 24U;
-		uint64_t base = cold_geometry_le64(hole);
-		uint64_t bytes = cold_geometry_le64(hole + 8);
-		r->bad_offset = first + 64U + i * 24U;
-		r->status = COLD_GEOMETRY_HOLE;
-		if (!bytes || base > UINT64_MAX - bytes || base + bytes > r->top)
-			return;
-	}
-	/* Every active pair must be disjoint. Sorting is unnecessary; all
-	 * lengths/endpoints were checked above, so additions cannot wrap. */
-	for (uint32_t i = 0; i < r->count; i++) {
-		const uint8_t *a = map + 64U + i * 24U;
-		uint64_t a_base = cold_geometry_le64(a);
-		uint64_t a_end = a_base + cold_geometry_le64(a + 8);
-		for (uint32_t j = i + 1; j < r->count; j++) {
-			const uint8_t *b = map + 64U + j * 24U;
-			uint64_t b_base = cold_geometry_le64(b);
-			uint64_t b_end = b_base + cold_geometry_le64(b + 8);
-			if (a_base < b_end && b_base < a_end) {
-				r->bad_offset = first + 64U + j * 24U;
-				r->status = COLD_GEOMETRY_OVERLAP;
-				return;
-			}
-		}
-	}
-	r->bad_offset = 0;
-	r->status = COLD_GEOMETRY_COMPLETE;
-}
-
 
 /* Native95/Source26: diagnostic bus0 only. No BAR sizing, enumeration,
  * resource publication, CFC data write, bridge routing or supplier callback.
@@ -625,156 +476,6 @@ restore:
 	text(" fsp_calls=0 cbmem_write=0 owner_release=0 native_release=0000\r\n");
 }
 
-static void cold_geometry_refusal(uint32_t status, uint32_t offset)
-{
-	text("B565D4 NATIVE7 REFUSED status="); hex(status, 4);
-	text(" offset="); hex(offset, 4);
-	text(" owner_release=0 native_release=0000\r\n");
-}
-
-static void cold_geometry_one_msr(uint32_t index)
-{
-	/* Only five literal caller sites below. No write helper, repair,
-	 * mailbox, SMM transition, lock operation or foreign pointer follows. */
-	text("B565D4 NATIVE7 MSR_BEFORE index="); hex(index, 4);
-	text(" owner_release=0\r\n");
-	msr_t value = rdmsr(index);
-	text("B565D4 NATIVE7 MSR index="); hex(index, 4);
-	text(" raw="); hex(value.raw, 8);
-	text(" owner_release=0\r\n");
-}
-
-static void cold_geometry_report(enum cold_apob_data_status data_status)
-{
-	uint64_t tom;
-	if (data_status != COLD_DATA_COMPLETE ||
-	    !cold_geometry_snapshot_current()) {
-		cold_geometry_refusal(COLD_GEOMETRY_SNAPSHOT, 0);
-		return;
-	}
-	if (!cold_data_context_current(&tom)) {
-		cold_geometry_refusal(COLD_GEOMETRY_CONTEXT, 0);
-		return;
-	}
-	struct cold_geometry_result r;
-	cold_geometry_validate(&r, tom);
-	if (r.status != COLD_GEOMETRY_COMPLETE) {
-		cold_geometry_refusal(r.status, r.bad_offset);
-		return;
-	}
-	if (!own_program((uintptr_t)&cold_geometry_read_policy,
-			 sizeof(cold_geometry_read_policy))) {
-		cold_geometry_refusal(COLD_GEOMETRY_READ_POLICY, 0);
-		return;
-	}
-	uint32_t msr_enable = cold_geometry_read_policy.optional_msr_reads_bound;
-	uint32_t fed_enable = cold_geometry_read_policy.fed80c18_read_bound;
-	if (msr_enable > 1 || fed_enable > 1 ||
-	    (fed_enable && !1) ||
-	    !(cpuid(1).edx & (1U << 5))) {
-		cold_geometry_refusal(COLD_GEOMETRY_READ_POLICY, 0);
-		return;
-	}
-	/* SIDT writes six bytes only to this current own stack object.
-	 * The reported IDT target is opaque and is never dereferenced. */
-	struct cold_apob_gdtr idtr;
-	__asm__ volatile("sidt %0" : "=m" (idtr));
-	struct cpuid_result max_ext = cpuid(0x80000000);
-	uint32_t address_eax = 0, encryption_eax = 0, encryption_ebx = 0;
-	uint32_t cpuid_observed = 0;
-	if (max_ext.eax >= 0x80000008) {
-		address_eax = cpuid(0x80000008).eax;
-		cpuid_observed |= 1;
-	}
-	if (max_ext.eax >= 0x8000001f) {
-		struct cpuid_result encryption = cpuid(0x8000001f);
-		encryption_eax = encryption.eax;
-		encryption_ebx = encryption.ebx;
-		cpuid_observed |= 2;
-	}
-	text("B565D4 NATIVE7 BEGIN candidate_only=1 entries="); hex(r.entries, 4);
-	text(" holes="); hex(r.count, 4); text(" top="); hex(r.top, 8);
-	text(" copy_crc="); hex(cold_data.crc32, 4);
-	text(" owner_release=0 native_release=0000\r\n");
-	text("B565D4 NATIVE7 IDTR base="); hex(idtr.base, 4);
-	text(" limit="); hex(idtr.limit, 2);
-	text(" descriptor_observed=1 target_read=0\r\n");
-	text("B565D4 NATIVE7 ADDRESS_CPUID max_ext="); hex(max_ext.eax, 4);
-	text(" observed="); hex(cpuid_observed, 4);
-	text(" leaf80000008_eax="); hex(address_eax, 4);
-	text(" leaf8000001f_eax="); hex(encryption_eax, 4);
-	text(" leaf8000001f_ebx="); hex(encryption_ebx, 4);
-	text(" decode=0\r\n");
-	text("B565D4 NATIVE7 MSR index=c0010010 raw="); hex(cold_apob.syscfg.raw, 8);
-	text(" from_renewed_context=1 owner_release=0\r\n");
-	text("B565D4 NATIVE7 MSR index=c001001a raw="); hex(tom, 8);
-	text(" from_renewed_context=1 owner_release=0\r\n");
-	uint32_t msr_observed = 0, fed_observed = 0;
-	if (msr_enable) {
-		cold_geometry_one_msr(TOP_MEM2_MSR); msr_observed |= 1;
-		cold_geometry_one_msr(HWCR_MSR); msr_observed |= 2;
-		cold_geometry_one_msr(SMM_BASE_MSR); msr_observed |= 4;
-		cold_geometry_one_msr(SMM_ADDR_MSR); msr_observed |= 8;
-		cold_geometry_one_msr(SMM_MASK_MSR); msr_observed |= 16;
-	}
-	if (fed_enable) {
-		text("B565D4 NATIVE7 SLOT_BEFORE address=fed80c18 bytes=00000004\r\n");
-		uint32_t value = *(const volatile uint32_t *)(uintptr_t)0xfed80c18U;
-		fed_observed = 1;
-		text("B565D4 NATIVE7 SLOT address=fed80c18 bytes=00000004 raw=");
-		hex(value, 4); text(" pointer_followed=0 owner_release=0\r\n");
-	}
-	const uint32_t first = cold_data_le32(cold_data.raw + 12);
-	uint32_t offset = first;
-	for (uint32_t i = 0; i < r.entries; i++) {
-		if (offset > cold_data.bytes ||
-		    48U > cold_data.bytes - offset) {
-			cold_geometry_refusal(COLD_GEOMETRY_ENTRY_BOUND, offset);
-			return;
-		}
-		const uint8_t *entry = cold_data.raw + offset;
-		uint32_t bytes = cold_data_le32(entry + 12);
-		if (bytes < 48U || bytes > cold_data.bytes - offset) {
-			cold_geometry_refusal(COLD_GEOMETRY_ENTRY_BOUND, offset);
-			return;
-		}
-		text("B565D4 NATIVE7 ENTRY index="); hex(i, 4);
-		text(" offset="); hex(offset, 4);
-		text(" group="); hex(cold_data_le32(entry), 4);
-		text(" type="); hex(cold_data_le32(entry + 4), 4);
-		text(" instance="); hex(cold_data_le32(entry + 8), 4);
-		text(" bytes="); hex(bytes, 4); text("\r\n");
-		offset += bytes;
-	}
-	for (uint32_t i = 0; i < r.count; i++) {
-		const uint8_t *hole = cold_data.raw + first + 64U + i * 24U;
-		uint64_t base = cold_geometry_le64(hole), bytes = cold_geometry_le64(hole + 8);
-		if (!bytes || base > UINT64_MAX - bytes || base + bytes > r.top) {
-			cold_geometry_refusal(COLD_GEOMETRY_HOLE,
-				first + 64U + i * 24U);
-			return;
-		}
-		text("B565D4 NATIVE7 HOLE index="); hex(i, 4);
-		text(" base="); hex(base, 8); text(" bytes="); hex(bytes, 8);
-		text(" end="); hex(base + bytes, 8);
-		text(" raw_type="); hex(cold_data_le32(hole + 16), 4);
-		text(" raw_unused="); hex(cold_data_le32(hole + 20), 4);
-		text(" reserved=1 owner_release=0\r\n");
-	}
-	/* A successful END also requires unchanged own copy and renewed
-	 * visible CPU context. This is not an atomicity or provider lease. */
-	if (!cold_geometry_snapshot_current() ||
-	    !cold_data_context_current(&tom)) {
-		cold_geometry_refusal(COLD_GEOMETRY_CONTEXT, 0);
-		return;
-	}
-	text("B565D4 NATIVE7 END status=00000000 entries="); hex(r.entries, 4);
-	text(" holes="); hex(r.count, 4);
-	text(" optional_msr_observed="); hex(msr_observed, 4);
-	text(" fed80c18_observed="); hex(fed_observed, 4);
-	text(" smram_decode=0 cbmem_write=0 fsp_calls=0 owner_release=0 native_release=0000\r\n");
-}
-
 
 void __noreturn b565d4_cold_apob_header_witness(void)
 {
@@ -863,14 +564,11 @@ void __noreturn b565d4_cold_apob_header_witness(void)
 	cold_apob.status = COLD_APOB_READ_COMPLETE;
 done:
 	report();
-	cold_extended_entry_report(0);
 	enum cold_apob_data_status data_status = cold_data_capture();
 	cold_data_report(data_status);
-	cold_extended_entry_report(1);
-	cold_geometry_report(data_status);
 	native95_pci0_roster();
 #if CONFIG(SOC_AMD_CEZANNE_NATIVE)
-	if (data_status != COLD_DATA_COMPLETE || !cold_geometry_snapshot_current())
+	if (data_status != COLD_DATA_COMPLETE || !cold_data_snapshot_current())
 		halt();
 	native99_prepare_and_enter(cold_data.raw, cold_data.bytes);
 #endif
