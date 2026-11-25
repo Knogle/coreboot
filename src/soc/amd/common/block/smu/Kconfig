@@ -6,6 +6,12 @@ config SOC_AMD_COMMON_BLOCK_SMU
 	help
 	  Select this option to add functions to communicate with the SMU to the build.
 
+config SOC_AMD_COMMON_BLOCK_VERMEER_SMU_TELEMETRY
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_SMU
+	help
+	  Register the qualified Vermeer SMU telemetry owner in CBMEM.
+
 config SOC_AMD_COMMON_BLOCK_SMU_SX_ENTRY
 	bool
 	depends on SOC_AMD_COMMON_BLOCK_SMU

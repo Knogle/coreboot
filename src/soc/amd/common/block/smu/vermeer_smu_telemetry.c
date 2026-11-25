@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <amdblocks/smu.h>
+#include <amdblocks/vermeer_smu_telemetry.h>
+#include <arch/cpu.h>
 #include <cbmem.h>
 #include <console/console.h>
 #include <cpu/x86/cache.h>
-#include <arch/cpu.h>
 #include <soc/smu.h>
 #include <string.h>
-#include "telemetry.h"
 
 #define SMU_TELEMETRY_CBMEM_ID 0x504d5442
 #define SMU_TELEMETRY_OWNER_BYTES 0x4000U
@@ -16,7 +16,7 @@
 static bool attempted;
 static bool registered;
 
-bool b565d4_vermeer_telemetry_prepare(uint32_t smu_version)
+bool vermeer_smu_telemetry_prepare(uint32_t smu_version)
 {
 	const struct cbmem_entry *entry;
 	struct smu_payload payload = { .msg = {0} };
@@ -27,10 +27,9 @@ bool b565d4_vermeer_telemetry_prepare(uint32_t smu_version)
 	attempted = true;
 	if (cpuid_eax(1) != 0x00a20f12 || smu_version != QUALIFIED_SMU_VERSION)
 		goto unavailable;
-	/* Original SmuV11Dxe reserves PCD401h=4 pages below 4 GiB, clears
+	/* Qualified Vermeer firmware reserves four pages below 4 GiB, clears
 	 * them, then registers the low/high address through BIOS message 6.
-	 * Its reported PM prefix is smaller than its internal export bound.
-	 * Keep the full original owner, including after an ambiguous reply.
+	 * Keep the full owner, including after an ambiguous reply.
 	 */
 	if (cbmem_entry_find(SMU_TELEMETRY_CBMEM_ID))
 		goto unavailable;

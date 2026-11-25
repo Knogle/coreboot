@@ -109,6 +109,7 @@ config B565D4_DESKTOP_PCH_MAX_SPEED
 config B565D4_VERMEER_SMU_TELEMETRY
 	bool "Reserve the original Vermeer SMU telemetry buffer"
 	depends on B565D4_VERMEER
+	select SOC_AMD_COMMON_BLOCK_VERMEER_SMU_TELEMETRY
 	help
 	  Register a persistent 16-KiB CBMEM owner for SMU384c telemetry,
 	  following the original board's reserved-memory allocation contract.

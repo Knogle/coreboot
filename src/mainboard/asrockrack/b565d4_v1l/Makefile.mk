@@ -78,7 +78,6 @@ ramstage-$(CONFIG_B565D4_VERMEER) += vermeer/cpu_power.c
 ramstage-$(CONFIG_B565D4_VERMEER) += vermeer/cstates.c
 ramstage-$(CONFIG_B565D4_VERMEER) += vermeer/cppc_pcc.c
 ramstage-$(CONFIG_B565D4_VERMEER) += vermeer/powerplay.c vermeer/powerplay_contract.c
-ramstage-$(CONFIG_B565D4_VERMEER_SMU_TELEMETRY) += vermeer/telemetry.c
 ramstage-$(CONFIG_B565D4_DESKTOP_INTX) += vermeer/pci_irq.c
 ramstage-$(CONFIG_B565D4_DESKTOP_NATIVE) += vermeer/pcie_link.c
 ramstage-$(CONFIG_B565D4_DESKTOP_NATIVE) += vermeer/fch.c

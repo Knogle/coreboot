@@ -2,6 +2,7 @@
 
 #include <amdblocks/smn.h>
 #include <amdblocks/smu.h>
+#include <amdblocks/vermeer_smu_telemetry.h>
 #include <arch/cpu.h>
 #include <bootstate.h>
 #include <commonlib/helpers.h>
@@ -11,7 +12,6 @@
 #include "cpu_power.h"
 #include "cstates.h"
 #include "powerplay.h"
-#include "telemetry.h"
 
 /* Original B565 SmuV11DxeVMR feature definitions. These differ from Cezanne:
  * data calculation, PPT, TDC, thermal, FIT, EDC and CCLK DPM. The board requests
@@ -102,7 +102,7 @@ static void setup_cpu_power(void *unused)
 	}
 	powerplay_ready = b565d4_vermeer_powerplay_prepare();
 	if (CONFIG(B565D4_VERMEER_SMU_TELEMETRY) && powerplay_ready)
-		b565d4_vermeer_telemetry_prepare(QUALIFIED_SMU_VERSION);
+		vermeer_smu_telemetry_prepare(QUALIFIED_SMU_VERSION);
 	payload = (struct smu_payload) { .msg = {CPU_POWER_FEATURES} };
 	/* One request only, including ambiguous failure. A successful response is
 	 * an acknowledgement, not an enabled-feature bitmap readback. Actual
