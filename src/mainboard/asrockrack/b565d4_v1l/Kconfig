@@ -121,6 +121,7 @@ config B565D4_VERMEER_SMU_TELEMETRY
 config B565D4_VERMEER_CORE_C6
 	bool "Vermeer core C6 idle support"
 	depends on B565D4_VERMEER
+	select SOC_AMD_COMMON_BLOCK_VERMEER_SMU_CC6
 	help
 	  Prepare the original Zen3 per-core C6 controls and desktop C-state
 	  I/O address during normal CPU initialization. After all CPUs and the

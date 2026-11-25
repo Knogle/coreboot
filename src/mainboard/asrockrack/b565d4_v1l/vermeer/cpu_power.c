@@ -3,6 +3,7 @@
 #include <amdblocks/smn.h>
 #include <amdblocks/smu.h>
 #include <amdblocks/vermeer_pcc.h>
+#include <amdblocks/vermeer_smu_cc6.h>
 #include <amdblocks/vermeer_smu_cppc.h>
 #include <amdblocks/vermeer_smu_telemetry.h>
 #include <arch/cpu.h>
@@ -11,8 +12,8 @@
 #include <console/console.h>
 #include <soc/smu.h>
 #include "cpu_power.h"
-#include "cstates.h"
 #include "powerplay.h"
+#include "setup_options.h"
 
 /* Original B565 SmuV11DxeVMR feature definitions. These differ from Cezanne:
  * data calculation, PPT, TDC, thermal, FIT, EDC and CCLK DPM. The board requests
@@ -83,8 +84,8 @@ static void setup_cpu_power(void *unused)
 			vermeer_pcc_prepare(cppc_info.information,
 					    cppc_info.nominal_mhz,
 					    cppc_info.lowest_mhz);
-		if (CONFIG(B565D4_VERMEER_CORE_C6))
-			b565d4_vermeer_cc6_enable();
+		if (CONFIG(B565D4_VERMEER_CORE_C6) && b565d4_setup_core_c6_enabled())
+			vermeer_smu_cc6_enable();
 	} else
 		printk(BIOS_WARNING, "Vermeer CPPC: CPU topology table unavailable; skipped\n");
 }

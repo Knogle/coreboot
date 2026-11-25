@@ -21,8 +21,9 @@
 #include <string.h>
 #include <types.h>
 #include "setup_options.h"
+#include "vermeer_cpu.h"
 #include "vermeer/cpu_power.h"
-#include "vermeer/cstates.h"
+#include <amdblocks/vermeer_smu_cc6.h>
 
 #if !CONFIG(SOC_AMD_CEZANNE_NATIVE) || !CONFIG(NO_SMM)
 #error "This ACPI draft is only for the retained NO_SMM profile"
@@ -443,7 +444,7 @@ void __wrap_generate_cpu_entries(const struct device *device)
 		b565d4_vermeer_cpu_power_ready();
 
 	const bool desktop_cc6 = CONFIG(B565D4_VERMEER_CORE_C6) &&
-		desktop_topology_valid && b565d4_vermeer_cc6_ready();
+		desktop_topology_valid && vermeer_smu_cc6_ready();
 	const acpi_cstate_t cstates[] = {
 		c1,
 		{

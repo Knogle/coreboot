@@ -4,11 +4,12 @@
 #include "native_smm_memory.h"
 #include "matisse_irq_probe.h"
 #include "matisse_cpu.h"
+#include "setup_options.h"
 #include "vermeer_cpu.h"
-#include "cstates.h"
 #include <amdblocks/cpu.h>
 #include <amdblocks/vermeer_cpu_name.h>
 #include <amdblocks/vermeer_microcode.h>
+#include <amdblocks/vermeer_smu_cc6.h>
 #include <arch/cpu.h>
 #include <console/console.h>
 #include <device/device.h>
@@ -50,8 +51,8 @@ void b565d4_desktop_cpu_init(struct device *dev)
 			vermeer_microcode_address_prepare();
 	}
 	amd_cpu_init(dev);
-	if (CONFIG(B565D4_VERMEER_CORE_C6))
-		b565d4_vermeer_cc6_cpu_prepare();
+	if (CONFIG(B565D4_VERMEER_CORE_C6) && b565d4_setup_core_c6_enabled())
+		vermeer_smu_cc6_cpu_prepare(B565D4_VERMEER_CSTATE_IO_BASE);
 	if (!b565d4_read_smm_state(&state) ||
 	    !b565d4_decode_smm_regions(state.smbase, state.smm_addr, state.smm_mask,
 				      state.hwcr, cpuid_eax(0x80000008) & 0xff, &ranges) ||

@@ -20,6 +20,13 @@ config SOC_AMD_COMMON_BLOCK_VERMEER_SMU_CPPC
 	  Initialize the qualified Vermeer CPPC service and read its
 	  capability and frequency description.
 
+config SOC_AMD_COMMON_BLOCK_VERMEER_SMU_CC6
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_SMU
+	help
+	  Prepare the qualified Vermeer per-CPU C6 controls and request the
+	  matching SMU feature after board policy admits the path.
+
 config SOC_AMD_COMMON_BLOCK_VERMEER_SMU_PCC
 	bool
 	depends on SOC_AMD_COMMON_BLOCK_SMU
