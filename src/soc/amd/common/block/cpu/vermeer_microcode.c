@@ -6,19 +6,18 @@
 #include <cpu/amd/microcode.h>
 #include <cpu/x86/msr.h>
 #include <stdint.h>
-#include "vermeer_cpu.h"
+#include <amdblocks/vermeer_microcode.h>
 
 #define VERMEER_UCODE_ADDRESS_MSR 0xc001100c
 
-void b565d4_vermeer_prepare_microcode_address(void)
+void vermeer_microcode_address_prepare(void)
 {
 	const void *patch;
 	msr_t address, before, cleared, after;
 
-	/* Both original ASRock and F20 Zen3 DXE write the complete patch-buffer
-	 * pointer here immediately before PATCH_LOADER. This is the observed
-	 * vendor handoff, not an architectural definition of this MSR. Keep the
-	 * experiment confined to the CPU and original patch studied so far.
+	/* Qualified Vermeer B2 DXE loaders write the complete patch-buffer
+	 * pointer here immediately before PATCH_LOADER. This is an observed
+	 * firmware handoff, not an architectural definition of this MSR.
 	 */
 	if (cpuid_eax(1) != 0x00a20f12 || amd_microcode_patch_id() != 0x0a201213)
 		return;

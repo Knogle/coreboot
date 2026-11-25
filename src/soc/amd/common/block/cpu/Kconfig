@@ -184,6 +184,13 @@ config SOC_AMD_COMMON_BLOCK_VERMEER_CPU_NAME
 	  Read the processor name from a qualified Vermeer SMU and publish it
 	  through the six processor-name MSRs on every logical processor.
 
+config SOC_AMD_COMMON_BLOCK_VERMEER_MICROCODE_ADDRESS
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_UCODE
+	help
+	  Prepare the qualified Vermeer B2 microcode patch-buffer pointer
+	  before the ordinary PATCH_LOADER write.
+
 config SOC_AMD_COMMON_BLOCK_UCODE
 	bool
 	help

@@ -8,6 +8,7 @@
 #include "cstates.h"
 #include <amdblocks/cpu.h>
 #include <amdblocks/vermeer_cpu_name.h>
+#include <amdblocks/vermeer_microcode.h>
 #include <arch/cpu.h>
 #include <console/console.h>
 #include <device/device.h>
@@ -46,7 +47,7 @@ void b565d4_desktop_cpu_init(struct device *dev)
 		b565d4_vermeer_init_msrs();
 		vermeer_cpu_name_apply();
 		if (CONFIG(B565D4_VERMEER_MICROCODE_ADDRESS))
-			b565d4_vermeer_prepare_microcode_address();
+			vermeer_microcode_address_prepare();
 	}
 	amd_cpu_init(dev);
 	if (CONFIG(B565D4_VERMEER_CORE_C6))

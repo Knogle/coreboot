@@ -439,6 +439,7 @@ config B565D4_VERMEER_ABL_FILE
 config B565D4_VERMEER_MICROCODE_ADDRESS
 	bool "Use the original Vermeer microcode pointer handoff (experimental)"
 	depends on B565D4_VERMEER_BOOT_MICROCODE
+	select SOC_AMD_COMMON_BLOCK_VERMEER_MICROCODE_ADDRESS
 	help
 	  Reproduce the literal patch-buffer pointer handoff observed in both
 	  original ASRock and comparison Zen3 DXE loaders before the ordinary
