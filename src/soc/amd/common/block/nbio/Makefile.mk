@@ -7,6 +7,7 @@ ramstage-y += matisse_dxio_lanes.c
 ramstage-y += matisse_nbif_map.c
 ramstage-y += matisse_nbif_port.c
 ramstage-y += matisse_nbio_memory.c
+ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_MATISSE_PORT_VISIBILITY) += matisse_port_visibility.c
 
 endif
 

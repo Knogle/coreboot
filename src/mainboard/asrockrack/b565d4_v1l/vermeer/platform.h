@@ -15,7 +15,6 @@ bool b565d4_desktop_posted_route(uint64_t begin, uint64_t end);
 void b565d4_desktop_fabric_prepare(void);
 void b565d4_desktop_iohc_prepare(void);
 void b565d4_desktop_ccp_hide(void *unused);
-void b565d4_matisse_hide_unused_ports(void);
 void b565d4_matisse_promontory_early(void *unused);
 void b565d4_matisse_disable_sdhc(void);
 bool b565d4_desktop_pch_set_speed(void);

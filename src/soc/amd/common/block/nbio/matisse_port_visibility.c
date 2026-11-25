@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "platform.h"
 #include <amdblocks/matisse_nbif_map.h>
 #include <amdblocks/matisse_nbio_memory.h>
+#include <amdblocks/matisse_port_visibility.h>
 #include <amdblocks/smn.h>
 #include <console/console.h>
 #include <device/device.h>
@@ -12,7 +12,7 @@
 #define PORT_VISIBILITY_BASE (0x13b31004U + MATISSE_NBIO_SMN_OFFSET)
 #define PORT_VISIBILITY_MASK 0x00040005U
 
-void b565d4_matisse_hide_unused_ports(void)
+void matisse_hide_unused_root_ports(void)
 {
 	unsigned int hidden = 0, kept = 0;
 
@@ -54,7 +54,7 @@ void b565d4_matisse_hide_unused_ports(void)
 
 		before = smn_read32(address);
 		if (before == UINT32_MAX) {
-			printk(BIOS_ERR, B565D4_DESKTOP_NAME " port %s visibility unavailable\n",
+			printk(BIOS_ERR, "Matisse port %s visibility unavailable\n",
 			       dev_path(dev));
 			continue;
 		}
@@ -63,16 +63,16 @@ void b565d4_matisse_hide_unused_ports(void)
 			smn_write32(address, wanted);
 		after = smn_read32(address);
 		id = pci_read_config32(dev, PCI_VENDOR_ID);
-		printk(BIOS_DEBUG, B565D4_DESKTOP_NAME " unused port %s: SMN%08x %08x -> %08x "
+		printk(BIOS_DEBUG, "Matisse unused port %s: SMN%08x %08x -> %08x "
 		       "link=%04x id=%08x\n", dev_path(dev), address, before, after, status, id);
 		if (after != wanted || id != UINT32_MAX) {
-			printk(BIOS_ERR, B565D4_DESKTOP_NAME " port visibility readback failed\n");
+			printk(BIOS_ERR, "Matisse port visibility readback failed\n");
 			return;
 		}
 		dev->hidden = true;
 		dev->enabled = false;
 		hidden++;
 	}
-	printk(BIOS_DEBUG, B565D4_DESKTOP_NAME " root visibility: hidden=%u live_or_hotplug=%u\n",
+	printk(BIOS_DEBUG, "Matisse root visibility: hidden=%u live_or_hotplug=%u\n",
 	       hidden, kept);
 }

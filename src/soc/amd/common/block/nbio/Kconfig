@@ -10,3 +10,10 @@ config SOC_AMD_COMMON_BLOCK_MATISSE_DXIO
 	select SOC_AMD_COMMON_BLOCK_MATISSE_NBIO
 	help
 	  Build the native Matisse DXIO protocol and state machines.
+
+config SOC_AMD_COMMON_BLOCK_MATISSE_PORT_VISIBILITY
+	bool
+	select SOC_AMD_COMMON_BLOCK_MATISSE_NBIO
+	help
+	  Hide unused Matisse root ports after PCI enumeration while retaining
+	  discovered, training and hotplug links.

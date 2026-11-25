@@ -6,6 +6,7 @@
 #include <amdblocks/matisse_dxio_service.h>
 #include "nbio_base_plan.h"
 #include <amdblocks/matisse_nbio_memory.h>
+#include <amdblocks/matisse_port_visibility.h>
 #include <amdblocks/matisse_usb_init.h>
 #include "native84_profile.h"
 #include "native87_devices.h"
@@ -560,7 +561,7 @@ static void devices_initialized(void *unused)
 	native91_log_visible_fixed_mtrrs();
 	native91_repair_legacy_shadow();
 	/* Both desktop backends use the original instance-3 NBIF port pool. */
-	b565d4_matisse_hide_unused_ports();
+	matisse_hide_unused_root_ports();
 }
 
 /* Conservative first-boot power policy: C1 only, no Cezanne SMU47 feature
