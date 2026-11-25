@@ -8,6 +8,7 @@
 #include <amdblocks/amd_pci_util.h>
 #include <amdblocks/cpu.h>
 #include <amdblocks/reset.h>
+#include <amdblocks/vermeer_pcc.h>
 #include <arch/cpu.h>
 #include <arch/io.h>
 #include <console/console.h>
@@ -23,7 +24,6 @@
 #include "vermeer/cpu_power.h"
 #include "vermeer/cstates.h"
 #include "vermeer/cppc_pcc.h"
-#include "vermeer/pcc_contract.h"
 
 #if !CONFIG(SOC_AMD_CEZANNE_NATIVE) || !CONFIG(NO_SMM)
 #error "This ACPI draft is only for the retained NO_SMM profile"
@@ -291,7 +291,7 @@ static struct {
 	unsigned int count;
 	uint32_t apic_ids[CONFIG_MAX_CPUS];
 	struct cppc_config config[CONFIG_MAX_CPUS];
-	struct b565d4_pcc_subspace subspace;
+	struct vermeer_pcc_subspace subspace;
 } cppc_acpi;
 
 static bool prepare_cppc_acpi(void)
@@ -322,38 +322,16 @@ static bool prepare_cppc_acpi(void)
 		cpus[count++] = cpu;
 	}
 	if (count != state.cpu_count || !pstate_topology_indices(cpus, count, ranks) ||
-	    !b565d4_pcc_subspace(state.shared_base, &cppc_acpi.subspace))
+	    !vermeer_pcc_subspace(state.shared_base, &cppc_acpi.subspace))
 		return false;
 	for (unsigned int i = 0; i < count; i++) {
-		struct b565d4_cppc_package package;
 		struct cppc_config *config = &cppc_acpi.config[i];
 
-		if (!b565d4_cppc_package(state.information, ranks[i], state.lowest_mhz,
-					state.nominal_mhz, &package) ||
-		    package.revision != CPPC_VERSION_3 ||
-		    package.field_count != CPPC_MAX_FIELDS_VER_3)
+		if (!vermeer_cppc_config(state.information, ranks[i], state.lowest_mhz,
+				       state.nominal_mhz, config) ||
+		    config->version != CPPC_VERSION_3)
 			return false;
-		config->version = package.revision;
 		cppc_acpi.apic_ids[i] = cpus[i]->path.apic.apic_id;
-		for (unsigned int field = 0; field < package.field_count; field++) {
-			const struct b565d4_cppc_field *source = &package.fields[field];
-
-			if (source->integer) {
-				config->entries[field] = CPPC_DWORD(source->value);
-				continue;
-			}
-			config->entries[field] = (cppc_entry_t) {
-				.type = CPPC_TYPE_REG,
-				.reg = {
-					.space_id = source->reg.space,
-					.bit_width = source->reg.width,
-					.bit_offset = source->reg.offset,
-					.access_size = source->reg.access,
-					.addrl = source->reg.address,
-					.addrh = source->reg.address >> 32,
-				},
-			};
-		}
 	}
 	cppc_acpi.count = count;
 	cppc_acpi.eligible = true;
@@ -368,7 +346,7 @@ unsigned long acpi_fill_pcct(unsigned long current)
 	memcpy((void *)current, &cppc_acpi.subspace, sizeof(cppc_acpi.subspace));
 	cppc_acpi.published = true;
 	printk(BIOS_NOTICE, "ACPI CPPC: PCCT base=%08x bytes=%u cpus=%u\n",
-	       (unsigned int)cppc_acpi.subspace.base, B565D4_PCC_BYTES, cppc_acpi.count);
+	       (unsigned int)cppc_acpi.subspace.base, VERMEER_PCC_BYTES, cppc_acpi.count);
 	return current + sizeof(cppc_acpi.subspace);
 }
 

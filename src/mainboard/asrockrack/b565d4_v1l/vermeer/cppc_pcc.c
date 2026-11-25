@@ -2,6 +2,7 @@
 
 #include <amdblocks/cpu.h>
 #include <amdblocks/smu.h>
+#include <amdblocks/vermeer_pcc.h>
 #include <arch/io.h>
 #include <cbmem.h>
 #include <commonlib/helpers.h>
@@ -17,10 +18,9 @@
 #include <string.h>
 #include <timer.h>
 #include "cppc_pcc.h"
-#include "pcc_contract.h"
 
 #define CPPC_CBMEM_ID 0x43505043
-#define PCC_OWNER_BYTES (2 * B565D4_PCC_BYTES)
+#define PCC_OWNER_BYTES (2 * VERMEER_PCC_BYTES)
 #define MAX_VARIABLE_MTRRS 16
 #define CPPC_INFORMATION_384C 0x006be3bf
 #define CPPC_SET_TABLE_MESSAGE 0x16
@@ -40,8 +40,8 @@ struct cpu_cache_state {
 	msr_t mask[MAX_VARIABLE_MTRRS];
 };
 
-static struct cpu_cache_state cpus[B565D4_PCC_MAX_CPUS];
-static struct b565d4_pcc_plan plan;
+static struct cpu_cache_state cpus[VERMEER_PCC_MAX_CPUS];
+static struct vermeer_pcc_plan plan;
 static unsigned int cpu_count;
 static unsigned int mtrr_index;
 static bool attempted;
@@ -127,7 +127,7 @@ static void configure_private_uc(void *unused)
 	write_cr0((state->cr0 | CR0_CD) & ~CR0_NW);
 	wbinvd();
 	state->changed = true;
-	set_var_mtrr(mtrr_index, plan.shared_begin, B565D4_PCC_BYTES, MTRR_TYPE_UNCACHEABLE);
+	set_var_mtrr(mtrr_index, plan.shared_begin, VERMEER_PCC_BYTES, MTRR_TYPE_UNCACHEABLE);
 	wbinvd();
 	write_cr0(state->cr0);
 	state->exact = rdmsr(MTRR_PHYS_BASE(mtrr_index)).raw == plan.uc_base &&
@@ -177,12 +177,12 @@ void b565d4_vermeer_cppc_pcc_prepare(uint32_t information,
 				 unsigned int nominal_mhz, unsigned int lowest_mhz)
 {
 	struct smu_payload payload = { .msg = {0} };
-	struct b565d4_cppc_package package;
+	struct cppc_config config;
 	struct stopwatch timeout;
 	const struct cbmem_entry *entry;
 	void *owner;
 	uint8_t *shared;
-	uint8_t snapshot[8 + B565D4_PCC_MAX_CPUS * B565D4_PCC_CPU_STRIDE];
+	uint8_t snapshot[8 + VERMEER_PCC_MAX_CPUS * VERMEER_PCC_CPU_STRIDE];
 	bool cache_ready;
 
 	if (attempted)
@@ -190,8 +190,8 @@ void b565d4_vermeer_cppc_pcc_prepare(uint32_t information,
 	attempted = true;
 	cpu_count = get_cpu_count();
 	if (information != CPPC_INFORMATION_384C || !cpu_count ||
-	    cpu_count > B565D4_PCC_MAX_CPUS ||
-	    !b565d4_cppc_package(information, 0, lowest_mhz, nominal_mhz, &package)) {
+	    cpu_count > VERMEER_PCC_MAX_CPUS ||
+	    !vermeer_cppc_config(information, 0, lowest_mhz, nominal_mhz, &config)) {
 		printk(BIOS_WARNING, "Vermeer PCC: service description unavailable\n");
 		return;
 	}
@@ -211,19 +211,19 @@ void b565d4_vermeer_cppc_pcc_prepare(uint32_t information,
 	entry = cbmem_entry_find(CPPC_CBMEM_ID);
 	if (!owner || !entry || cbmem_entry_start(entry) != owner ||
 	    cbmem_entry_size(entry) != PCC_OWNER_BYTES ||
-	    !b565d4_pcc_plan((uintptr_t)owner, (uintptr_t)owner + PCC_OWNER_BYTES,
+	    !vermeer_pcc_plan((uintptr_t)owner, (uintptr_t)owner + PCC_OWNER_BYTES,
 				     cpus[0].physical_bits, cpu_count, &plan)) {
 		printk(BIOS_WARNING, "Vermeer PCC: private CBMEM allocation unavailable\n");
 		return;
 	}
 	shared = (void *)(uintptr_t)plan.shared_begin;
-	memset(shared, 0, B565D4_PCC_BYTES);
+	memset(shared, 0, VERMEER_PCC_BYTES);
 	write32(shared, PCC_SIGNATURE);
 	cache_ready = private_uc_ready();
 	if (!cache_ready)
 		return;
 	printk(BIOS_NOTICE, "Vermeer PCC: owner=%p+%x shared=%p+%x UC%u all%u CPUs exact\n",
-	       owner, PCC_OWNER_BYTES, shared, B565D4_PCC_BYTES, mtrr_index, cpu_count);
+	       owner, PCC_OWNER_BYTES, shared, VERMEER_PCC_BYTES, mtrr_index, cpu_count);
 	payload.msg[0] = plan.shared_begin;
 	payload.msg[1] = plan.shared_begin >> 32;
 	/* Original SMU384c message16 takes the PCC address directly. There is no
@@ -253,7 +253,7 @@ void b565d4_vermeer_cppc_pcc_prepare(uint32_t information,
 		udelay(10);
 	asm volatile ("mfence" ::: "memory");
 	memcpy(snapshot, shared, sizeof(snapshot));
-	const bool reply = b565d4_pcc_reply(snapshot, sizeof(snapshot), cpu_count);
+	const bool reply = vermeer_pcc_reply(snapshot, sizeof(snapshot), cpu_count);
 	if (reply) {
 		exported_state = (struct b565d4_cppc_pcc_state) {
 			.shared_base = plan.shared_begin,
@@ -268,7 +268,7 @@ void b565d4_vermeer_cppc_pcc_prepare(uint32_t information,
 	printk(BIOS_NOTICE, "Vermeer PCC: finite read status=%04x allCPUcapabilities=%u; "
 	       "OS interface not published\n", read16(shared + 6), reply);
 	for (unsigned int slot = 0; slot < cpu_count; slot++) {
-		const uint8_t *p = shared + 8 + slot * B565D4_PCC_CPU_STRIDE;
+		const uint8_t *p = shared + 8 + slot * VERMEER_PCC_CPU_STRIDE;
 
 		printk(BIOS_NOTICE, "Vermeer PCC: slot%u highest=%u nominal=%u nonlinear=%u lowest=%u\n",
 		       slot, read32(p), read32(p + 4), read32(p + 8), read32(p + 12));

@@ -10,6 +10,7 @@ ramstage-$(CONFIG_ACPI_BERT) += bert.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_ACPI_HEST) += hest.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_ACPI_ALIB) += alib.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_ACPI_CPPC) += cppc.c
+ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_ACPI_VERMEER_PCC) += vermeer_pcc.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_ACPI_CPU_POWER_STATE) += cpu_power_state.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_ACPI_GPIO) += gpio.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_ACPI_IVRS) += ivrs.c
