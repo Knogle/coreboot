@@ -385,7 +385,7 @@ static int cold_data_snapshot_current(void)
 
 /* Native95/Source26: diagnostic bus0 only. No BAR sizing, enumeration,
  * resource publication, CFC data write, bridge routing or supplier callback.
- * Keep all rows in linker-owned BSS, never a guessed early RAM arena.
+ * Preserve the proven read sequence in linker-owned BSS and report its result.
  */
 struct native95_pci_row {
 	uint32_t id, class_revision, header, buses;
@@ -462,16 +462,6 @@ restore:
 	text(" restored_cf8="); hex(native95_pci.restored_cf8, 4);
 	text(" requested="); hex(native95_pci.requested, 4);
 	text(" observed="); hex(native95_pci.observed, 4); text("\r\n");
-	for (unsigned int i = 0; i < native95_pci.complete; i++) {
-		const struct native95_pci_row *row = &native95_pci.row[i];
-
-		text("B565D4 NATIVE95 PCI0 ROW dev="); hex(i >> 3, 1);
-		text(" fn="); hex(i & 7, 1);
-		text(" id="); hex(row->id, 4);
-		text(" class_revision="); hex(row->class_revision, 4);
-		text(" header="); hex(row->header, 4);
-		text(" buses="); hex(row->buses, 4); text("\r\n");
-	}
 	text("B565D4 NATIVE95 END status="); hex(native95_pci.status, 4);
 	text(" fsp_calls=0 cbmem_write=0 owner_release=0 native_release=0000\r\n");
 }
