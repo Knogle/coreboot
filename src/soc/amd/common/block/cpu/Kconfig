@@ -177,6 +177,13 @@ config SOC_AMD_COMMON_BLOCK_CPU_SYNC_PSP_ADDR_MSR
 	  Select this option to have coreboot sync the PSP_ADDR_MSR from
 	  the BSP to all APs.
 
+config SOC_AMD_COMMON_BLOCK_VERMEER_CPU_NAME
+	bool
+	select SOC_AMD_COMMON_BLOCK_SMU
+	help
+	  Read the processor name from a qualified Vermeer SMU and publish it
+	  through the six processor-name MSRs on every logical processor.
+
 config SOC_AMD_COMMON_BLOCK_UCODE
 	bool
 	help

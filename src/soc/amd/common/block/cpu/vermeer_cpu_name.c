@@ -6,7 +6,7 @@
 #include <console/console.h>
 #include <cpu/x86/msr.h>
 #include <string.h>
-#include "vermeer_cpu.h"
+#include <amdblocks/vermeer_cpu_name.h>
 
 #define CPU_NAME_BYTES 48
 #define CPU_NAME_MSR 0xc0010030
@@ -16,7 +16,7 @@ static char cpu_name[CPU_NAME_BYTES];
 static bool cpu_name_ready;
 static bool cpu_name_attempted;
 
-void b565d4_vermeer_cpu_name_apply(void)
+void vermeer_cpu_name_apply(void)
 {
 	if (!cpu_name_ready || cpuid_eax(1) != 0x00a20f12)
 		return;
@@ -36,7 +36,7 @@ void b565d4_vermeer_cpu_name_apply(void)
 	}
 }
 
-void b565d4_vermeer_cpu_name_prepare(void)
+void vermeer_cpu_name_prepare(void)
 {
 	struct smu_payload payload = { .msg = {0} };
 	char name[CPU_NAME_BYTES];
@@ -85,6 +85,6 @@ void b565d4_vermeer_cpu_name_prepare(void)
 		return;
 	memcpy(cpu_name, name, sizeof(cpu_name));
 	cpu_name_ready = true;
-	b565d4_vermeer_cpu_name_apply();
+	vermeer_cpu_name_apply();
 	printk(BIOS_NOTICE, "Vermeer CPU name: %s\n", cpu_name);
 }

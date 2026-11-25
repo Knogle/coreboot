@@ -6,6 +6,7 @@ romstage-y += cpu.c
 ramstage-y += cpu.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_SVI2) += svi2.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_SVI3) += svi3.c
+ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_VERMEER_CPU_NAME) += vermeer_cpu_name.c
 ramstage-$(CONFIG_SOC_AMD_COMMON_BLOCK_UCODE) += update_microcode.c
 bootblock-$(CONFIG_SOC_AMD_COMMON_BLOCK_UCODE_BOOTBLOCK) += update_microcode.c
 

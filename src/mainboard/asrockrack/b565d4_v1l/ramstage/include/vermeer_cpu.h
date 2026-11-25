@@ -3,8 +3,6 @@
 #define B565D4_VERMEER_CPU_H
 
 void b565d4_vermeer_init_msrs(void);
-void b565d4_vermeer_cpu_name_prepare(void);
-void b565d4_vermeer_cpu_name_apply(void);
 void b565d4_vermeer_prepare_microcode_address(void);
 
 #endif

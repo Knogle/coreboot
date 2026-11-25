@@ -13,6 +13,7 @@
 #include <amdblocks/amd_pci_util.h>
 #include <amdblocks/cpu.h>
 #include <amdblocks/cppc.h>
+#include <amdblocks/vermeer_cpu_name.h>
 #include <arch/cpu.h>
 #include <console/console.h>
 #include <console/uart.h>
@@ -235,7 +236,7 @@ void mp_init_cpus(DEVTREE_CONST struct bus *cpu_bus)
 		if (CONFIG(B565D4_MATISSE) && !CONFIG(B565D4_MATISSE_IRQ_DIAGNOSTIC))
 			b565d4_matisse_init_msrs();
 		else if (CONFIG(B565D4_VERMEER)) {
-			b565d4_vermeer_cpu_name_prepare();
+			vermeer_cpu_name_prepare();
 			b565d4_vermeer_init_msrs();
 		}
 #if CONFIG(B565D4_MATISSE_IRQ_DIAGNOSTIC)
