@@ -4,9 +4,23 @@
 #define B565D4_MATISSE_DXIO_H
 
 #include "b565d4_policy.h"
-#include "b565d4_link_policy.h"
+#include <amdblocks/matisse_dxio_configured.h>
 #include <amdblocks/matisse_dxio_dma.h>
 #include <amdblocks/matisse_dxio_events.h>
+#include <amdblocks/matisse_dxio_reconfigure.h>
+
+#define B565D4_MATISSE_WRAPPERS 2
+#define B565D4_MATISSE_TOPOLOGY_PORTS 16
+#define B565D4_MATISSE_ACTIVE_PORTS 6
+
+struct b565d4_matisse_link_policy {
+	uint8_t wrappers[B565D4_MATISSE_WRAPPERS];
+	struct matisse_dxio_result_slot slots[B565D4_MATISSE_TOPOLOGY_PORTS];
+	struct matisse_dxio_link_controls controls[MATISSE_NBIF_MAP_SLOTS];
+	struct matisse_dxio_link_overrides overrides[B565D4_MATISSE_ACTIVE_PORTS];
+	struct matisse_dxio_reconfigure_policy reconfigure;
+	struct matisse_dxio_configured_policy configured;
+};
 
 struct b565d4_matisse_dxio_input {
 	enum b565d4_matisse_slot_mode slot_mode;
