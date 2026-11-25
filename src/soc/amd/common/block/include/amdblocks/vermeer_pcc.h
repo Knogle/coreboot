@@ -29,6 +29,17 @@ struct vermeer_pcc_plan {
 	unsigned int cpu_count;
 };
 
+/* Valid only after fresh allocation, all-CPU UC setup, SMU registration and
+ * one completed read with valid capabilities for every CPU.
+ */
+struct vermeer_pcc_state {
+	uint64_t shared_base;
+	uint32_t information;
+	unsigned int nominal_mhz;
+	unsigned int lowest_mhz;
+	unsigned int cpu_count;
+};
+
 /* Pure calculations only. The caller must first obtain the owner interval
  * through the admitted CBMEM/resource allocation path. An arbitrary reserved
  * PSP/ABL/SMM range is not an allocation. No allocation or MTRR write occurs.
@@ -47,5 +58,9 @@ bool vermeer_cppc_config(uint32_t information, unsigned int slot,
  * transaction and its observed completion remain the caller's responsibility.
  */
 bool vermeer_pcc_reply(const uint8_t *snapshot, size_t bytes, unsigned int cpu_count);
+
+bool vermeer_pcc_get_state(struct vermeer_pcc_state *state);
+void vermeer_pcc_prepare(uint32_t information, unsigned int nominal_mhz,
+			 unsigned int lowest_mhz);
 
 #endif /* AMD_BLOCK_VERMEER_PCC_H */

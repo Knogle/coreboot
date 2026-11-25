@@ -2,6 +2,7 @@
 
 #include <amdblocks/smn.h>
 #include <amdblocks/smu.h>
+#include <amdblocks/vermeer_pcc.h>
 #include <amdblocks/vermeer_smu_cppc.h>
 #include <amdblocks/vermeer_smu_telemetry.h>
 #include <arch/cpu.h>
@@ -9,7 +10,6 @@
 #include <commonlib/helpers.h>
 #include <console/console.h>
 #include <soc/smu.h>
-#include "cppc_pcc.h"
 #include "cpu_power.h"
 #include "cstates.h"
 #include "powerplay.h"
@@ -80,9 +80,9 @@ static void setup_cpu_power(void *unused)
 	cpu_power_ready = true;
 	if (powerplay_ready) {
 		if (vermeer_smu_cppc_prepare(QUALIFIED_SMU_VERSION, &cppc_info))
-			b565d4_vermeer_cppc_pcc_prepare(cppc_info.information,
-							cppc_info.nominal_mhz,
-							cppc_info.lowest_mhz);
+			vermeer_pcc_prepare(cppc_info.information,
+					    cppc_info.nominal_mhz,
+					    cppc_info.lowest_mhz);
 		if (CONFIG(B565D4_VERMEER_CORE_C6))
 			b565d4_vermeer_cc6_enable();
 	} else

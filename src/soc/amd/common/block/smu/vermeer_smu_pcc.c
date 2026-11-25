@@ -17,7 +17,6 @@
 #include <soc/smu.h>
 #include <string.h>
 #include <timer.h>
-#include "cppc_pcc.h"
 
 #define CPPC_CBMEM_ID 0x43505043
 #define PCC_OWNER_BYTES (2 * VERMEER_PCC_BYTES)
@@ -46,16 +45,15 @@ static unsigned int cpu_count;
 static unsigned int mtrr_index;
 static bool attempted;
 static bool verified;
-static struct b565d4_cppc_pcc_state exported_state;
+static struct vermeer_pcc_state exported_state;
 
-bool b565d4_vermeer_cppc_pcc_get_state(struct b565d4_cppc_pcc_state *out)
+bool vermeer_pcc_get_state(struct vermeer_pcc_state *state)
 {
-	if (!verified || !out)
+	if (!verified || !state)
 		return false;
-	*out = exported_state;
+	*state = exported_state;
 	return true;
 }
-
 
 static void collect_cache_state(void *unused)
 {
@@ -173,8 +171,8 @@ static bool private_uc_ready(void)
 	return false;
 }
 
-void b565d4_vermeer_cppc_pcc_prepare(uint32_t information,
-				 unsigned int nominal_mhz, unsigned int lowest_mhz)
+void vermeer_pcc_prepare(uint32_t information, unsigned int nominal_mhz,
+			 unsigned int lowest_mhz)
 {
 	struct smu_payload payload = { .msg = {0} };
 	struct cppc_config config;
@@ -255,7 +253,7 @@ void b565d4_vermeer_cppc_pcc_prepare(uint32_t information,
 	memcpy(snapshot, shared, sizeof(snapshot));
 	const bool reply = vermeer_pcc_reply(snapshot, sizeof(snapshot), cpu_count);
 	if (reply) {
-		exported_state = (struct b565d4_cppc_pcc_state) {
+		exported_state = (struct vermeer_pcc_state) {
 			.shared_base = plan.shared_begin,
 			.information = information,
 			.nominal_mhz = nominal_mhz,

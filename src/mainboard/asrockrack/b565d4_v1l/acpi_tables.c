@@ -23,7 +23,6 @@
 #include "setup_options.h"
 #include "vermeer/cpu_power.h"
 #include "vermeer/cstates.h"
-#include "vermeer/cppc_pcc.h"
 
 #if !CONFIG(SOC_AMD_CEZANNE_NATIVE) || !CONFIG(NO_SMM)
 #error "This ACPI draft is only for the retained NO_SMM profile"
@@ -298,7 +297,7 @@ static bool prepare_cppc_acpi(void)
 {
 	const struct device *cpus[CONFIG_MAX_CPUS];
 	unsigned int ranks[CONFIG_MAX_CPUS];
-	struct b565d4_cppc_pcc_state state;
+	struct vermeer_pcc_state state;
 	unsigned int count = 0, nodes = 0;
 	const struct device *cpu;
 
@@ -307,7 +306,7 @@ static bool prepare_cppc_acpi(void)
 	cppc_acpi.checked = true;
 	if (!CONFIG(B565D4_VERMEER) || !b565d4_vermeer_cpu_power_ready() ||
 	    (CONFIG(B565D4_DESKTOP_SETUP) && b565d4_setup_get(B565D4_OPT_PSTATE_LIMIT)) ||
-	    !b565d4_vermeer_cppc_pcc_get_state(&state))
+	    !vermeer_pcc_get_state(&state))
 		return false;
 	if (!state.cpu_count || state.cpu_count > CONFIG_MAX_CPUS ||
 	    state.cpu_count != get_cpu_count())
