@@ -2,6 +2,7 @@
 
 #include <amdblocks/smn.h>
 #include <amdblocks/smu.h>
+#include <amdblocks/vermeer_smu_cppc.h>
 #include <amdblocks/vermeer_smu_telemetry.h>
 #include <arch/cpu.h>
 #include <bootstate.h>
@@ -26,58 +27,6 @@
 static bool cpu_power_ready;
 static bool cpu_power_attempted;
 
-static void prepare_cppc_service(void)
-{
-	struct smu_payload payload = { .msg = {0} };
-	uint32_t before, after, nominal;
-
-	if (send_smu_message(SMC_MSG_GET_CPPC_INFO, &payload) != CB_SUCCESS) {
-		printk(BIOS_WARNING, "Vermeer CPPC: initial information request failed\n");
-		return;
-	}
-	before = payload.msg[0];
-	if (!before) {
-		/* Original SMU384c feature table B208h entry22 initializes the
-		 * CPPC service through callback288B8h. Enable this bit once; do not
-		 * retry an ambiguous result or replace the existing feature subset.
-		 */
-		payload = (struct smu_payload) { .msg = {BIT(22)} };
-		if (send_smu_message(SMC_MSG_ENABLE_SMU_FEATURES, &payload) != CB_SUCCESS) {
-			printk(BIOS_WARNING, "Vermeer CPPC: service feature request failed\n");
-			return;
-		}
-		payload = (struct smu_payload) { .msg = {0} };
-		if (send_smu_message(SMC_MSG_GET_CPPC_INFO, &payload) != CB_SUCCESS) {
-			printk(BIOS_WARNING, "Vermeer CPPC: information request failed\n");
-			return;
-		}
-	}
-	after = payload.msg[0];
-	printk(BIOS_NOTICE, "Vermeer CPPC: information %08x -> %08x\n", before, after);
-	if (!after || !(after & 3))
-		return;
-
-	payload = (struct smu_payload) { .msg = {0} };
-	if (send_smu_message(SMC_MSG_GET_CPPC_NOMINAL_FREQUENCY, &payload) != CB_SUCCESS) {
-		printk(BIOS_WARNING, "Vermeer CPPC: nominal frequency request failed\n");
-		return;
-	}
-	nominal = payload.msg[0];
-	payload = (struct smu_payload) { .msg = {0} };
-	if (send_smu_message(SMC_MSG_GET_CPPC_LOWEST_FREQUENCY, &payload) != CB_SUCCESS) {
-		printk(BIOS_WARNING, "Vermeer CPPC: lowest frequency request failed\n");
-		return;
-	}
-	printk(BIOS_NOTICE, "Vermeer CPPC: nominal=%uMHz lowest=%uMHz; "
-	       "OS interface not published\n", nominal, payload.msg[0]);
-	b565d4_vermeer_cppc_pcc_prepare(after, nominal, payload.msg[0]);
-	/* GetInfo returns a static capability word after service initialization.
-	 * The optional PCC probe checks its private allocation and one finite
-	 * read separately. Keep ordinary hardware P-states until CPU indexing,
-	 * the ACPI contract and actual OS operation are independently proven.
-	 */
-}
-
 bool b565d4_vermeer_cpu_power_ready(void)
 {
 	return cpu_power_ready;
@@ -86,6 +35,7 @@ bool b565d4_vermeer_cpu_power_ready(void)
 static void setup_cpu_power(void *unused)
 {
 	struct smu_payload payload = { .msg = {0} };
+	struct vermeer_smu_cppc_info cppc_info;
 	bool powerplay_ready;
 
 	if (cpu_power_attempted)
@@ -129,7 +79,10 @@ static void setup_cpu_power(void *unused)
 	       CONFIG_B565D4_CPU_TCTL_LIMIT);
 	cpu_power_ready = true;
 	if (powerplay_ready) {
-		prepare_cppc_service();
+		if (vermeer_smu_cppc_prepare(QUALIFIED_SMU_VERSION, &cppc_info))
+			b565d4_vermeer_cppc_pcc_prepare(cppc_info.information,
+							cppc_info.nominal_mhz,
+							cppc_info.lowest_mhz);
 		if (CONFIG(B565D4_VERMEER_CORE_C6))
 			b565d4_vermeer_cc6_enable();
 	} else

@@ -13,6 +13,13 @@ config SOC_AMD_COMMON_BLOCK_VERMEER_SMU_POWERPLAY
 	  Import a board-supplied PowerPlay table through the qualified
 	  Vermeer SMU interface.
 
+config SOC_AMD_COMMON_BLOCK_VERMEER_SMU_CPPC
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_SMU
+	help
+	  Initialize the qualified Vermeer CPPC service and read its
+	  capability and frequency description.
+
 config SOC_AMD_COMMON_BLOCK_VERMEER_SMU_TELEMETRY
 	bool
 	depends on SOC_AMD_COMMON_BLOCK_SMU
