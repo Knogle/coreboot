@@ -99,13 +99,18 @@ def payload_layout(large):
 
 def payload_command(args):
     _, payload_end, payload_source = payload_layout(args.large_payload)
-    with tempfile.TemporaryDirectory(prefix='b565d4-payload-') as temporary:
-        image = Path(temporary) / 'payload.cbfs'
-        run([args.cbfstool, image, 'create', '-m', 'x86',
-             '-s', '0x400000' if args.large_payload else '0x200000'])
-        run([args.cbfstool, image, 'add-payload', '-f', args.input,
-             '-n', 'payload', '-c', 'lzma'])
-        run([args.cbfstool, image, 'extract', '-n', 'payload', '-U', '-f', args.output])
+    source = Path(args.input).read_bytes()
+    # Reuse a standard coreboot SELF without wrapping it as a second payload.
+    if source[:4] in (b'CODE', b'DATA', b'BSS '):
+        update_file(args.output, source)
+    else:
+        with tempfile.TemporaryDirectory(prefix='b565d4-payload-') as temporary:
+            image = Path(temporary) / 'payload.cbfs'
+            run([args.cbfstool, image, 'create', '-m', 'x86',
+                 '-s', '0x400000' if args.large_payload else '0x200000'])
+            run([args.cbfstool, image, 'add-payload', '-f', args.input,
+                 '-n', 'payload', '-c', 'lzma'])
+            run([args.cbfstool, image, 'extract', '-n', 'payload', '-U', '-f', args.output])
     data = Path(args.output).read_bytes()
     position = 0
     segments = []
