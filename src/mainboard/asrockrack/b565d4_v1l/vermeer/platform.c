@@ -23,7 +23,6 @@
 #include <amdblocks/amd_pci_util.h>
 #include <amdblocks/root_complex.h>
 #include <amdblocks/smn.h>
-#include <arch/io.h>
 #include <bootstate.h>
 #include <cbmem.h>
 #include <console/console.h>
@@ -476,65 +475,6 @@ struct chip_operations soc_amd_cezanne_ops = {
 	.init = soc_init,
 };
 
-/* Native315 temporary physical diagnosis: read the actual Promontory
- * downstream port before/after upload and retraining. No PCI data writes;
- * each CF8 selector is restored after a returned I/O access.
- */
-static void native315_probe_pch(const char *phase, bool io_probe)
-{
-	const struct device *root = DEV_PTR(gpp_bridge_0);
-	const struct device *upstream = NULL, *port = NULL;
-
-	for (const struct device *dev = all_devices; dev; dev = dev->next) {
-		if (dev->vendor == 0x1022 && dev->device == 0x43e9 &&
-		    dev->upstream && dev->upstream->dev == root)
-			upstream = dev;
-	}
-	if (upstream) {
-		for (const struct device *dev = all_devices; dev; dev = dev->next) {
-			if (dev->vendor == 0x1022 && dev->device == 0x43ea &&
-			    dev->path.type == DEVICE_PATH_PCI && !dev->path.pci.devfn &&
-			    dev->upstream && dev->upstream->dev == upstream)
-				port = dev;
-		}
-	}
-	if (!root || !upstream || !port) {
-		printk(BIOS_NOTICE, "N315 PCH PROBE %s no matching discovered path\n", phase);
-		return;
-	}
-	printk(BIOS_NOTICE, "N315 PCH PROBE %s root=%08x upstream=%08x port=%08x\n",
-	       phase, pcidev_bdf(root), pcidev_bdf(upstream), pcidev_bdf(port));
-	printk(BIOS_NOTICE, "N315 PCH ROUTE BEGIN %s\n", phase);
-	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
-	const uint32_t root_bus = pci_read_config32(root, PCI_PRIMARY_BUS);
-	const uint32_t upstream_bus = pci_read_config32(upstream, PCI_PRIMARY_BUS);
-
-	printk(BIOS_NOTICE, "N315 PCH ROUTE END %s root=%08x upstream=%08x\n",
-	       phase, root_bus, upstream_bus);
-	printk(BIOS_NOTICE, "N315 PCH ECAM32 BEGIN %s\n", phase);
-	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
-	const uint32_t ecam = pci_read_config32(port, PCI_VENDOR_ID);
-
-	printk(BIOS_NOTICE, "N315 PCH ECAM32 END %s value=%08x\n", phase, ecam);
-	if (!io_probe)
-		return;
-	const uint32_t saved = inl(0xcf8);
-
-	printk(BIOS_NOTICE, "N315 PCH CF8_32 BEGIN %s saved=%08x\n", phase, saved);
-	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
-	uint32_t value = pci_io_read_config32(pcidev_bdf(port), PCI_VENDOR_ID);
-
-	outl(saved, 0xcf8);
-	printk(BIOS_NOTICE, "N315 PCH CF8_32 END %s value=%08x restored=%08x\n",
-	       phase, value, inl(0xcf8));
-	printk(BIOS_NOTICE, "N315 PCH CF8_16 BEGIN %s\n", phase);
-	uart_tx_flush(CONFIG_UART_FOR_CONSOLE);
-	value = pci_io_read_config16(pcidev_bdf(port), PCI_VENDOR_ID);
-	outl(saved, 0xcf8);
-	printk(BIOS_NOTICE, "N315 PCH CF8_16 END %s value=%08x restored=%08x\n",
-	       phase, value, inl(0xcf8));
-}
-
 static void __attribute__((noinline)) matisse_enable_legacy_irq_input(void)
 {
 	/* The board's existing native FCH path enables this input after PIC
@@ -558,13 +498,10 @@ static void __attribute__((noinline)) matisse_enable_legacy_irq_input(void)
 static void devices_initialized(void *unused)
 {
 	native84_stage_check();
-	native315_probe_pch("before_upload", false);
 	native42_promontory_init();
-	native315_probe_pch("after_upload", false);
 	/* Complete the resetting speed transition before assigning resources. */
 	printk(BIOS_NOTICE, B565D4_DESKTOP_NAME
 	       " Promontory uplink initialized before resources\n");
-	native315_probe_pch("after_retrain", true);
 	matisse_enable_legacy_irq_input();
 	native91_log_visible_fixed_mtrrs();
 	native91_repair_legacy_shadow();
