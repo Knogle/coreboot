@@ -1,5 +1,8 @@
 # Experimental SeaBIOS CSM application
 
+The [V26 review scope](REVIEW_SCOPE.md) separates the wrapper and SeaBIOS
+changes, EDK2 integration, and B565-specific policy for independent review.
+
 The B565D4-V1L `EDK2_CSMWRAP` option builds pinned open CSMWrap sources and
 their SeaBIOS submodule, embeds the resulting EFI application in the EDK2
 firmware volume, and adds a selectable legacy boot entry. Ordinary UEFI boot
